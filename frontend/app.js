@@ -11,10 +11,11 @@ document.addEventListener('DOMContentLoaded', () => {
     checkAuthStatus();
     setupEventListeners();
     
-    // Set remember me checkbox state from localStorage if available
+    // Set remember me checkbox state from localStorage if available, default to checked
     const rememberMeCheckbox = document.getElementById('rememberMe');
     if (rememberMeCheckbox) {
-        rememberMeCheckbox.checked = rememberMe;
+        const savedRememberMe = localStorage.getItem('rememberMe');
+        rememberMeCheckbox.checked = savedRememberMe === 'true' || savedRememberMe === null;
     }
     
     // Load credits status every 30 seconds if authenticated
