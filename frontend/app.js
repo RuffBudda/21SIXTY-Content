@@ -63,10 +63,9 @@ async function checkAuthStatus() {
 function showLoginModal() {
     document.getElementById('loginModal').style.display = 'flex';
     document.getElementById('mainContainer').style.display = 'none';
-    // Reset remember me checkbox when showing login modal
+    // Set remember me checkbox - default to checked if no saved preference
     const rememberMeCheckbox = document.getElementById('rememberMe');
     if (rememberMeCheckbox) {
-        // Default to checked if no localStorage value exists
         const savedRememberMe = localStorage.getItem('rememberMe');
         rememberMeCheckbox.checked = savedRememberMe === 'true' || savedRememberMe === null;
     }
