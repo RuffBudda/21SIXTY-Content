@@ -16,6 +16,8 @@ class YouTubeService:
         # Resolve path relative to backend directory (parent of services)
         backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         self.cookies_dir = os.path.join(backend_dir, "cookies")
+        # Ensure cookies directory exists
+        os.makedirs(self.cookies_dir, exist_ok=True)
         self.uploaded_cookies_path = os.path.join(self.cookies_dir, "cookies.txt")
         
     def _extract_video_id(self, url: str) -> str:
@@ -34,16 +36,25 @@ class YouTubeService:
     def _get_cookies_file_path(self) -> Optional[str]:
         """Get cookie file path, checking multiple locations in priority order"""
         # 1. Check uploaded cookies file first
-        if os.path.exists(self.uploaded_cookies_path):
-            logger.info(f"Found uploaded cookies file: {self.uploaded_cookies_path}")
-            return self.uploaded_cookies_path
+        abs_path = os.path.abspath(self.uploaded_cookies_path)
+        if os.path.exists(abs_path):
+            file_size = os.path.getsize(abs_path)
+            logger.info(f"Found uploaded cookies file: {abs_path} (size: {file_size} bytes)")
+            return abs_path
+        else:
+            logger.debug(f"Uploaded cookies file not found at: {abs_path}")
         
         # 2. Check environment variable (backward compatibility)
         env_cookies_file = os.getenv('YOUTUBE_COOKIES_FILE', None)
-        if env_cookies_file and os.path.exists(env_cookies_file):
-            logger.info(f"Found cookies file from env var: {env_cookies_file}")
-            return env_cookies_file
+        if env_cookies_file:
+            abs_env_path = os.path.abspath(env_cookies_file)
+            if os.path.exists(abs_env_path):
+                logger.info(f"Found cookies file from env var: {abs_env_path}")
+                return abs_env_path
+            else:
+                logger.debug(f"Cookies file from env var not found at: {abs_env_path}")
         
+        logger.warning("No cookies file found - YouTube downloads may fail")
         return None
     
     def _build_ydl_opts(self, output_path: str, use_cookies: bool = True) -> dict:
