@@ -19,7 +19,7 @@ def fetch_from_github():
             text=True,
             check=True
         )
-        print("✓ Successfully fetched from GitHub")
+        print("Successfully fetched from GitHub")
         return True
     except subprocess.CalledProcessError as e:
         print(f"Warning: Failed to fetch from GitHub: {e.stderr}", file=sys.stderr)
@@ -156,7 +156,7 @@ def commit_and_push(file_path, version):
                 ['git', 'push', 'origin', 'main'],
                 check=True
             )
-            print(f"✓ Successfully pushed version v{version} to GitHub")
+            print(f"Successfully pushed version v{version} to GitHub")
             return True
         else:
             print("No version file changes to commit")
@@ -186,7 +186,7 @@ def main():
         
         # Automatically commit and push
         if commit_and_push(html_file, new_version):
-            print(f"\n✓ Version v{new_version} has been committed and pushed to GitHub")
+            print(f"\nVersion v{new_version} has been committed and pushed to GitHub")
         else:
             print(f"\n⚠ Version file updated, but git push failed. Please commit and push manually:")
             print(f"  git add frontend/index.html")

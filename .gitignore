@@ -39,6 +39,7 @@ Thumbs.db
 *.log
 logs/
 
-# Deployment guide (not tracked in git)
-DEPLOYMENT.md
+# Markdown files (keep only README.md for GitHub)
+*.md
+!README.md
 
