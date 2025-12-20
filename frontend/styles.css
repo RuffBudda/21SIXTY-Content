@@ -133,45 +133,68 @@ body {
 .status-container {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 4px 10px;
+    gap: 6px;
+    padding: 3px 8px;
     background-color: var(--bg-card);
-    border-radius: 6px;
+    border-radius: 4px;
     border: 1px solid var(--border-color);
 }
 
 .status-item {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 3px;
+}
+
+.status-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background-color: #9E9E9E;
+    flex-shrink: 0;
+}
+
+.status-dot.active {
+    background-color: #4CAF50;
+}
+
+.status-dot.warning {
+    background-color: #FFA500;
+}
+
+.status-dot.error {
+    background-color: #f44336;
 }
 
 .status-label {
     color: var(--text-secondary);
-    font-size: 0.65rem;
+    font-size: 0.55rem;
     font-weight: 500;
+    white-space: nowrap;
 }
 
 .status-value {
-    font-weight: 600;
-    font-size: 0.65rem;
-    padding: 2px 6px;
-    border-radius: 10px;
+    font-weight: 500;
+    font-size: 0.55rem;
+    padding: 1px 4px;
+    border-radius: 8px;
     background-color: var(--bg-secondary);
     color: var(--text-primary);
     white-space: nowrap;
 }
 
 .btn-upload-cookies {
-    padding: 3px 8px;
-    font-size: 0.65rem;
+    padding: 2px 6px;
+    font-size: 0.55rem;
     background-color: var(--bg-secondary);
     color: var(--text-primary);
     border: 1px solid var(--border-color);
-    border-radius: 4px;
+    border-radius: 3px;
     cursor: pointer;
     transition: all 0.2s ease;
     white-space: nowrap;
+    height: 18px;
+    line-height: 14px;
 }
 
 .btn-upload-cookies:hover {

@@ -65,19 +65,27 @@ def update_version_in_file(file_path, new_version):
         updated_content = re.sub(title_pattern, title_replacement, updated_content)
         changes_made = True
     
-    # Update h1 tag - check for new format first (with span), then old format (without span)
+    # Update h1 tag - check for new format first (with span), then old format (without span), then no version
+    # Pattern 1: With span (new format): <h1 class="title">21SIXTY CONTENT GEN <span class="version">v26</span></h1>
     h1_with_span_pattern = r'(<h1 class="title">21SIXTY CONTENT GEN\s*)<span class="version">v\d+</span>(</h1>)'
-    h1_with_span_replacement = f'\\1<span class="version">v{new_version}</span>\\2'
-    
-    h1_without_span_pattern = r'<h1 class="title">21SIXTY CONTENT GEN v\d+</h1>'
-    h1_without_span_replacement = f'<h1 class="title">21SIXTY CONTENT GEN <span class="version">v{new_version}</span></h1>'
-    
-    # Try new format first, then old format (they're mutually exclusive)
     if re.search(h1_with_span_pattern, updated_content):
-        updated_content = re.sub(h1_with_span_pattern, h1_with_span_replacement, updated_content)
+        updated_content = re.sub(h1_with_span_pattern, f'\\1<span class="version">v{new_version}</span>\\2', updated_content)
         changes_made = True
-    elif re.search(h1_without_span_pattern, updated_content):
-        updated_content = re.sub(h1_without_span_pattern, h1_without_span_replacement, updated_content)
+    # Pattern 2: Old format with inline version: <h1 class="title">21SIXTY CONTENT GEN v26</h1>
+    elif re.search(r'<h1 class="title">21SIXTY CONTENT GEN v\d+</h1>', updated_content):
+        updated_content = re.sub(
+            r'<h1 class="title">21SIXTY CONTENT GEN v\d+</h1>',
+            f'<h1 class="title">21SIXTY CONTENT GEN <span class="version">v{new_version}</span></h1>',
+            updated_content
+        )
+        changes_made = True
+    # Pattern 3: No version at all: <h1 class="title">21SIXTY CONTENT GEN</h1>
+    elif re.search(r'<h1 class="title">21SIXTY CONTENT GEN</h1>', updated_content):
+        updated_content = re.sub(
+            r'<h1 class="title">21SIXTY CONTENT GEN</h1>',
+            f'<h1 class="title">21SIXTY CONTENT GEN <span class="version">v{new_version}</span></h1>',
+            updated_content
+        )
         changes_made = True
     
     # Check if anything changed

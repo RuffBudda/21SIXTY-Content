@@ -3,33 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>21SIXTY CONTENT GEN v26</title>
-    <link rel="icon" type="image/x-icon" href="/static/images/favicons/favicon.ico">
+    <title>21SIXTY CONTENT GEN v27</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <!-- Login Modal -->
     <div id="loginModal" class="modal">
         <div class="modal-content">
-            <div class="login-logo-container">
-                <img src="/static/images/logos/logo.png" alt="21SIXTY Logo" class="login-logo" onerror="this.onerror=null; this.src='/static/images/logo.svg';">
-            </div>
             <h2>Authentication Required</h2>
             <p>Please enter the master password to access the tool.</p>
             <div class="input-group">
                 <label for="passwordInput">Master Password</label>
-                <div class="password-input-wrapper">
-                    <input type="password" id="passwordInput" placeholder="Enter password" autocomplete="current-password" />
-                    <button type="button" class="password-toggle" id="passwordToggle" aria-label="Toggle password visibility">
-                        <span class="eye-icon">👁️</span>
-                    </button>
-                </div>
-            </div>
-            <div class="input-group remember-me-group">
-                <label class="checkbox-label">
-                    <input type="checkbox" id="rememberMe" checked>
-                    <span>Remember me (stay logged in)</span>
-                </label>
+                <input type="password" id="passwordInput" placeholder="Enter password" autocomplete="current-password" />
             </div>
             <div id="loginError" class="error-message" style="display: none;"></div>
             <button class="btn btn-primary" id="loginBtn">Login</button>
@@ -40,45 +25,27 @@
         <!-- Header -->
         <header class="header">
             <div class="logo-container">
-                <img src="/static/images/logos/logo.png" alt="21SIXTY Logo" class="logo" onerror="this.onerror=null; this.src='/static/images/logo.svg';">
-                <h1 class="title">21SIXTY CONTENT GEN <span class="version">v26</span></h1>
+                <img src="https://scrape.2160.media/logos/logo.png" alt="21SIXTY Logo" class="logo">
+                <h1 class="title">21SIXTY CONTENT GEN <span class="version">v27</span></h1>
             </div>
             <div class="status-container">
                 <div class="status-item">
+                    <span class="status-dot" id="openaiDot"></span>
                     <span class="status-label">OpenAI:</span>
                     <span class="status-value" id="creditsValue">Loading...</span>
                 </div>
                 <div class="status-item">
+                    <span class="status-dot" id="cookiesDot"></span>
                     <span class="status-label">Cookies:</span>
                     <span class="status-value" id="cookiesValue">Loading...</span>
                 </div>
                 <input type="file" id="cookieFileInput" accept=".txt" style="display: none;" />
-                <button class="btn btn-upload-cookies" id="uploadCookiesBtn">Upload Cookies</button>
+                <button class="btn btn-upload-cookies" id="uploadCookiesBtn">Upload</button>
             </div>
             <div class="logout-btn">
                 <button class="btn btn-secondary" id="logoutBtn">Logout</button>
             </div>
         </header>
-
-        <!-- Cookie Help Section -->
-        <div id="cookieHelpSection" class="cookie-help-section" style="display: none;">
-            <div class="cookie-help-content">
-                <strong>Need to upload cookies? Export from your browser:</strong>
-                <div class="cookie-help-links">
-                    <a href="https://chrome.google.com/webstore/detail/get-cookiestxt-locally/cclelndahbckbenkjhflpdbgdldlbecc" target="_blank" rel="noopener noreferrer">Chrome/Edge Extension</a>
-                    <span>•</span>
-                    <a href="https://addons.mozilla.org/en-US/firefox/addon/cookies-txt/" target="_blank" rel="noopener noreferrer">Firefox Extension</a>
-                </div>
-                <ol class="cookie-help-steps">
-                    <li>Log in to YouTube in your browser</li>
-                    <li>Navigate to any YouTube video page</li>
-                    <li>Click the extension icon</li>
-                    <li>Click "Export" to download <code>cookies.txt</code></li>
-                    <li>Upload the file using the button above</li>
-                </ol>
-                <button class="cookie-help-close" id="cookieHelpClose">×</button>
-            </div>
-        </div>
 
         <!-- Navigation Tabs -->
         <nav class="tabs">
@@ -248,4 +215,3 @@
     <script src="app.js"></script>
 </body>
 </html>
-

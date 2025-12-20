@@ -314,9 +314,15 @@ async function loadCookiesStatus() {
         const data = await response.json();
         
         const cookiesValue = document.getElementById('cookiesValue');
+        const cookiesDot = document.getElementById('cookiesDot');
         const helpSection = document.getElementById('cookieHelpSection');
         
         if (!cookiesValue) return;
+        
+        // Reset dot classes
+        if (cookiesDot) {
+            cookiesDot.className = 'status-dot';
+        }
         
         // Update status display
         switch (data.status) {
@@ -324,12 +330,14 @@ async function loadCookiesStatus() {
                 cookiesValue.textContent = 'Active';
                 cookiesValue.style.color = '#4CAF50';
                 cookiesValue.title = data.message || 'Cookies file is configured';
+                if (cookiesDot) cookiesDot.classList.add('active');
                 if (helpSection) helpSection.style.display = 'none';
                 break;
             case 'warning':
-                cookiesValue.textContent = `Warning (${data.age_days}d old)`;
+                cookiesValue.textContent = `Warning (${data.age_days}d)`;
                 cookiesValue.style.color = '#FFA500';
                 cookiesValue.title = data.message || 'Cookies file may be expired';
+                if (cookiesDot) cookiesDot.classList.add('warning');
                 if (helpSection) helpSection.style.display = 'block';
                 break;
             case 'missing':
@@ -342,6 +350,7 @@ async function loadCookiesStatus() {
                 cookiesValue.textContent = 'Error';
                 cookiesValue.style.color = '#f44336';
                 cookiesValue.title = data.message || 'Error with cookies file';
+                if (cookiesDot) cookiesDot.classList.add('error');
                 if (helpSection) helpSection.style.display = 'block';
                 break;
             default:
@@ -352,9 +361,13 @@ async function loadCookiesStatus() {
     } catch (error) {
         console.error('Error loading cookies status:', error);
         const cookiesValue = document.getElementById('cookiesValue');
+        const cookiesDot = document.getElementById('cookiesDot');
         if (cookiesValue) {
-            cookiesValue.textContent = 'Unable to load';
+            cookiesValue.textContent = 'Error';
             cookiesValue.style.color = '#f44336';
+        }
+        if (cookiesDot) {
+            cookiesDot.className = 'status-dot error';
         }
     }
 }
@@ -366,31 +379,51 @@ async function loadCredits() {
         const data = await response.json();
         
         const creditsDisplay = document.getElementById('creditsValue');
+        const openaiDot = document.getElementById('openaiDot');
+        
+        if (!creditsDisplay) return;
+        
+        // Reset dot classes
+        if (openaiDot) {
+            openaiDot.className = 'status-dot';
+        }
+        
         if (data.success) {
             if (data.status === 'operational') {
-                creditsDisplay.textContent = 'Active - Check Dashboard';
+                creditsDisplay.textContent = 'Active';
                 creditsDisplay.style.color = '#4CAF50';
                 creditsDisplay.title = data.credits_note || data.note || 'Check OpenAI dashboard for remaining credits/balance';
+                if (openaiDot) openaiDot.classList.add('active');
             } else {
-                creditsDisplay.textContent = data.message || 'API Key Configured';
+                creditsDisplay.textContent = 'Active';
                 creditsDisplay.style.color = '#4CAF50';
                 creditsDisplay.title = data.note || 'Check OpenAI dashboard for usage details';
+                if (openaiDot) openaiDot.classList.add('active');
             }
         } else {
             if (data.status === 'no_credits') {
-                creditsDisplay.textContent = 'Insufficient Credits';
+                creditsDisplay.textContent = 'No Credits';
                 creditsDisplay.style.color = '#f44336';
                 creditsDisplay.title = 'Please add credits to your OpenAI account';
+                if (openaiDot) openaiDot.classList.add('error');
             } else {
-                creditsDisplay.textContent = data.message || 'Error';
+                creditsDisplay.textContent = 'Error';
                 creditsDisplay.style.color = '#f44336';
                 creditsDisplay.title = data.error || 'Error loading status';
+                if (openaiDot) openaiDot.classList.add('error');
             }
         }
     } catch (error) {
         console.error('Error loading credits:', error);
-        document.getElementById('creditsValue').textContent = 'Unable to load';
-        document.getElementById('creditsValue').style.color = '#f44336';
+        const creditsDisplay = document.getElementById('creditsValue');
+        const openaiDot = document.getElementById('openaiDot');
+        if (creditsDisplay) {
+            creditsDisplay.textContent = 'Error';
+            creditsDisplay.style.color = '#f44336';
+        }
+        if (openaiDot) {
+            openaiDot.className = 'status-dot error';
+        }
     }
 }
 
