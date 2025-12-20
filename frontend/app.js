@@ -3,16 +3,24 @@ const API_BASE_URL = window.location.origin;
 // State
 let transcriptData = null;
 let videoInfo = null;
-let authToken = localStorage.getItem('authToken') || null;
+let authToken = localStorage.getItem('authToken') || sessionStorage.getItem('authToken') || null;
+let rememberMe = localStorage.getItem('rememberMe') === 'true';
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
     checkAuthStatus();
     setupEventListeners();
     
-    // Load credits every 30 seconds if authenticated
+    // Set remember me checkbox state from localStorage if available
+    const rememberMeCheckbox = document.getElementById('rememberMe');
+    if (rememberMeCheckbox) {
+        rememberMeCheckbox.checked = rememberMe;
+    }
+    
+    // Load credits and cookies status every 30 seconds if authenticated
     if (authToken) {
         setInterval(loadCredits, 30000);
+        setInterval(loadCookiesStatus, 30000);
     }
 });
 
@@ -34,9 +42,13 @@ async function checkAuthStatus() {
         if (data.authenticated) {
             showMainApp();
             loadCredits();
+            loadCookiesStatus(); // Check cookie status when authenticated
         } else {
             authToken = null;
             localStorage.removeItem('authToken');
+            localStorage.removeItem('rememberMe');
+            sessionStorage.removeItem('authToken');
+            rememberMe = false;
             showLoginModal();
         }
     } catch (error) {
@@ -48,6 +60,11 @@ async function checkAuthStatus() {
 function showLoginModal() {
     document.getElementById('loginModal').style.display = 'flex';
     document.getElementById('mainContainer').style.display = 'none';
+    // Reset remember me checkbox when showing login modal
+    const rememberMeCheckbox = document.getElementById('rememberMe');
+    if (rememberMeCheckbox) {
+        rememberMeCheckbox.checked = false;
+    }
 }
 
 function showMainApp() {
@@ -60,6 +77,8 @@ function showMainApp() {
 async function login() {
     const password = document.getElementById('passwordInput').value;
     const errorDiv = document.getElementById('loginError');
+    const rememberMeCheckbox = document.getElementById('rememberMe');
+    const currentRememberMe = rememberMeCheckbox ? rememberMeCheckbox.checked : false;
     
     if (!password) {
         errorDiv.textContent = 'Please enter a password';
@@ -80,9 +99,18 @@ async function login() {
         
         if (response.ok && data.success) {
             authToken = data.token;
-            localStorage.setItem('authToken', authToken);
+            rememberMe = currentRememberMe; // Update global rememberMe state
+            if (rememberMe) {
+                localStorage.setItem('authToken', authToken);
+                localStorage.setItem('rememberMe', 'true');
+            } else {
+                sessionStorage.setItem('authToken', authToken);
+                localStorage.removeItem('authToken'); // Ensure localStorage is clean if not remembering
+                localStorage.removeItem('rememberMe');
+            }
             showMainApp();
             loadCredits();
+            loadCookiesStatus(); // Check cookie status immediately after login
             errorDiv.style.display = 'none';
             document.getElementById('passwordInput').value = '';
         } else {
@@ -112,6 +140,9 @@ async function logout() {
     
     authToken = null;
     localStorage.removeItem('authToken');
+    localStorage.removeItem('rememberMe');
+    sessionStorage.removeItem('authToken');
+    rememberMe = false; // Reset rememberMe state
     showLoginModal();
 }
 
@@ -223,6 +254,9 @@ async function processVideo() {
         if (response.status === 401) {
             authToken = null;
             localStorage.removeItem('authToken');
+            localStorage.removeItem('rememberMe');
+            sessionStorage.removeItem('authToken');
+            rememberMe = false;
             showLoginModal();
             return;
         }
@@ -321,6 +355,9 @@ async function generateContent() {
         if (response.status === 401) {
             authToken = null;
             localStorage.removeItem('authToken');
+            localStorage.removeItem('rememberMe');
+            sessionStorage.removeItem('authToken');
+            rememberMe = false;
             showLoginModal();
             return;
         }
@@ -486,6 +523,9 @@ async function loadPrompts() {
         if (response.status === 401) {
             authToken = null;
             localStorage.removeItem('authToken');
+            localStorage.removeItem('rememberMe');
+            sessionStorage.removeItem('authToken');
+            rememberMe = false;
             showLoginModal();
             return;
         }
@@ -536,6 +576,9 @@ async function savePrompts() {
         if (response.status === 401) {
             authToken = null;
             localStorage.removeItem('authToken');
+            localStorage.removeItem('rememberMe');
+            sessionStorage.removeItem('authToken');
+            rememberMe = false;
             showLoginModal();
             return;
         }
@@ -584,6 +627,9 @@ async function downloadAudioFile(videoId) {
         if (response.status === 401) {
             authToken = null;
             localStorage.removeItem('authToken');
+            localStorage.removeItem('rememberMe');
+            sessionStorage.removeItem('authToken');
+            rememberMe = false;
             showLoginModal();
             return;
         }
