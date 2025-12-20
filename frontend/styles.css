@@ -50,6 +50,13 @@ body {
     width: 60px;
     height: 60px;
     border-radius: 8px;
+    object-fit: contain;
+    background-color: transparent;
+}
+
+.logo[src=""],
+.logo:not([src]) {
+    display: none;
 }
 
 .title {

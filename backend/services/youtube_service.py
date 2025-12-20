@@ -42,6 +42,17 @@ class YouTubeService:
                 }],
                 'quiet': False,
                 'no_warnings': False,
+                # Options to help bypass YouTube bot detection
+                'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'extractor_args': {
+                    'youtube': {
+                        'skip': ['dash', 'hls'],
+                        'player_client': ['android', 'web'],
+                    }
+                },
+                # Retry options
+                'retries': 10,
+                'fragment_retries': 10,
             }
             
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -109,6 +120,13 @@ class YouTubeService:
             ydl_opts = {
                 'quiet': True,
                 'no_warnings': True,
+                'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'extractor_args': {
+                    'youtube': {
+                        'skip': ['dash', 'hls'],
+                        'player_client': ['android', 'web'],
+                    }
+                },
             }
             
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
