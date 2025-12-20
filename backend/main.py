@@ -6,7 +6,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import os
 from dotenv import load_dotenv
 import logging
-from typing import Optional
+from typing import Optional, Dict
 import hashlib
 
 from models import ProcessVideoRequest, GenerateContentRequest, ProcessVideoResponse, GenerateContentResponse
@@ -175,6 +175,46 @@ async def get_openai_credits():
     except Exception as e:
         logger.error(f"Error fetching credits: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error fetching credits: {str(e)}")
+
+@app.post("/api/auth/login")
+async def login(password_data: Dict[str, str]):
+    """Login endpoint to authenticate with master password"""
+    try:
+        password = password_data.get("password", "")
+        if verify_password(password):
+            token = get_password_hash(password)
+            authenticated_sessions.add(token)
+            return {"success": True, "message": "Login successful", "token": token}
+        else:
+            raise HTTPException(status_code=401, detail="Invalid credentials")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Login error: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Login failed")
+
+@app.post("/api/auth/logout")
+async def logout(credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)):
+    """Logout endpoint to invalidate session"""
+    try:
+        if credentials:
+            token_hash = credentials.credentials
+            if token_hash in authenticated_sessions:
+                authenticated_sessions.remove(token_hash)
+                return {"success": True, "message": "Logged out successfully"}
+        raise HTTPException(status_code=401, detail="Invalid token")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Logout error: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Logout failed")
+
+@app.get("/api/auth/check")
+async def check_auth(credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)):
+    """Check if user is authenticated"""
+    if verify_auth(credentials):
+        return {"authenticated": True}
+    return {"authenticated": False}
 
 @app.get("/api/prompts")
 async def get_prompts(credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)):
