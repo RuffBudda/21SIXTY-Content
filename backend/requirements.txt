@@ -4,7 +4,8 @@ python-multipart==0.0.6
 pydantic==2.5.0
 python-dotenv==1.0.0
 openai>=1.40.0
-yt-dlp>=2023.11.16
+# yt-dlp>=2023.11.16  # Commented out - replaced with pytube
+pytube>=15.0.0
 youtube-transcript-api==0.6.1
 aiofiles==23.2.1
 

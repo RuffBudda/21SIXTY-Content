@@ -17,10 +17,11 @@ document.addEventListener('DOMContentLoaded', () => {
         rememberMeCheckbox.checked = rememberMe;
     }
     
-    // Load credits and cookies status every 30 seconds if authenticated
+    // Load credits status every 30 seconds if authenticated
+    // COMMENTED OUT: Cookie status - pytube doesn't support cookies
     if (authToken) {
         setInterval(loadCredits, 30000);
-        setInterval(loadCookiesStatus, 30000);
+        // setInterval(loadCookiesStatus, 30000);
     }
 });
 
@@ -42,7 +43,8 @@ async function checkAuthStatus() {
         if (data.authenticated) {
             showMainApp();
             loadCredits();
-            loadCookiesStatus(); // Check cookie status when authenticated
+            // COMMENTED OUT: Cookie status - pytube doesn't support cookies
+            // loadCookiesStatus(); // Check cookie status when authenticated
         } else {
             authToken = null;
             localStorage.removeItem('authToken');
@@ -110,7 +112,8 @@ async function login() {
             }
             showMainApp();
             loadCredits();
-            loadCookiesStatus(); // Check cookie status immediately after login
+            // COMMENTED OUT: Cookie status - pytube doesn't support cookies
+            // loadCookiesStatus(); // Check cookie status immediately after login
             errorDiv.style.display = 'none';
             document.getElementById('passwordInput').value = '';
         } else {
@@ -211,23 +214,23 @@ function setupEventListeners() {
         });
     }
     
-    // Cookie file upload
-    const uploadCookiesBtn = document.getElementById('uploadCookiesBtn');
-    const cookieFileInput = document.getElementById('cookieFileInput');
-    if (uploadCookiesBtn && cookieFileInput) {
-        // When upload button is clicked, trigger file input
-        uploadCookiesBtn.addEventListener('click', () => {
-            cookieFileInput.click();
-        });
-        
-        // When file is selected, upload it
-        cookieFileInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                uploadCookiesFile(file);
-            }
-        });
-    }
+    // COMMENTED OUT: Cookie file upload - pytube doesn't support cookies
+    // const uploadCookiesBtn = document.getElementById('uploadCookiesBtn');
+    // const cookieFileInput = document.getElementById('cookieFileInput');
+    // if (uploadCookiesBtn && cookieFileInput) {
+    //     // When upload button is clicked, trigger file input
+    //     uploadCookiesBtn.addEventListener('click', () => {
+    //         cookieFileInput.click();
+    //     });
+    //     
+    //     // When file is selected, upload it
+    //     cookieFileInput.addEventListener('change', (e) => {
+    //         const file = e.target.files[0];
+    //         if (file) {
+    //             uploadCookiesFile(file);
+    //         }
+    //     });
+    // }
 }
 
 // API Calls
@@ -270,144 +273,144 @@ async function loadCredits() {
     }
 }
 
-// Cookie Management
-async function loadCookiesStatus() {
-    try {
-        const response = await fetch(`${API_BASE_URL}/api/cookies-status`);
-        const data = await response.json();
-        
-        const cookiesValue = document.getElementById('cookiesValue');
-        const cookiesDot = document.getElementById('cookiesDot');
-        const uploadBtn = document.getElementById('uploadCookiesBtn');
-        
-        if (!cookiesValue) return;
-        
-        if (cookiesDot) {
-            cookiesDot.className = 'status-dot';
-        }
-        
-        switch (data.status) {
-            case 'active':
-                cookiesValue.textContent = 'Active';
-                cookiesValue.style.color = '#4CAF50';
-                cookiesValue.title = data.message || 'Cookies file is configured';
-                if (cookiesDot) cookiesDot.classList.add('active');
-                if (uploadBtn) uploadBtn.style.display = 'none'; // Hide upload button when active
-                break;
-            case 'warning':
-                cookiesValue.textContent = `Warning (${data.age_days}d)`;
-                cookiesValue.style.color = '#FFA500';
-                cookiesValue.title = data.message || 'Cookies file may be expired';
-                if (cookiesDot) cookiesDot.classList.add('warning');
-                if (uploadBtn) uploadBtn.style.display = 'inline-block'; // Show upload button
-                break;
-            case 'missing':
-                cookiesValue.textContent = 'Missing';
-                cookiesValue.style.color = '#9E9E9E';
-                cookiesValue.title = data.message || 'No cookies file found';
-                if (uploadBtn) uploadBtn.style.display = 'inline-block'; // Show upload button
-                break;
-            case 'error':
-                cookiesValue.textContent = 'Error';
-                cookiesValue.style.color = '#f44336';
-                cookiesValue.title = data.message || 'Error with cookies file';
-                if (cookiesDot) cookiesDot.classList.add('error');
-                if (uploadBtn) uploadBtn.style.display = 'inline-block'; // Show upload button
-                break;
-            default:
-                cookiesValue.textContent = 'Unknown';
-                cookiesValue.style.color = '#9E9E9E';
-                cookiesValue.title = 'Unknown status';
-                if (uploadBtn) uploadBtn.style.display = 'inline-block';
-        }
-    } catch (error) {
-        console.error('Error loading cookies status:', error);
-        const cookiesValue = document.getElementById('cookiesValue');
-        const cookiesDot = document.getElementById('cookiesDot');
-        const uploadBtn = document.getElementById('uploadCookiesBtn');
-        if (cookiesValue) {
-            cookiesValue.textContent = 'Error';
-            cookiesValue.style.color = '#f44336';
-        }
-        if (cookiesDot) {
-            cookiesDot.className = 'status-dot error';
-        }
-        if (uploadBtn) uploadBtn.style.display = 'inline-block';
-    }
-}
-
-async function uploadCookiesFile(file) {
-    const uploadBtn = document.getElementById('uploadCookiesBtn');
-    const cookieFileInput = document.getElementById('cookieFileInput');
-    
-    if (!file) {
-        console.error('No file selected');
-        return;
-    }
-    
-    // Validate file type
-    if (!file.name.endsWith('.txt')) {
-        alert('Please upload a .txt file');
-        return;
-    }
-    
-    // Disable button during upload
-    if (uploadBtn) {
-        uploadBtn.disabled = true;
-        uploadBtn.textContent = 'Uploading...';
-    }
-    
-    try {
-        const formData = new FormData();
-        formData.append('file', file);
-        
-        const response = await fetch(`${API_BASE_URL}/api/upload-cookies`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${authToken}`
-            },
-            body: formData
-        });
-        
-        if (response.status === 401) {
-            authToken = null;
-            localStorage.removeItem('authToken');
-            localStorage.removeItem('rememberMe');
-            sessionStorage.removeItem('authToken');
-            rememberMe = false;
-            showLoginModal();
-            return;
-        }
-        
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.detail || 'Failed to upload cookies file');
-        }
-        
-        const data = await response.json();
-        
-        if (data.success) {
-            // Reload cookie status to reflect the new upload
-            await loadCookiesStatus();
-            alert('Cookies file uploaded successfully!');
-        } else {
-            throw new Error(data.message || 'Upload failed');
-        }
-    } catch (error) {
-        console.error('Error uploading cookies file:', error);
-        alert(`Failed to upload cookies file: ${error.message}`);
-    } finally {
-        // Re-enable button
-        if (uploadBtn) {
-            uploadBtn.disabled = false;
-            uploadBtn.textContent = 'Upload Cookies';
-        }
-        // Reset file input
-        if (cookieFileInput) {
-            cookieFileInput.value = '';
-        }
-    }
-}
+// COMMENTED OUT: Cookie Management - pytube doesn't support cookies
+// async function loadCookiesStatus() {
+//     try {
+//         const response = await fetch(`${API_BASE_URL}/api/cookies-status`);
+//         const data = await response.json();
+//         
+//         const cookiesValue = document.getElementById('cookiesValue');
+//         const cookiesDot = document.getElementById('cookiesDot');
+//         const uploadBtn = document.getElementById('uploadCookiesBtn');
+//         
+//         if (!cookiesValue) return;
+//         
+//         if (cookiesDot) {
+//             cookiesDot.className = 'status-dot';
+//         }
+//         
+//         switch (data.status) {
+//             case 'active':
+//                 cookiesValue.textContent = 'Active';
+//                 cookiesValue.style.color = '#4CAF50';
+//                 cookiesValue.title = data.message || 'Cookies file is configured';
+//                 if (cookiesDot) cookiesDot.classList.add('active');
+//                 if (uploadBtn) uploadBtn.style.display = 'none'; // Hide upload button when active
+//                 break;
+//             case 'warning':
+//                 cookiesValue.textContent = `Warning (${data.age_days}d)`;
+//                 cookiesValue.style.color = '#FFA500';
+//                 cookiesValue.title = data.message || 'Cookies file may be expired';
+//                 if (cookiesDot) cookiesDot.classList.add('warning');
+//                 if (uploadBtn) uploadBtn.style.display = 'inline-block'; // Show upload button
+//                 break;
+//             case 'missing':
+//                 cookiesValue.textContent = 'Missing';
+//                 cookiesValue.style.color = '#9E9E9E';
+//                 cookiesValue.title = data.message || 'No cookies file found';
+//                 if (uploadBtn) uploadBtn.style.display = 'inline-block'; // Show upload button
+//                 break;
+//             case 'error':
+//                 cookiesValue.textContent = 'Error';
+//                 cookiesValue.style.color = '#f44336';
+//                 cookiesValue.title = data.message || 'Error with cookies file';
+//                 if (cookiesDot) cookiesDot.classList.add('error');
+//                 if (uploadBtn) uploadBtn.style.display = 'inline-block'; // Show upload button
+//                 break;
+//             default:
+//                 cookiesValue.textContent = 'Unknown';
+//                 cookiesValue.style.color = '#9E9E9E';
+//                 cookiesValue.title = 'Unknown status';
+//                 if (uploadBtn) uploadBtn.style.display = 'inline-block';
+//         }
+//     } catch (error) {
+//         console.error('Error loading cookies status:', error);
+//         const cookiesValue = document.getElementById('cookiesValue');
+//         const cookiesDot = document.getElementById('cookiesDot');
+//         const uploadBtn = document.getElementById('uploadCookiesBtn');
+//         if (cookiesValue) {
+//             cookiesValue.textContent = 'Error';
+//             cookiesValue.style.color = '#f44336';
+//         }
+//         if (cookiesDot) {
+//             cookiesDot.className = 'status-dot error';
+//         }
+//         if (uploadBtn) uploadBtn.style.display = 'inline-block';
+//     }
+// }
+// 
+// async function uploadCookiesFile(file) {
+//     const uploadBtn = document.getElementById('uploadCookiesBtn');
+//     const cookieFileInput = document.getElementById('cookieFileInput');
+//     
+//     if (!file) {
+//         console.error('No file selected');
+//         return;
+//     }
+//     
+//     // Validate file type
+//     if (!file.name.endsWith('.txt')) {
+//         alert('Please upload a .txt file');
+//         return;
+//     }
+//     
+//     // Disable button during upload
+//     if (uploadBtn) {
+//         uploadBtn.disabled = true;
+//         uploadBtn.textContent = 'Uploading...';
+//     }
+//     
+//     try {
+//         const formData = new FormData();
+//         formData.append('file', file);
+//         
+//         const response = await fetch(`${API_BASE_URL}/api/upload-cookies`, {
+//             method: 'POST',
+//             headers: {
+//                 'Authorization': `Bearer ${authToken}`
+//             },
+//             body: formData
+//         });
+//         
+//         if (response.status === 401) {
+//             authToken = null;
+//             localStorage.removeItem('authToken');
+//             localStorage.removeItem('rememberMe');
+//             sessionStorage.removeItem('authToken');
+//             rememberMe = false;
+//             showLoginModal();
+//             return;
+//         }
+//         
+//         if (!response.ok) {
+//             const error = await response.json();
+//             throw new Error(error.detail || 'Failed to upload cookies file');
+//         }
+//         
+//         const data = await response.json();
+//         
+//         if (data.success) {
+//             // Reload cookie status to reflect the new upload
+//             await loadCookiesStatus();
+//             alert('Cookies file uploaded successfully!');
+//         } else {
+//             throw new Error(data.message || 'Upload failed');
+//         }
+//     } catch (error) {
+//         console.error('Error uploading cookies file:', error);
+//         alert(`Failed to upload cookies file: ${error.message}`);
+//     } finally {
+//         // Re-enable button
+//         if (uploadBtn) {
+//             uploadBtn.disabled = false;
+//             uploadBtn.textContent = 'Upload Cookies';
+//         }
+//         // Reset file input
+//         if (cookieFileInput) {
+//             cookieFileInput.value = '';
+//         }
+//     }
+// }
 
 async function processVideo() {
     const youtubeUrl = document.getElementById('youtubeUrl').value.trim();

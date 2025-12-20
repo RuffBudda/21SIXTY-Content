@@ -56,10 +56,10 @@ authenticated_sessions = set()
 # Format: {video_id: file_path}
 mp3_files = {}
 
-# Cookie file directory
-COOKIES_DIR = os.path.join(os.path.dirname(__file__), "cookies")
-COOKIES_FILE_PATH = os.path.join(COOKIES_DIR, "cookies.txt")
-os.makedirs(COOKIES_DIR, exist_ok=True)
+# Cookie file directory - COMMENTED OUT: pytube doesn't support cookies
+# COOKIES_DIR = os.path.join(os.path.dirname(__file__), "cookies")
+# COOKIES_FILE_PATH = os.path.join(COOKIES_DIR, "cookies.txt")
+# os.makedirs(COOKIES_DIR, exist_ok=True)
 
 def verify_password(password: str) -> bool:
     """Verify master password"""
@@ -183,85 +183,87 @@ async def get_openai_credits():
         logger.error(f"Error fetching credits: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error fetching credits: {str(e)}")
 
-@app.post("/api/upload-cookies")
-async def upload_cookies(
-    file: UploadFile = File(...),
-    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)
-):
-    """Upload cookies.txt file (requires authentication)"""
-    if not verify_auth(credentials):
-        raise HTTPException(status_code=401, detail="Authentication required")
-    
-    try:
-        # Validate file size (max 100KB)
-        content = await file.read()
-        if len(content) > 100 * 1024:  # 100KB
-            raise HTTPException(status_code=400, detail="File too large. Maximum size is 100KB")
-        
-        # Basic validation: check if it looks like a cookies file
-        # Netscape format cookies start with # Netscape HTTP Cookie File or have domain entries
-        content_str = content.decode('utf-8', errors='ignore')
-        if not content_str.strip():
-            raise HTTPException(status_code=400, detail="Empty file")
-        
-        # Save file as cookies.txt (normalize filename)
-        # Always save as cookies.txt regardless of uploaded filename
-        with open(COOKIES_FILE_PATH, 'wb') as f:
-            f.write(content)
-        
-        logger.info(f"Cookies file uploaded successfully: {COOKIES_FILE_PATH}")
-        return {"success": True, "message": "Cookies file uploaded successfully"}
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error uploading cookies: {str(e)}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Error uploading cookies: {str(e)}")
+# COMMENTED OUT: Cookie upload endpoint - pytube doesn't support cookies
+# @app.post("/api/upload-cookies")
+# async def upload_cookies(
+#     file: UploadFile = File(...),
+#     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)
+# ):
+#     """Upload cookies.txt file (requires authentication)"""
+#     if not verify_auth(credentials):
+#         raise HTTPException(status_code=401, detail="Authentication required")
+#     
+#     try:
+#         # Validate file size (max 100KB)
+#         content = await file.read()
+#         if len(content) > 100 * 1024:  # 100KB
+#             raise HTTPException(status_code=400, detail="File too large. Maximum size is 100KB")
+#         
+#         # Basic validation: check if it looks like a cookies file
+#         # Netscape format cookies start with # Netscape HTTP Cookie File or have domain entries
+#         content_str = content.decode('utf-8', errors='ignore')
+#         if not content_str.strip():
+#             raise HTTPException(status_code=400, detail="Empty file")
+#         
+#         # Save file as cookies.txt (normalize filename)
+#         # Always save as cookies.txt regardless of uploaded filename
+#         with open(COOKIES_FILE_PATH, 'wb') as f:
+#             f.write(content)
+#         
+#         logger.info(f"Cookies file uploaded successfully: {COOKIES_FILE_PATH}")
+#         return {"success": True, "message": "Cookies file uploaded successfully"}
+#     except HTTPException:
+#         raise
+#     except Exception as e:
+#         logger.error(f"Error uploading cookies: {str(e)}", exc_info=True)
+#         raise HTTPException(status_code=500, detail=f"Error uploading cookies: {str(e)}")
 
-@app.get("/api/cookies-status")
-async def get_cookies_status():
-    """Get cookie file status (no auth required for display)"""
-    try:
-        if not os.path.exists(COOKIES_FILE_PATH):
-            return {
-                "status": "missing",
-                "message": "No cookies file found",
-                "file_path": COOKIES_FILE_PATH
-            }
-        
-        # Check file size (should not be empty)
-        file_size = os.path.getsize(COOKIES_FILE_PATH)
-        if file_size == 0:
-            return {
-                "status": "error",
-                "message": "Cookies file is empty",
-                "file_path": COOKIES_FILE_PATH
-            }
-        
-        # Check file age (warn if older than 7 days)
-        file_mtime = os.path.getmtime(COOKIES_FILE_PATH)
-        file_age = datetime.now() - datetime.fromtimestamp(file_mtime)
-        
-        if file_age > timedelta(days=7):
-            return {
-                "status": "warning",
-                "message": f"Cookies file is {file_age.days} days old (may be expired)",
-                "file_path": COOKIES_FILE_PATH,
-                "age_days": file_age.days
-            }
-        
-        return {
-            "status": "active",
-            "message": "Cookies file is configured and recent",
-            "file_path": COOKIES_FILE_PATH,
-            "age_days": file_age.days
-        }
-    except Exception as e:
-        logger.error(f"Error checking cookies status: {str(e)}", exc_info=True)
-        return {
-            "status": "error",
-            "message": f"Error checking cookies: {str(e)}",
-            "file_path": COOKIES_FILE_PATH
-        }
+# COMMENTED OUT: Cookie status endpoint - pytube doesn't support cookies
+# @app.get("/api/cookies-status")
+# async def get_cookies_status():
+#     """Get cookie file status (no auth required for display)"""
+#     try:
+#         if not os.path.exists(COOKIES_FILE_PATH):
+#             return {
+#                 "status": "missing",
+#                 "message": "No cookies file found",
+#                 "file_path": COOKIES_FILE_PATH
+#             }
+#         
+#         # Check file size (should not be empty)
+#         file_size = os.path.getsize(COOKIES_FILE_PATH)
+#         if file_size == 0:
+#             return {
+#                 "status": "error",
+#                 "message": "Cookies file is empty",
+#                 "file_path": COOKIES_FILE_PATH
+#             }
+#         
+#         # Check file age (warn if older than 7 days)
+#         file_mtime = os.path.getmtime(COOKIES_FILE_PATH)
+#         file_age = datetime.now() - datetime.fromtimestamp(file_mtime)
+#         
+#         if file_age > timedelta(days=7):
+#             return {
+#                 "status": "warning",
+#                 "message": f"Cookies file is {file_age.days} days old (may be expired)",
+#                 "file_path": COOKIES_FILE_PATH,
+#                 "age_days": file_age.days
+#             }
+#         
+#         return {
+#             "status": "active",
+#             "message": "Cookies file is configured and recent",
+#             "file_path": COOKIES_FILE_PATH,
+#             "age_days": file_age.days
+#         }
+#     except Exception as e:
+#         logger.error(f"Error checking cookies status: {str(e)}", exc_info=True)
+#         return {
+#             "status": "error",
+#             "message": f"Error checking cookies: {str(e)}",
+#             "file_path": COOKIES_FILE_PATH
+#         }
 
 @app.post("/api/auth/login")
 async def login(password_data: Dict[str, str]):
