@@ -18,7 +18,7 @@ A web-based tool for processing YouTube podcast episodes and generating comprehe
 
 ## Tech Stack
 
-- **Backend**: Python 3.11+ with FastAPI
+- **Backend**: Python 3.12+ with FastAPI (tested with Python 3.12.3)
 - **Frontend**: HTML, CSS, JavaScript (vanilla)
 - **YouTube Processing**: yt-dlp
 - **Transcription**: YouTube Transcript API
@@ -29,7 +29,7 @@ A web-based tool for processing YouTube podcast episodes and generating comprehe
 
 ### Prerequisites
 
-- Python 3.11+
+- Python 3.12+ (Python 3.12.3 recommended)
 - FFmpeg (for audio processing)
 - OpenAI API key
 - Node.js/npm (optional, for development)
@@ -45,7 +45,7 @@ cd content-generator
 2. Set up Python virtual environment:
 ```bash
 cd backend
-python3.11 -m venv venv
+python3 -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```

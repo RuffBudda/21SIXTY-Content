@@ -21,20 +21,12 @@ sudo apt upgrade -y
 ### Install Required Software
 
 ```bash
-# Check existing Python version
+# Check existing Python version (should be 3.8 or higher, Python 3.12.3 is recommended)
 python3 --version
 
-# Install Python 3.10+ and pip (Ubuntu 20.04+ comes with Python 3.8+ by default)
-# If Python 3.10+ is not available, you can add deadsnakes PPA for Python 3.11+
-sudo apt install software-properties-common -y
-sudo add-apt-repository ppa:deadsnakes/ppa -y
-sudo apt update
-
-# Install Python 3.11 (or use existing Python 3.8+ if available)
-sudo apt install python3.11 python3.11-venv python3.11-dev python3-pip -y
-
-# Alternatively, if you prefer to use the default system Python (usually 3.8 or 3.10):
-# sudo apt install python3 python3-venv python3-pip -y
+# Install Python venv and pip (if not already installed)
+# System Python 3.12.3+ is already available, just need venv support
+sudo apt install python3-venv python3-pip -y
 
 # Install nginx (check if already installed)
 sudo apt install nginx -y
@@ -108,13 +100,12 @@ content-generator/
 ```bash
 cd /opt/content-generator/backend
 
-# Use python3.11 if installed, otherwise use python3 (system default)
-# Check which Python version is available:
-python3.11 --version 2>/dev/null && PYTHON_CMD=python3.11 || PYTHON_CMD=python3
-
-# Create virtual environment
-$PYTHON_CMD -m venv venv
+# Create virtual environment using system Python (3.12.3)
+python3 -m venv venv
 source venv/bin/activate
+
+# Verify Python version in virtual environment
+python --version  # Should show Python 3.12.3
 
 # Upgrade pip
 pip install --upgrade pip
@@ -123,10 +114,7 @@ pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-**Note:** If you used the system Python (python3) instead of python3.11, make sure it's version 3.8 or higher:
-```bash
-python3 --version  # Should show 3.8.x or higher
-```
+**Note:** This guide assumes Python 3.12.3 is already installed. If you have a different Python 3.8+ version, adjust accordingly.
 
 ### Configure Environment Variables
 
@@ -506,4 +494,3 @@ sudo tail -f /var/log/nginx/contents.2160.media.error.log
 3. Monitor OpenAI API usage to prevent unexpected costs
 4. Consider setting up fail2ban for additional security
 5. Keep SSL certificates renewed (auto-configured by certbot)
-
