@@ -43,3 +43,6 @@ logs/
 *.md
 !README.md
 
+# Documentation folder (internal docs)
+Documentations/
+
