@@ -1,5 +1,5 @@
-# import yt_dlp  # Commented out - replaced with pytube
-from pytube import YouTube
+import yt_dlp
+# from pytube import YouTube  # Commented out - replaced with yt-dlp due to HTTP 400 errors
 import os
 import logging
 from typing import Dict, List, Optional
@@ -155,78 +155,80 @@ class YouTubeService:
     #     return ydl_opts
     
     async def download_audio(self, youtube_url: str) -> Optional[str]:
-        """Download YouTube video as MP3 using pytube and return file path"""
+        """Download YouTube video as MP3 using yt-dlp and return file path"""
         try:
             video_id = self._extract_video_id(youtube_url)
             mp3_path = os.path.join(self.upload_dir, f"{video_id}.mp3")
             
-            logger.info(f"Attempting download with pytube for video: {youtube_url}")
+            logger.info(f"Attempting download with yt-dlp for video: {youtube_url}")
             
-            # Create YouTube object
-            yt = YouTube(youtube_url)
+            # Build yt-dlp options (cookies optional - works without them for most public videos)
+            # Note: FFmpegExtractAudio postprocessor will convert to .mp3, so we set outtmpl without extension
+            base_output_path = os.path.join(self.upload_dir, video_id)
+            ydl_opts = {
+                'format': 'bestaudio/best',
+                'outtmpl': base_output_path + '.%(ext)s',  # yt-dlp will add extension, postprocessor converts to .mp3
+                'postprocessors': [{
+                    'key': 'FFmpegExtractAudio',
+                    'preferredcodec': 'mp3',
+                    'preferredquality': '192',
+                }],
+                'quiet': False,
+                'no_warnings': False,
+                # Enhanced bot detection bypass (works without cookies for most videos)
+                'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'referer': 'https://www.youtube.com/',
+                'extractor_args': {
+                    'youtube': {
+                        'skip': ['dash', 'hls'],
+                        'player_client': ['android', 'ios', 'web'],  # Try multiple clients
+                    }
+                },
+                # Retry options
+                'retries': 10,
+                'fragment_retries': 10,
+                'ignoreerrors': False,
+            }
             
-            # Get the best audio stream
-            audio_stream = yt.streams.filter(only_audio=True).order_by('abr').desc().first()
-            
-            if not audio_stream:
-                raise Exception("No audio stream available for this video")
-            
-            logger.info(f"Found audio stream: {audio_stream.abr} kbps, {audio_stream.mime_type}")
-            
-            # Download audio (pytube downloads as webm/mp4, we'll convert to mp3)
-            temp_path = os.path.join(self.upload_dir, f"{video_id}.{audio_stream.subtype}")
-            logger.info(f"Downloading audio to temporary file: {temp_path}")
-            audio_stream.download(output_path=self.upload_dir, filename=f"{video_id}.{audio_stream.subtype}")
-            
-            # Convert to MP3 using ffmpeg if needed
-            if audio_stream.subtype != 'mp3':
-                logger.info(f"Converting {audio_stream.subtype} to MP3 using ffmpeg...")
+            # Use yt-dlp to download and convert to MP3
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 try:
-                    # Use ffmpeg to convert to MP3
-                    subprocess.run(
-                        [
-                            'ffmpeg', '-i', temp_path,
-                            '-acodec', 'libmp3lame',
-                            '-ab', '192k',
-                            '-y',  # Overwrite output file
-                            mp3_path
-                        ],
-                        check=True,
-                        capture_output=True
-                    )
-                    # Remove temporary file
-                    if os.path.exists(temp_path):
-                        os.remove(temp_path)
-                    logger.info(f"Successfully converted to MP3: {mp3_path}")
-                except subprocess.CalledProcessError as e:
-                    logger.error(f"FFmpeg conversion failed: {e.stderr.decode() if e.stderr else str(e)}")
-                    # If conversion fails but we have the audio file, return it anyway
-                    if os.path.exists(temp_path):
-                        logger.warning(f"Conversion failed, but audio file exists. Returning original format.")
-                        return temp_path
-                    raise Exception(f"Failed to convert audio to MP3: {str(e)}")
-                except FileNotFoundError:
-                    logger.error("FFmpeg not found. Please install ffmpeg to convert audio to MP3.")
-                    # If ffmpeg is not available but we have the audio file, return it
-                    if os.path.exists(temp_path):
-                        logger.warning(f"FFmpeg not found, but audio file exists. Returning original format.")
-                        return temp_path
-                    raise Exception("FFmpeg not found. Please install ffmpeg to convert audio to MP3.")
-            else:
-                # Already MP3, just rename if needed
-                if temp_path != mp3_path and os.path.exists(temp_path):
-                    os.rename(temp_path, mp3_path)
+                    ydl.download([youtube_url])
+                except yt_dlp.utils.DownloadError as e:
+                    error_msg = str(e)
+                    logger.error(f"yt-dlp download error: {error_msg}")
+                    # Check if it's a bot detection error
+                    if 'Sign in to confirm you\'re not a bot' in error_msg or 'HTTP Error 400' in error_msg:
+                        logger.warning("Bot detection encountered. Video may require authentication (cookies not configured).")
+                    raise Exception(f"Failed to download audio: {error_msg}")
             
-            # Verify MP3 file exists
+            # FFmpegExtractAudio postprocessor should have created .mp3 file
+            # Check if MP3 file exists at expected path
             if os.path.exists(mp3_path):
                 file_size = os.path.getsize(mp3_path)
-                logger.info(f"✓ Successfully downloaded audio to {mp3_path} ({file_size} bytes)")
+                logger.info(f"Successfully downloaded audio to {mp3_path} ({file_size} bytes)")
                 return mp3_path
-            else:
-                raise Exception(f"MP3 file not found at expected path: {mp3_path}")
+            
+            # yt-dlp might have created the file with a slightly different name, check for variations
+            possible_files = [f for f in os.listdir(self.upload_dir) if f.startswith(video_id)]
+            if possible_files:
+                # Find .mp3 file first
+                mp3_files = [f for f in possible_files if f.endswith('.mp3')]
+                if mp3_files:
+                    found_file = os.path.join(self.upload_dir, mp3_files[0])
+                    if found_file != mp3_path:
+                        logger.info(f"Found downloaded file: {found_file}, renaming to {mp3_path}")
+                        os.rename(found_file, mp3_path)
+                    return mp3_path
+                # If no .mp3, check for other audio formats (shouldn't happen with postprocessor)
+                found_file = os.path.join(self.upload_dir, possible_files[0])
+                logger.warning(f"Expected .mp3 file not found, but found: {found_file}")
+                raise Exception(f"MP3 conversion failed. File exists but is not MP3: {found_file}")
+            
+            raise Exception(f"MP3 file not found at expected path: {mp3_path}")
                 
         except Exception as e:
-            logger.error(f"Error downloading audio with pytube: {str(e)}", exc_info=True)
+            logger.error(f"Error downloading audio with yt-dlp: {str(e)}", exc_info=True)
             raise Exception(f"Failed to download audio: {str(e)}")
     
     async def get_transcript(self, youtube_url: str) -> Dict:
@@ -273,18 +275,24 @@ class YouTubeService:
             raise
     
     async def _get_video_info(self, youtube_url: str) -> Dict:
-        """Get video metadata using pytube"""
+        """Get video metadata using yt-dlp"""
         try:
-            yt = YouTube(youtube_url)
-            # pytube provides title and length directly
-            title = yt.title or ''
-            duration = yt.length or 0  # Length is in seconds
-            
-            logger.debug(f"Got video info - Title: {title}, Duration: {duration}s")
-            return {
-                'title': title,
-                'duration': duration
+            ydl_opts = {
+                'quiet': True,
+                'no_warnings': True,
+                'skip_download': True,
             }
+            
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                info = ydl.extract_info(youtube_url, download=False)
+                title = info.get('title', '') if info else ''
+                duration = info.get('duration', 0) if info else 0  # Duration is in seconds
+                
+                logger.debug(f"Got video info - Title: {title}, Duration: {duration}s")
+                return {
+                    'title': title,
+                    'duration': duration
+                }
         except Exception as e:
-            logger.warning(f"Could not get video info with pytube: {str(e)}")
+            logger.warning(f"Could not get video info with yt-dlp: {str(e)}")
             return {'title': '', 'duration': 0}
