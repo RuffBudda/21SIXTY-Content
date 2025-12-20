@@ -10,10 +10,9 @@ document.addEventListener('DOMContentLoaded', () => {
     checkAuthStatus();
     setupEventListeners();
     
-    // Load credits and cookies status every 30 seconds if authenticated
+    // Load credits every 30 seconds if authenticated
     if (authToken) {
         setInterval(loadCredits, 30000);
-        setInterval(loadCookiesStatus, 30000);
     }
 });
 
@@ -25,7 +24,7 @@ async function checkAuthStatus() {
     }
     
     try {
-        const response = await fetch(`${API_BASE_URL}/api/auth/status`, {
+        const response = await fetch(`${API_BASE_URL}/api/auth/check`, {
             headers: {
                 'Authorization': `Bearer ${authToken}`
             }
@@ -35,7 +34,6 @@ async function checkAuthStatus() {
         if (data.authenticated) {
             showMainApp();
             loadCredits();
-            loadCookiesStatus(); // Check cookie status when authenticated
         } else {
             authToken = null;
             localStorage.removeItem('authToken');
@@ -85,7 +83,6 @@ async function login() {
             localStorage.setItem('authToken', authToken);
             showMainApp();
             loadCredits();
-            loadCookiesStatus(); // Check cookie status immediately after login
             errorDiv.style.display = 'none';
             document.getElementById('passwordInput').value = '';
         } else {
@@ -159,159 +156,9 @@ function setupEventListeners() {
             copyToClipboard(targetId);
         });
     });
-    
-    // Cookie upload button
-    setupCookieUpload();
-}
-
-// Cookie Upload Setup
-function setupCookieUpload() {
-    const uploadBtn = document.getElementById('uploadCookiesBtn');
-    const fileInput = document.getElementById('cookieFileInput');
-    
-    if (uploadBtn && fileInput) {
-        uploadBtn.addEventListener('click', () => {
-            fileInput.click();
-        });
-        
-        fileInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                uploadCookiesFile(file);
-            }
-        });
-    }
-}
-
-async function uploadCookiesFile(file) {
-    const uploadBtn = document.getElementById('uploadCookiesBtn');
-    const cookiesValue = document.getElementById('cookiesValue');
-    
-    if (!file.name.endsWith('.txt') && !file.type.includes('text')) {
-        if (cookiesValue) {
-            cookiesValue.textContent = 'Invalid file';
-            cookiesValue.style.color = '#f44336';
-        }
-        alert('Please upload a .txt file');
-        return;
-    }
-    
-    const originalText = uploadBtn.textContent;
-    uploadBtn.disabled = true;
-    uploadBtn.textContent = 'Uploading...';
-    
-    try {
-        const formData = new FormData();
-        formData.append('file', file);
-        
-        const response = await fetch(`${API_BASE_URL}/api/upload-cookies`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${authToken}`
-            },
-            body: formData
-        });
-        
-        if (response.status === 401) {
-            authToken = null;
-            localStorage.removeItem('authToken');
-            showLoginModal();
-            return;
-        }
-        
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.detail || 'Failed to upload cookies');
-        }
-        
-        const data = await response.json();
-        if (data.success) {
-            await loadCookiesStatus(); // Refresh status after upload
-        } else {
-            throw new Error(data.message || 'Upload failed');
-        }
-    } catch (error) {
-        console.error('Error uploading cookies:', error);
-        if (cookiesValue) {
-            cookiesValue.textContent = 'Upload failed';
-            cookiesValue.style.color = '#f44336';
-        }
-        alert(`Upload failed: ${error.message}`);
-    } finally {
-        uploadBtn.disabled = false;
-        uploadBtn.textContent = originalText;
-        // Reset file input
-        const fileInput = document.getElementById('cookieFileInput');
-        if (fileInput) fileInput.value = '';
-    }
 }
 
 // API Calls
-async function loadCookiesStatus() {
-    try {
-        const response = await fetch(`${API_BASE_URL}/api/cookies-status`);
-        const data = await response.json();
-        
-        const cookiesValue = document.getElementById('cookiesValue');
-        const cookiesDot = document.getElementById('cookiesDot');
-        const uploadBtn = document.getElementById('uploadCookiesBtn');
-        
-        if (!cookiesValue) return;
-        
-        if (cookiesDot) {
-            cookiesDot.className = 'status-dot';
-        }
-        
-        switch (data.status) {
-            case 'active':
-                cookiesValue.textContent = 'Active';
-                cookiesValue.style.color = '#4CAF50';
-                cookiesValue.title = data.message || 'Cookies file is configured';
-                if (cookiesDot) cookiesDot.classList.add('active');
-                if (uploadBtn) uploadBtn.style.display = 'none'; // Hide upload button when active
-                break;
-            case 'warning':
-                cookiesValue.textContent = `Warning (${data.age_days}d)`;
-                cookiesValue.style.color = '#FFA500';
-                cookiesValue.title = data.message || 'Cookies file may be expired';
-                if (cookiesDot) cookiesDot.classList.add('warning');
-                if (uploadBtn) uploadBtn.style.display = ''; // Show upload button
-                break;
-            case 'missing':
-                cookiesValue.textContent = 'Missing';
-                cookiesValue.style.color = '#9E9E9E';
-                cookiesValue.title = data.message || 'No cookies file found';
-                if (uploadBtn) uploadBtn.style.display = ''; // Show upload button
-                break;
-            case 'error':
-                cookiesValue.textContent = 'Error';
-                cookiesValue.style.color = '#f44336';
-                cookiesValue.title = data.message || 'Error with cookies file';
-                if (cookiesDot) cookiesDot.classList.add('error');
-                if (uploadBtn) uploadBtn.style.display = ''; // Show upload button
-                break;
-            default:
-                cookiesValue.textContent = 'Unknown';
-                cookiesValue.style.color = '#9E9E9E';
-                cookiesValue.title = 'Unknown status';
-                if (uploadBtn) uploadBtn.style.display = '';
-        }
-    } catch (error) {
-        console.error('Error loading cookies status:', error);
-        const cookiesValue = document.getElementById('cookiesValue');
-        const cookiesDot = document.getElementById('cookiesDot');
-        const uploadBtn = document.getElementById('uploadCookiesBtn');
-        if (cookiesValue) {
-            cookiesValue.textContent = 'Error';
-            cookiesValue.style.color = '#f44336';
-        }
-        if (cookiesDot) {
-            cookiesDot.className = 'status-dot error';
-        }
-        if (uploadBtn) uploadBtn.style.display = '';
-    }
-}
-
 async function loadCredits() {
     try {
         const response = await fetch(`${API_BASE_URL}/api/openai-credits`);
