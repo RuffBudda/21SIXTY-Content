@@ -362,6 +362,12 @@ body {
     border-color: var(--accent-blue);
 }
 
+.btn-secondary:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
 #audioDownloadContainer {
     padding-top: 15px;
     border-top: 1px solid var(--border-color);
