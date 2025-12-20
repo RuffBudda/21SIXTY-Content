@@ -187,6 +187,29 @@ function setupEventListeners() {
             copyToClipboard(targetId);
         });
     });
+    
+    // Password visibility toggle
+    const passwordInput = document.getElementById('passwordInput');
+    const passwordToggle = document.getElementById('passwordToggle');
+    if (passwordInput && passwordToggle) {
+        passwordToggle.addEventListener('click', () => {
+            const isPassword = passwordInput.type === 'password';
+            passwordInput.type = isPassword ? 'text' : 'password';
+            
+            // Toggle SVG icons
+            const eyeOpen = passwordToggle.querySelector('.eye-open');
+            const eyeClosed = passwordToggle.querySelector('.eye-closed');
+            if (eyeOpen && eyeClosed) {
+                if (isPassword) {
+                    eyeOpen.style.display = 'none';
+                    eyeClosed.style.display = 'block';
+                } else {
+                    eyeOpen.style.display = 'block';
+                    eyeClosed.style.display = 'none';
+                }
+            }
+        });
+    }
 }
 
 // API Calls
