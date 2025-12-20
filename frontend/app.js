@@ -3,9 +3,7 @@ const API_BASE_URL = window.location.origin;
 // State
 let transcriptData = null;
 let videoInfo = null;
-// Check both localStorage (remember me) and sessionStorage (session only)
-let authToken = localStorage.getItem('authToken') || sessionStorage.getItem('authToken') || null;
-let rememberMe = localStorage.getItem('rememberMe') === 'true';
+let authToken = localStorage.getItem('authToken') || null;
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
@@ -18,29 +16,17 @@ document.addEventListener('DOMContentLoaded', () => {
         setInterval(loadCookiesStatus, 30000);
         loadCookiesStatus(); // Load immediately
     }
-    
-    // Set remember me checkbox state
-    const rememberMeCheckbox = document.getElementById('rememberMe');
-    if (rememberMeCheckbox) {
-        rememberMeCheckbox.checked = rememberMe;
-    }
 });
 
 // Authentication
 async function checkAuthStatus() {
-    // Check if we have a stored token and remember me is enabled
-    if (!authToken && !rememberMe) {
-        showLoginModal();
-        return;
-    }
-    
     if (!authToken) {
         showLoginModal();
         return;
     }
     
     try {
-        const response = await fetch(`${API_BASE_URL}/api/auth/check`, {
+        const response = await fetch(`${API_BASE_URL}/api/auth/status`, {
             headers: {
                 'Authorization': `Bearer ${authToken}`
             }
@@ -51,20 +37,12 @@ async function checkAuthStatus() {
             showMainApp();
             loadCredits();
         } else {
-            // Token invalid, clear it
             authToken = null;
             localStorage.removeItem('authToken');
-            localStorage.removeItem('rememberMe');
-            rememberMe = false;
             showLoginModal();
         }
     } catch (error) {
         console.error('Auth check failed:', error);
-        // If remember me is not enabled, clear token on error
-        if (!rememberMe) {
-            authToken = null;
-            localStorage.removeItem('authToken');
-        }
         showLoginModal();
     }
 }
@@ -83,7 +61,6 @@ function showMainApp() {
 
 async function login() {
     const password = document.getElementById('passwordInput').value;
-    const rememberMeCheckbox = document.getElementById('rememberMe');
     const errorDiv = document.getElementById('loginError');
     
     if (!password) {
@@ -105,19 +82,7 @@ async function login() {
         
         if (response.ok && data.success) {
             authToken = data.token;
-            rememberMe = rememberMeCheckbox.checked;
-            
-            // Store token and remember me preference
-            if (rememberMe) {
-                localStorage.setItem('authToken', authToken);
-                localStorage.setItem('rememberMe', 'true');
-            } else {
-                // Store in sessionStorage instead (cleared on browser close)
-                sessionStorage.setItem('authToken', authToken);
-                localStorage.removeItem('authToken');
-                localStorage.removeItem('rememberMe');
-            }
-            
+            localStorage.setItem('authToken', authToken);
             showMainApp();
             loadCredits();
             errorDiv.style.display = 'none';
@@ -149,9 +114,6 @@ async function logout() {
     
     authToken = null;
     localStorage.removeItem('authToken');
-    localStorage.removeItem('rememberMe');
-    sessionStorage.removeItem('authToken');
-    rememberMe = false;
     showLoginModal();
 }
 
@@ -168,21 +130,6 @@ function setupEventListeners() {
     document.getElementById('passwordInput').addEventListener('keypress', (e) => {
         if (e.key === 'Enter') login();
     });
-    
-    // Password visibility toggle
-    const passwordToggle = document.getElementById('passwordToggle');
-    const passwordInput = document.getElementById('passwordInput');
-    if (passwordToggle && passwordInput) {
-        passwordToggle.addEventListener('click', () => {
-            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
-            passwordInput.setAttribute('type', type);
-            // Update icon (you can use emoji or SVG icons)
-            const eyeIcon = passwordToggle.querySelector('.eye-icon');
-            if (eyeIcon) {
-                eyeIcon.textContent = type === 'password' ? '👁️' : '👁️‍🗨️';
-            }
-        });
-    }
     
     const logoutBtn = document.getElementById('logoutBtn');
     if (logoutBtn) {
@@ -220,7 +167,6 @@ function setupEventListeners() {
 function setupCookieUpload() {
     const uploadBtn = document.getElementById('uploadCookiesBtn');
     const fileInput = document.getElementById('cookieFileInput');
-    const helpCloseBtn = document.getElementById('cookieHelpClose');
     
     if (uploadBtn && fileInput) {
         uploadBtn.addEventListener('click', () => {
@@ -231,15 +177,8 @@ function setupCookieUpload() {
             const file = e.target.files[0];
             if (file) {
                 await uploadCookiesFile(file);
-                // Reset file input
                 fileInput.value = '';
             }
-        });
-    }
-    
-    if (helpCloseBtn) {
-        helpCloseBtn.addEventListener('click', () => {
-            document.getElementById('cookieHelpSection').style.display = 'none';
         });
     }
 }
@@ -248,19 +187,21 @@ async function uploadCookiesFile(file) {
     const cookiesValue = document.getElementById('cookiesValue');
     const uploadBtn = document.getElementById('uploadCookiesBtn');
     
-    // Validate file
     if (!file.name.endsWith('.txt') && !file.type.includes('text')) {
-        cookiesValue.textContent = 'Invalid file type';
-        cookiesValue.style.color = '#f44336';
+        if (cookiesValue) {
+            cookiesValue.textContent = 'Invalid file';
+            cookiesValue.style.color = '#f44336';
+        }
         return;
     }
     
-    // Show uploading state
     const originalText = uploadBtn.textContent;
     uploadBtn.disabled = true;
     uploadBtn.textContent = 'Uploading...';
-    cookiesValue.textContent = 'Uploading...';
-    cookiesValue.style.color = '#FFA500';
+    if (cookiesValue) {
+        cookiesValue.textContent = 'Uploading...';
+        cookiesValue.style.color = '#FFA500';
+    }
     
     try {
         const formData = new FormData();
@@ -277,9 +218,6 @@ async function uploadCookiesFile(file) {
         if (response.status === 401) {
             authToken = null;
             localStorage.removeItem('authToken');
-            localStorage.removeItem('rememberMe');
-            sessionStorage.removeItem('authToken');
-            rememberMe = false;
             showLoginModal();
             return;
         }
@@ -291,17 +229,16 @@ async function uploadCookiesFile(file) {
         
         const data = await response.json();
         if (data.success) {
-            cookiesValue.textContent = 'Uploaded';
-            cookiesValue.style.color = '#4CAF50';
-            // Reload status to get updated info
             await loadCookiesStatus();
         } else {
             throw new Error(data.message || 'Upload failed');
         }
     } catch (error) {
         console.error('Error uploading cookies:', error);
-        cookiesValue.textContent = 'Upload failed';
-        cookiesValue.style.color = '#f44336';
+        if (cookiesValue) {
+            cookiesValue.textContent = 'Upload failed';
+            cookiesValue.style.color = '#f44336';
+        }
     } finally {
         uploadBtn.disabled = false;
         uploadBtn.textContent = originalText;
@@ -315,53 +252,53 @@ async function loadCookiesStatus() {
         
         const cookiesValue = document.getElementById('cookiesValue');
         const cookiesDot = document.getElementById('cookiesDot');
-        const helpSection = document.getElementById('cookieHelpSection');
+        const uploadBtn = document.getElementById('uploadCookiesBtn');
         
         if (!cookiesValue) return;
         
-        // Reset dot classes
         if (cookiesDot) {
             cookiesDot.className = 'status-dot';
         }
         
-        // Update status display
         switch (data.status) {
             case 'active':
                 cookiesValue.textContent = 'Active';
                 cookiesValue.style.color = '#4CAF50';
                 cookiesValue.title = data.message || 'Cookies file is configured';
                 if (cookiesDot) cookiesDot.classList.add('active');
-                if (helpSection) helpSection.style.display = 'none';
+                if (uploadBtn) uploadBtn.style.display = 'none'; // Hide upload button when active
                 break;
             case 'warning':
                 cookiesValue.textContent = `Warning (${data.age_days}d)`;
                 cookiesValue.style.color = '#FFA500';
                 cookiesValue.title = data.message || 'Cookies file may be expired';
                 if (cookiesDot) cookiesDot.classList.add('warning');
-                if (helpSection) helpSection.style.display = 'block';
+                if (uploadBtn) uploadBtn.style.display = 'inline-block'; // Show upload button
                 break;
             case 'missing':
                 cookiesValue.textContent = 'Missing';
                 cookiesValue.style.color = '#9E9E9E';
                 cookiesValue.title = data.message || 'No cookies file found';
-                if (helpSection) helpSection.style.display = 'block';
+                if (uploadBtn) uploadBtn.style.display = 'inline-block'; // Show upload button
                 break;
             case 'error':
                 cookiesValue.textContent = 'Error';
                 cookiesValue.style.color = '#f44336';
                 cookiesValue.title = data.message || 'Error with cookies file';
                 if (cookiesDot) cookiesDot.classList.add('error');
-                if (helpSection) helpSection.style.display = 'block';
+                if (uploadBtn) uploadBtn.style.display = 'inline-block'; // Show upload button
                 break;
             default:
                 cookiesValue.textContent = 'Unknown';
                 cookiesValue.style.color = '#9E9E9E';
                 cookiesValue.title = 'Unknown status';
+                if (uploadBtn) uploadBtn.style.display = 'inline-block';
         }
     } catch (error) {
         console.error('Error loading cookies status:', error);
         const cookiesValue = document.getElementById('cookiesValue');
         const cookiesDot = document.getElementById('cookiesDot');
+        const uploadBtn = document.getElementById('uploadCookiesBtn');
         if (cookiesValue) {
             cookiesValue.textContent = 'Error';
             cookiesValue.style.color = '#f44336';
@@ -369,6 +306,7 @@ async function loadCookiesStatus() {
         if (cookiesDot) {
             cookiesDot.className = 'status-dot error';
         }
+        if (uploadBtn) uploadBtn.style.display = 'inline-block';
     }
 }
 
@@ -383,7 +321,6 @@ async function loadCredits() {
         
         if (!creditsDisplay) return;
         
-        // Reset dot classes
         if (openaiDot) {
             openaiDot.className = 'status-dot';
         }
@@ -457,9 +394,6 @@ async function processVideo() {
         if (response.status === 401) {
             authToken = null;
             localStorage.removeItem('authToken');
-            localStorage.removeItem('rememberMe');
-            sessionStorage.removeItem('authToken');
-            rememberMe = false;
             showLoginModal();
             return;
         }
@@ -558,9 +492,6 @@ async function generateContent() {
         if (response.status === 401) {
             authToken = null;
             localStorage.removeItem('authToken');
-            localStorage.removeItem('rememberMe');
-            sessionStorage.removeItem('authToken');
-            rememberMe = false;
             showLoginModal();
             return;
         }
@@ -726,9 +657,6 @@ async function loadPrompts() {
         if (response.status === 401) {
             authToken = null;
             localStorage.removeItem('authToken');
-            localStorage.removeItem('rememberMe');
-            sessionStorage.removeItem('authToken');
-            rememberMe = false;
             showLoginModal();
             return;
         }
@@ -779,9 +707,6 @@ async function savePrompts() {
         if (response.status === 401) {
             authToken = null;
             localStorage.removeItem('authToken');
-            localStorage.removeItem('rememberMe');
-            sessionStorage.removeItem('authToken');
-            rememberMe = false;
             showLoginModal();
             return;
         }
@@ -830,9 +755,6 @@ async function downloadAudioFile(videoId) {
         if (response.status === 401) {
             authToken = null;
             localStorage.removeItem('authToken');
-            localStorage.removeItem('rememberMe');
-            sessionStorage.removeItem('authToken');
-            rememberMe = false;
             showLoginModal();
             return;
         }
@@ -868,4 +790,3 @@ async function downloadAudioFile(videoId) {
         alert(`Failed to download audio: ${error.message}`);
     }
 }
-

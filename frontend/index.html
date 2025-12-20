@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>21SIXTY CONTENT GEN v27</title>
+    <title>21SIXTY CONTENT GEN v31</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -26,7 +26,7 @@
         <header class="header">
             <div class="logo-container">
                 <img src="https://scrape.2160.media/logos/logo.png" alt="21SIXTY Logo" class="logo">
-                <h1 class="title">21SIXTY CONTENT GEN <span class="version">v27</span></h1>
+                <h1 class="title">21SIXTY CONTENT GEN <span class="version">v31</span></h1>
             </div>
             <div class="status-container">
                 <div class="status-item">
@@ -51,6 +51,7 @@
         <nav class="tabs">
             <button class="tab-btn active" data-tab="content">Content Generator</button>
             <button class="tab-btn" data-tab="prompts">Prompts Editor</button>
+            <button class="tab-btn" data-tab="cookies">Cookies Setup</button>
         </nav>
 
         <!-- Main Content -->
@@ -98,6 +99,39 @@
                         <button class="btn btn-secondary" id="resetPromptsBtn">Reset to Default</button>
                     </div>
                     <div id="promptsStatus" class="status-message"></div>
+                </div>
+            </div>
+
+            <!-- Cookies Setup Tab -->
+            <div id="cookiesTab" class="tab-content" style="display: none;">
+                <div class="card">
+                    <h2>YouTube Cookies Setup</h2>
+                    <p class="info-text">YouTube requires authentication cookies to download videos. Follow the steps below to export and upload your cookies.</p>
+                    
+                    <div class="cookie-instructions">
+                        <h3>Step 1: Install Browser Extension</h3>
+                        <p>Install a cookie export extension in your browser:</p>
+                        <ul>
+                            <li><strong>For Chrome/Edge:</strong> <a href="https://chrome.google.com/webstore/detail/get-cookiestxt-locally/cclelndahbckbenkjhflpdbgdldlbecc" target="_blank" rel="noopener noreferrer">Get cookies.txt LOCALLY</a></li>
+                            <li><strong>For Firefox:</strong> <a href="https://addons.mozilla.org/en-US/firefox/addon/cookies-txt/" target="_blank" rel="noopener noreferrer">cookies.txt</a></li>
+                        </ul>
+                        
+                        <h3>Step 2: Export Cookies</h3>
+                        <ol>
+                            <li><strong>Log in to YouTube</strong> in your browser (make sure you're logged in)</li>
+                            <li>Navigate to any YouTube video page</li>
+                            <li>Click the extension icon</li>
+                            <li>Click "Export" to download <code>cookies.txt</code></li>
+                            <li>Upload the file using the button in the header above</li>
+                        </ol>
+                        
+                        <h3>Step 3: Upload Cookies</h3>
+                        <p>Once you have exported your cookies file, use the "Upload" button in the header to upload it. The status will update automatically.</p>
+                        
+                        <div class="cookie-note">
+                            <strong>Note:</strong> Cookies expire after some time. If you encounter authentication errors, re-export and upload a fresh cookies file.
+                        </div>
+                    </div>
                 </div>
             </div>
 
