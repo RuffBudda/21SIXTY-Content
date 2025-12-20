@@ -183,30 +183,6 @@ body {
     white-space: nowrap;
 }
 
-.btn-upload-cookies {
-    padding: 2px 6px;
-    font-size: 0.55rem;
-    background-color: var(--bg-secondary);
-    color: var(--text-primary);
-    border: 1px solid var(--border-color);
-    border-radius: 3px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    white-space: nowrap;
-    height: 18px;
-    line-height: 14px;
-}
-
-.btn-upload-cookies:hover {
-    background-color: var(--bg-card);
-    border-color: var(--accent-blue);
-    color: var(--accent-blue);
-}
-
-.btn-upload-cookies:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-}
 
 /* Cookie Instructions Tab */
 .cookie-instructions {
@@ -379,7 +355,10 @@ body {
     color: var(--text-primary);
 }
 
-.logout-btn {
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
     margin-left: 20px;
 }
 
@@ -831,10 +810,6 @@ body {
         min-width: 120px;
     }
     
-    .btn-upload-cookies {
-        width: 100%;
-        margin-top: 8px;
-    }
     
     .credits-display {
         width: 100%;
