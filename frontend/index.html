@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>21SIXTY CONTENT GEN</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo-container">
+                <img src="https://scrape.2160.media/logos/logo.png" alt="21SIXTY Logo" class="logo">
+                <h1 class="title">21SIXTY CONTENT GEN</h1>
+            </div>
+            <div class="credits-display" id="creditsDisplay">
+                <span class="credits-label">OpenAI Credits:</span>
+                <span class="credits-value" id="creditsValue">Loading...</span>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Step 1: YouTube URL Input -->
+            <div class="card" id="step1Card">
+                <h2>Step 1: Enter YouTube URL</h2>
+                <div class="input-group">
+                    <label for="youtubeUrl">YouTube Video URL *</label>
+                    <div class="input-with-button">
+                        <input type="text" id="youtubeUrl" placeholder="https://www.youtube.com/watch?v=..." />
+                        <button class="btn btn-primary" id="processVideoBtn">Process Video</button>
+                    </div>
+                </div>
+                <div id="processingStatus" class="status-message"></div>
+            </div>
+
+            <!-- Step 2: Guest Information -->
+            <div class="card" id="step2Card" style="display: none;">
+                <h2>Step 2: Guest Information</h2>
+                <div class="form-grid">
+                    <div class="input-group">
+                        <label for="guestName">Name *</label>
+                        <input type="text" id="guestName" placeholder="John Doe" />
+                    </div>
+                    <div class="input-group">
+                        <label for="guestTitle">Title *</label>
+                        <input type="text" id="guestTitle" placeholder="CEO" />
+                    </div>
+                    <div class="input-group">
+                        <label for="guestCompany">Company *</label>
+                        <input type="text" id="guestCompany" placeholder="Company Name" />
+                    </div>
+                    <div class="input-group">
+                        <label for="guestLinkedIn">LinkedIn Profile URL *</label>
+                        <input type="text" id="guestLinkedIn" placeholder="https://www.linkedin.com/in/..." />
+                    </div>
+                </div>
+                <button class="btn btn-primary" id="generateContentBtn">Generate Content</button>
+                <div id="generatingStatus" class="status-message"></div>
+            </div>
+
+            <!-- Results -->
+            <div id="resultsContainer" style="display: none;">
+                <!-- YouTube Summary -->
+                <div class="card result-card">
+                    <div class="result-header">
+                        <h2>YouTube Summary</h2>
+                        <button class="btn btn-copy" data-target="youtubeSummary">Copy</button>
+                    </div>
+                    <div class="result-content" id="youtubeSummary"></div>
+                </div>
+
+                <!-- Blog Post -->
+                <div class="card result-card">
+                    <div class="result-header">
+                        <h2>Blog Post (2000 words)</h2>
+                        <button class="btn btn-copy" data-target="blogPost">Copy</button>
+                    </div>
+                    <div class="result-content" id="blogPost"></div>
+                </div>
+
+                <!-- Two Line Summary -->
+                <div class="card result-card">
+                    <div class="result-header">
+                        <h2>Two Line Summary</h2>
+                        <button class="btn btn-copy" data-target="twoLineSummary">Copy</button>
+                    </div>
+                    <div class="result-content" id="twoLineSummary"></div>
+                </div>
+
+                <!-- Clickbait Titles -->
+                <div class="card result-card">
+                    <div class="result-header">
+                        <h2>20 Clickbait Titles</h2>
+                        <button class="btn btn-copy" data-target="clickbaitTitles">Copy</button>
+                    </div>
+                    <div class="result-content" id="clickbaitTitles"></div>
+                </div>
+
+                <!-- Quotes -->
+                <div class="card result-card">
+                    <div class="result-header">
+                        <h2>20 Quotes</h2>
+                        <button class="btn btn-copy" data-target="quotes">Copy</button>
+                    </div>
+                    <div class="result-content" id="quotes"></div>
+                </div>
+
+                <!-- Chapter Timestamps -->
+                <div class="card result-card">
+                    <div class="result-header">
+                        <h2>YouTube Chapter Timestamps</h2>
+                        <button class="btn btn-copy" data-target="chapterTimestamps">Copy</button>
+                    </div>
+                    <div class="result-content" id="chapterTimestamps"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay" style="display: none;">
+        <div class="spinner"></div>
+        <p id="loadingText">Processing...</p>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
+
