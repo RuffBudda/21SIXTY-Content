@@ -12,9 +12,11 @@ document.addEventListener('DOMContentLoaded', () => {
     checkAuthStatus();
     setupEventListeners();
     
-    // Load credits every 30 seconds if authenticated
+    // Load credits and cookies status every 30 seconds if authenticated
     if (authToken) {
         setInterval(loadCredits, 30000);
+        setInterval(loadCookiesStatus, 30000);
+        loadCookiesStatus(); // Load immediately
     }
     
     // Set remember me checkbox state
@@ -209,6 +211,152 @@ function setupEventListeners() {
             copyToClipboard(targetId);
         });
     });
+    
+    // Cookie upload setup
+    setupCookieUpload();
+}
+
+// Cookie Upload and Status
+function setupCookieUpload() {
+    const uploadBtn = document.getElementById('uploadCookiesBtn');
+    const fileInput = document.getElementById('cookieFileInput');
+    const helpCloseBtn = document.getElementById('cookieHelpClose');
+    
+    if (uploadBtn && fileInput) {
+        uploadBtn.addEventListener('click', () => {
+            fileInput.click();
+        });
+        
+        fileInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                await uploadCookiesFile(file);
+                // Reset file input
+                fileInput.value = '';
+            }
+        });
+    }
+    
+    if (helpCloseBtn) {
+        helpCloseBtn.addEventListener('click', () => {
+            document.getElementById('cookieHelpSection').style.display = 'none';
+        });
+    }
+}
+
+async function uploadCookiesFile(file) {
+    const cookiesValue = document.getElementById('cookiesValue');
+    const uploadBtn = document.getElementById('uploadCookiesBtn');
+    
+    // Validate file
+    if (!file.name.endsWith('.txt') && !file.type.includes('text')) {
+        cookiesValue.textContent = 'Invalid file type';
+        cookiesValue.style.color = '#f44336';
+        return;
+    }
+    
+    // Show uploading state
+    const originalText = uploadBtn.textContent;
+    uploadBtn.disabled = true;
+    uploadBtn.textContent = 'Uploading...';
+    cookiesValue.textContent = 'Uploading...';
+    cookiesValue.style.color = '#FFA500';
+    
+    try {
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        const response = await fetch(`${API_BASE_URL}/api/upload-cookies`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${authToken}`
+            },
+            body: formData
+        });
+        
+        if (response.status === 401) {
+            authToken = null;
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('rememberMe');
+            sessionStorage.removeItem('authToken');
+            rememberMe = false;
+            showLoginModal();
+            return;
+        }
+        
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'Failed to upload cookies');
+        }
+        
+        const data = await response.json();
+        if (data.success) {
+            cookiesValue.textContent = 'Uploaded';
+            cookiesValue.style.color = '#4CAF50';
+            // Reload status to get updated info
+            await loadCookiesStatus();
+        } else {
+            throw new Error(data.message || 'Upload failed');
+        }
+    } catch (error) {
+        console.error('Error uploading cookies:', error);
+        cookiesValue.textContent = 'Upload failed';
+        cookiesValue.style.color = '#f44336';
+    } finally {
+        uploadBtn.disabled = false;
+        uploadBtn.textContent = originalText;
+    }
+}
+
+async function loadCookiesStatus() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/cookies-status`);
+        const data = await response.json();
+        
+        const cookiesValue = document.getElementById('cookiesValue');
+        const helpSection = document.getElementById('cookieHelpSection');
+        
+        if (!cookiesValue) return;
+        
+        // Update status display
+        switch (data.status) {
+            case 'active':
+                cookiesValue.textContent = 'Active';
+                cookiesValue.style.color = '#4CAF50';
+                cookiesValue.title = data.message || 'Cookies file is configured';
+                if (helpSection) helpSection.style.display = 'none';
+                break;
+            case 'warning':
+                cookiesValue.textContent = `Warning (${data.age_days}d old)`;
+                cookiesValue.style.color = '#FFA500';
+                cookiesValue.title = data.message || 'Cookies file may be expired';
+                if (helpSection) helpSection.style.display = 'block';
+                break;
+            case 'missing':
+                cookiesValue.textContent = 'Missing';
+                cookiesValue.style.color = '#9E9E9E';
+                cookiesValue.title = data.message || 'No cookies file found';
+                if (helpSection) helpSection.style.display = 'block';
+                break;
+            case 'error':
+                cookiesValue.textContent = 'Error';
+                cookiesValue.style.color = '#f44336';
+                cookiesValue.title = data.message || 'Error with cookies file';
+                if (helpSection) helpSection.style.display = 'block';
+                break;
+            default:
+                cookiesValue.textContent = 'Unknown';
+                cookiesValue.style.color = '#9E9E9E';
+                cookiesValue.title = 'Unknown status';
+        }
+    } catch (error) {
+        console.error('Error loading cookies status:', error);
+        const cookiesValue = document.getElementById('cookiesValue');
+        if (cookiesValue) {
+            cookiesValue.textContent = 'Unable to load';
+            cookiesValue.style.color = '#f44336';
+        }
+    }
 }
 
 // API Calls

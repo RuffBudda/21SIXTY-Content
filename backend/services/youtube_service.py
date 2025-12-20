@@ -12,6 +12,11 @@ class YouTubeService:
     def __init__(self, upload_dir: str = "./uploads"):
         self.upload_dir = upload_dir
         os.makedirs(upload_dir, exist_ok=True)
+        # Cookie file paths (in order of preference)
+        # Resolve path relative to backend directory (parent of services)
+        backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        self.cookies_dir = os.path.join(backend_dir, "cookies")
+        self.uploaded_cookies_path = os.path.join(self.cookies_dir, "cookies.txt")
         
     def _extract_video_id(self, url: str) -> str:
         """Extract video ID from YouTube URL"""
@@ -25,6 +30,21 @@ class YouTubeService:
             if match:
                 return match.group(1)
         raise ValueError(f"Could not extract video ID from URL: {url}")
+    
+    def _get_cookies_file_path(self) -> Optional[str]:
+        """Get cookie file path, checking multiple locations in priority order"""
+        # 1. Check uploaded cookies file first
+        if os.path.exists(self.uploaded_cookies_path):
+            logger.info(f"Found uploaded cookies file: {self.uploaded_cookies_path}")
+            return self.uploaded_cookies_path
+        
+        # 2. Check environment variable (backward compatibility)
+        env_cookies_file = os.getenv('YOUTUBE_COOKIES_FILE', None)
+        if env_cookies_file and os.path.exists(env_cookies_file):
+            logger.info(f"Found cookies file from env var: {env_cookies_file}")
+            return env_cookies_file
+        
+        return None
     
     def _build_ydl_opts(self, output_path: str, use_cookies: bool = True) -> dict:
         """Build yt-dlp options with cookie support"""
@@ -54,24 +74,42 @@ class YouTubeService:
         }
         
         if use_cookies:
-            # Cookie support - try multiple methods
-            cookies_file = os.getenv('YOUTUBE_COOKIES_FILE', None)
+            # Hybrid cookie strategy (in priority order):
+            # 1. Try browser cookies first (chrome, firefox, edge)
+            # 2. Fall back to uploaded cookies file
+            # 3. Fall back to env var (backward compatibility)
+            
             cookies_browser = os.getenv('YOUTUBE_COOKIES_BROWSER', None)
             
-            # Try cookies from browser first (most reliable)
+            # Strategy 1: Browser cookies (automatic extraction)
             if cookies_browser:
+                # Use explicit browser setting from env
                 ydl_opts['cookiesfrombrowser'] = cookies_browser.split(',')
-                logger.info(f"Using cookies from browser: {cookies_browser}")
-            elif cookies_file and os.path.exists(cookies_file):
-                ydl_opts['cookiefile'] = cookies_file
-                logger.info(f"Using cookies file: {cookies_file}")
+                logger.info(f"Using cookies from browser (env): {cookies_browser}")
             else:
-                # Try to automatically use Chrome cookies (most common)
-                try:
-                    ydl_opts['cookiesfrombrowser'] = ['chrome']
-                    logger.info("Attempting to use Chrome cookies automatically")
-                except Exception as e:
-                    logger.warning(f"Could not use Chrome cookies: {e}")
+                # Try to automatically extract from browsers (in order: chrome, firefox, edge)
+                browsers_to_try = ['chrome', 'firefox', 'edge']
+                browser_used = None
+                for browser in browsers_to_try:
+                    try:
+                        # Test if we can use this browser's cookies
+                        ydl_opts['cookiesfrombrowser'] = [browser]
+                        browser_used = browser
+                        logger.info(f"Attempting to use {browser} cookies automatically")
+                        break
+                    except Exception as e:
+                        logger.debug(f"Could not use {browser} cookies: {e}")
+                        continue
+                
+                # If no browser worked, try cookies file
+                if not browser_used:
+                    cookies_file = self._get_cookies_file_path()
+                    if cookies_file:
+                        ydl_opts.pop('cookiesfrombrowser', None)  # Remove if set
+                        ydl_opts['cookiefile'] = cookies_file
+                        logger.info(f"Using cookies file (fallback): {cookies_file}")
+                    else:
+                        logger.warning("No cookies available (no browser or file found)")
         
         return ydl_opts
     
@@ -184,20 +222,32 @@ class YouTubeService:
                 },
             }
             
-            # Cookie support - try multiple methods
-            cookies_file = os.getenv('YOUTUBE_COOKIES_FILE', None)
+            # Cookie support - use same hybrid strategy as download
             cookies_browser = os.getenv('YOUTUBE_COOKIES_BROWSER', None)
             
             if cookies_browser:
                 ydl_opts['cookiesfrombrowser'] = cookies_browser.split(',')
-            elif cookies_file and os.path.exists(cookies_file):
-                ydl_opts['cookiefile'] = cookies_file
+                logger.debug(f"Using cookies from browser (env) for video info: {cookies_browser}")
             else:
-                # Try to automatically use Chrome cookies
-                try:
-                    ydl_opts['cookiesfrombrowser'] = ['chrome']
-                except Exception:
-                    pass  # Continue without cookies if not available
+                # Try browser cookies automatically
+                browsers_to_try = ['chrome', 'firefox', 'edge']
+                browser_used = None
+                for browser in browsers_to_try:
+                    try:
+                        ydl_opts['cookiesfrombrowser'] = [browser]
+                        browser_used = browser
+                        logger.debug(f"Using {browser} cookies for video info")
+                        break
+                    except Exception:
+                        continue
+                
+                # Fall back to cookies file if no browser worked
+                if not browser_used:
+                    cookies_file = self._get_cookies_file_path()
+                    if cookies_file:
+                        ydl_opts.pop('cookiesfrombrowser', None)
+                        ydl_opts['cookiefile'] = cookies_file
+                        logger.debug(f"Using cookies file for video info: {cookies_file}")
             
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 info = ydl.extract_info(youtube_url, download=False)

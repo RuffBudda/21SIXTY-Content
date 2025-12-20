@@ -22,6 +22,8 @@ uploads/
 # Cookies (security sensitive)
 cookies.txt
 *.cookies
+cookies/
+backend/cookies/
 
 # IDE
 .vscode/
