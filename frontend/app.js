@@ -238,8 +238,23 @@ async function processVideo() {
             transcriptData = data;
             videoInfo = {
                 title: data.video_title,
-                duration: data.video_duration
+                duration: data.video_duration,
+                video_id: data.video_id
             };
+            
+            // Show download button if video_id is available
+            if (data.video_id) {
+                const downloadContainer = document.getElementById('audioDownloadContainer');
+                const downloadBtn = document.getElementById('downloadAudioBtn');
+                downloadContainer.style.display = 'block';
+                downloadBtn.href = `${API_BASE_URL}/api/download-audio/${data.video_id}`;
+                
+                // Add auth header for download (using fetch to handle auth)
+                downloadBtn.onclick = async (e) => {
+                    e.preventDefault();
+                    await downloadAudioFile(data.video_id);
+                };
+            }
             
             showStatus(statusDiv, 'Video processed successfully! Please fill in guest information.', 'success');
             document.getElementById('step2Card').style.display = 'block';
@@ -554,6 +569,54 @@ async function resetPrompts() {
     } catch (error) {
         console.error('Error resetting prompts:', error);
         showStatus(document.getElementById('promptsStatus'), 'Error resetting prompts', 'error');
+    }
+}
+
+// Audio Download
+async function downloadAudioFile(videoId) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/download-audio/${videoId}`, {
+            headers: {
+                'Authorization': `Bearer ${authToken}`
+            }
+        });
+        
+        if (response.status === 401) {
+            authToken = null;
+            localStorage.removeItem('authToken');
+            showLoginModal();
+            return;
+        }
+        
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'Failed to download audio');
+        }
+        
+        // Get the blob and create download link
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        
+        // Get filename from Content-Disposition header or use video_id
+        const contentDisposition = response.headers.get('Content-Disposition');
+        let filename = `${videoId}.mp3`;
+        if (contentDisposition) {
+            const filenameMatch = contentDisposition.match(/filename="?(.+?)"?$/);
+            if (filenameMatch) {
+                filename = filenameMatch[1];
+            }
+        }
+        
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+    } catch (error) {
+        console.error('Error downloading audio:', error);
+        alert(`Failed to download audio: ${error.message}`);
     }
 }
 

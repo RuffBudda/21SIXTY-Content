@@ -10,6 +10,7 @@ class ProcessVideoResponse(BaseModel):
     transcript_with_timecodes: List[dict] = Field(..., description="Transcript with timecodes")
     video_title: Optional[str] = Field(None, description="Video title")
     video_duration: Optional[float] = Field(None, description="Video duration in seconds")
+    video_id: Optional[str] = Field(None, description="YouTube video ID for downloading MP3")
 
 class GuestInfo(BaseModel):
     name: str = Field(..., description="Guest name")

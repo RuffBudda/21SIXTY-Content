@@ -50,6 +50,10 @@ content_generator = ContentGenerator(openai_service, prompts_service)
 # Session storage (in production, use Redis or similar)
 authenticated_sessions = set()
 
+# Store MP3 file paths by video ID (in production, use Redis or database)
+# Format: {video_id: file_path}
+mp3_files = {}
+
 def verify_password(password: str) -> bool:
     """Verify master password"""
     return password == MASTER_PASSWORD
@@ -110,22 +114,27 @@ async def process_video(request: ProcessVideoRequest, background_tasks: Backgrou
     try:
         logger.info(f"Processing video: {request.youtube_url}")
         
+        # Extract video ID for storing and downloading
+        video_id = youtube_service._extract_video_id(request.youtube_url)
+        
         # Download video and extract MP3
         audio_path = await youtube_service.download_audio(request.youtube_url)
         
         # Get transcript with timecodes
         transcript_data = await youtube_service.get_transcript(request.youtube_url)
         
-        # Schedule cleanup of audio file
-        if audio_path:
-            background_tasks.add_task(cleanup_file, audio_path)
+        # Store MP3 file path for download (don't cleanup immediately)
+        if audio_path and os.path.exists(audio_path):
+            mp3_files[video_id] = audio_path
+            logger.info(f"Stored MP3 file path for video_id: {video_id}")
         
         return ProcessVideoResponse(
             success=True,
             transcript=transcript_data["transcript"],
             transcript_with_timecodes=transcript_data["transcript_with_timecodes"],
             video_title=transcript_data.get("title", ""),
-            video_duration=transcript_data.get("duration", 0)
+            video_duration=transcript_data.get("duration", 0),
+            video_id=video_id
         )
     except Exception as e:
         logger.error(f"Error processing video: {str(e)}", exc_info=True)
@@ -196,6 +205,57 @@ async def update_prompts(
     except Exception as e:
         logger.error(f"Error updating prompts: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error updating prompts: {str(e)}")
+
+@app.get("/api/download-audio/{video_id}")
+async def download_audio(
+    video_id: str,
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)
+):
+    """Download the MP3 audio file for a processed video"""
+    if not verify_auth(credentials):
+        raise HTTPException(status_code=401, detail="Authentication required")
+    
+    try:
+        # Check if we have the file path stored
+        if video_id not in mp3_files:
+            raise HTTPException(status_code=404, detail="Audio file not found. Please process the video first.")
+        
+        file_path = mp3_files[video_id]
+        
+        # Check if file still exists on disk
+        if not os.path.exists(file_path):
+            # Remove from storage if file is missing
+            del mp3_files[video_id]
+            raise HTTPException(status_code=404, detail="Audio file no longer exists on server")
+        
+        # Get video title for filename
+        video_title = "audio"
+        try:
+            # Try to get from stored data or use video_id
+            video_title = video_id
+        except:
+            pass
+        
+        # Sanitize filename
+        safe_filename = "".join(c for c in video_title if c.isalnum() or c in (' ', '-', '_')).rstrip()
+        if not safe_filename:
+            safe_filename = video_id
+        
+        filename = f"{safe_filename}.mp3"
+        
+        return FileResponse(
+            file_path,
+            media_type="audio/mpeg",
+            filename=filename,
+            headers={
+                "Content-Disposition": f'attachment; filename="{filename}"'
+            }
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error serving audio file: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error serving audio file: {str(e)}")
 
 def cleanup_file(file_path: str):
     """Cleanup temporary file"""
