@@ -33,28 +33,68 @@ class YouTubeService:
                 return match.group(1)
         raise ValueError(f"Could not extract video ID from URL: {url}")
     
+    def _validate_cookie_file(self, cookie_path: str) -> bool:
+        """Validate that the cookie file exists and has valid content"""
+        try:
+            if not os.path.exists(cookie_path):
+                logger.error(f"Cookie file does not exist: {cookie_path}")
+                return False
+            
+            file_size = os.path.getsize(cookie_path)
+            if file_size == 0:
+                logger.error(f"Cookie file is empty: {cookie_path}")
+                return False
+            
+            # Read first few lines to check format
+            with open(cookie_path, 'r', encoding='utf-8', errors='ignore') as f:
+                first_lines = [f.readline().strip() for _ in range(5)]
+                content = '\n'.join(first_lines)
+                
+                # Check for Netscape cookie format indicators
+                # Valid formats: starts with # Netscape HTTP Cookie File, or has tab-separated cookie entries
+                if '# Netscape HTTP Cookie File' in content:
+                    logger.debug(f"Cookie file appears to be in Netscape format: {cookie_path}")
+                elif '\t' in content:
+                    # Tab-separated format (Netscape format without header)
+                    logger.debug(f"Cookie file appears to be in tab-separated format: {cookie_path}")
+                else:
+                    logger.warning(f"Cookie file format may be invalid (no Netscape header or tabs): {cookie_path}")
+                    # Still allow it, as yt-dlp might handle it
+            
+            logger.info(f"Cookie file validated: {cookie_path} (size: {file_size} bytes)")
+            return True
+        except Exception as e:
+            logger.error(f"Error validating cookie file {cookie_path}: {str(e)}", exc_info=True)
+            return False
+    
     def _get_cookies_file_path(self) -> Optional[str]:
         """Get cookie file path, checking multiple locations in priority order"""
         # 1. Check uploaded cookies file first
         abs_path = os.path.abspath(self.uploaded_cookies_path)
         if os.path.exists(abs_path):
-            file_size = os.path.getsize(abs_path)
-            logger.info(f"Found uploaded cookies file: {abs_path} (size: {file_size} bytes)")
-            return abs_path
+            if self._validate_cookie_file(abs_path):
+                file_size = os.path.getsize(abs_path)
+                logger.info(f"Using uploaded cookies file: {abs_path} (size: {file_size} bytes)")
+                return abs_path
+            else:
+                logger.error(f"Uploaded cookies file failed validation: {abs_path}")
         else:
-            logger.debug(f"Uploaded cookies file not found at: {abs_path}")
+            logger.warning(f"Uploaded cookies file not found at: {abs_path}")
         
         # 2. Check environment variable (backward compatibility)
         env_cookies_file = os.getenv('YOUTUBE_COOKIES_FILE', None)
         if env_cookies_file:
             abs_env_path = os.path.abspath(env_cookies_file)
             if os.path.exists(abs_env_path):
-                logger.info(f"Found cookies file from env var: {abs_env_path}")
-                return abs_env_path
+                if self._validate_cookie_file(abs_env_path):
+                    logger.info(f"Using cookies file from env var: {abs_env_path}")
+                    return abs_env_path
+                else:
+                    logger.error(f"Cookies file from env var failed validation: {abs_env_path}")
             else:
                 logger.debug(f"Cookies file from env var not found at: {abs_env_path}")
         
-        logger.warning("No cookies file found - YouTube downloads may fail")
+        logger.error("No valid cookies file found - YouTube downloads will likely fail with bot detection")
         return None
     
     def _build_ydl_opts(self, output_path: str, use_cookies: bool = True) -> dict:
@@ -94,7 +134,9 @@ class YouTubeService:
             cookies_file = self._get_cookies_file_path()
             if cookies_file:
                 ydl_opts['cookiefile'] = cookies_file
-                logger.info(f"Using uploaded cookies file: {cookies_file}")
+                # Add additional options for better cookie handling
+                ydl_opts['no_check_certificate'] = False  # Ensure SSL verification is on
+                logger.info(f"✓ Configured yt-dlp to use cookies file: {cookies_file}")
             else:
                 # Strategy 2: Browser cookies (only if explicitly set via env)
                 cookies_browser = os.getenv('YOUTUBE_COOKIES_BROWSER', None)
@@ -103,7 +145,8 @@ class YouTubeService:
                     ydl_opts['cookiesfrombrowser'] = cookies_browser.split(',')
                     logger.info(f"Using cookies from browser (env): {cookies_browser}")
                 else:
-                    logger.warning("No cookies available - upload cookies file or set YOUTUBE_COOKIES_BROWSER env var")
+                    logger.error("⚠️  NO COOKIES AVAILABLE - YouTube bot detection will likely fail!")
+                    logger.error("   Please upload cookies.txt file via the web interface or set YOUTUBE_COOKIES_BROWSER env var")
         
         return ydl_opts
     
@@ -122,26 +165,37 @@ class YouTubeService:
             last_error = None
             for use_cookies, strategy_name in strategies:
                 try:
-                    logger.info(f"Attempting download {strategy_name}")
+                    logger.info(f"Attempting download {strategy_name} for video: {youtube_url}")
                     ydl_opts = self._build_ydl_opts(output_path, use_cookies=use_cookies)
+                    
+                    # Log cookie usage details
+                    if use_cookies and 'cookiefile' in ydl_opts:
+                        logger.info(f"  → Using cookie file: {ydl_opts['cookiefile']}")
+                    elif use_cookies and 'cookiesfrombrowser' in ydl_opts:
+                        logger.info(f"  → Using browser cookies: {ydl_opts['cookiesfrombrowser']}")
+                    else:
+                        logger.warning(f"  → No cookies will be used (bot detection likely)")
                     
                     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                         ydl.download([youtube_url])
                     
                     # If we get here, download succeeded
+                    logger.info(f"✓ Download succeeded {strategy_name}")
                     break
                 except Exception as e:
                     error_msg = str(e)
                     last_error = e
-                    logger.warning(f"Download failed {strategy_name}: {error_msg}")
+                    logger.error(f"✗ Download failed {strategy_name}")
+                    logger.error(f"  Error: {error_msg}")
                     
                     # If it's a bot detection error and we haven't tried without cookies yet, continue
-                    if "bot" in error_msg.lower() or "sign in" in error_msg.lower():
-                        if use_cookies:
-                            logger.info("Bot detection error with cookies, trying without cookies...")
-                            continue
+                    if ("bot" in error_msg.lower() or "sign in" in error_msg.lower()) and use_cookies:
+                        logger.warning("  → Bot detection error with cookies - this suggests cookies are invalid/expired")
+                        logger.warning("  → Trying without cookies (will likely still fail)...")
+                        continue
                     # For other errors, re-raise immediately
                     if not use_cookies:
+                        logger.error(f"  → Final attempt failed, giving up")
                         raise
             
             # Return the path to the MP3 file
@@ -220,13 +274,13 @@ class YouTubeService:
             cookies_file = self._get_cookies_file_path()
             if cookies_file:
                 ydl_opts['cookiefile'] = cookies_file
-                logger.debug(f"Using uploaded cookies file for video info: {cookies_file}")
+                logger.debug(f"Using cookies file for video info: {cookies_file}")
             else:
                 # Fall back to browser cookies if explicitly set
                 cookies_browser = os.getenv('YOUTUBE_COOKIES_BROWSER', None)
                 if cookies_browser:
                     ydl_opts['cookiesfrombrowser'] = cookies_browser.split(',')
-                    logger.debug(f"Using cookies from browser (env) for video info: {cookies_browser}")
+                    logger.debug(f"Using browser cookies for video info: {cookies_browser}")
             
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 info = ydl.extract_info(youtube_url, download=False)
