@@ -54,19 +54,31 @@ def update_version_in_file(file_path, new_version):
     content = file_path.read_text(encoding='utf-8')
     
     # Pattern to match version numbers in title tag and h1 tag
-    # Matches: v23, v26, etc. - more specific patterns
-    patterns = [
-        (r'<title>21SIXTY CONTENT GEN v\d+</title>', f'<title>21SIXTY CONTENT GEN v{new_version}</title>'),
-        (r'<h1 class="title">21SIXTY CONTENT GEN v\d+</h1>', f'<h1 class="title">21SIXTY CONTENT GEN v{new_version}</h1>'),
-    ]
-    
+    # Supports both old format (<h1>21SIXTY CONTENT GEN v26</h1>) and new format (<h1>21SIXTY CONTENT GEN <span class="version">v26</span></h1>)
     updated_content = content
     changes_made = False
     
-    for pattern, replacement in patterns:
-        if re.search(pattern, updated_content):
-            updated_content = re.sub(pattern, replacement, updated_content)
-            changes_made = True
+    # Update title tag
+    title_pattern = r'<title>21SIXTY CONTENT GEN v\d+</title>'
+    title_replacement = f'<title>21SIXTY CONTENT GEN v{new_version}</title>'
+    if re.search(title_pattern, updated_content):
+        updated_content = re.sub(title_pattern, title_replacement, updated_content)
+        changes_made = True
+    
+    # Update h1 tag - check for new format first (with span), then old format (without span)
+    h1_with_span_pattern = r'(<h1 class="title">21SIXTY CONTENT GEN\s*)<span class="version">v\d+</span>(</h1>)'
+    h1_with_span_replacement = f'\\1<span class="version">v{new_version}</span>\\2'
+    
+    h1_without_span_pattern = r'<h1 class="title">21SIXTY CONTENT GEN v\d+</h1>'
+    h1_without_span_replacement = f'<h1 class="title">21SIXTY CONTENT GEN <span class="version">v{new_version}</span></h1>'
+    
+    # Try new format first, then old format (they're mutually exclusive)
+    if re.search(h1_with_span_pattern, updated_content):
+        updated_content = re.sub(h1_with_span_pattern, h1_with_span_replacement, updated_content)
+        changes_made = True
+    elif re.search(h1_without_span_pattern, updated_content):
+        updated_content = re.sub(h1_without_span_pattern, h1_without_span_replacement, updated_content)
+        changes_made = True
     
     # Check if anything changed
     if not changes_made:
