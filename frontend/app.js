@@ -167,6 +167,21 @@ function setupEventListeners() {
         if (e.key === 'Enter') login();
     });
     
+    // Password visibility toggle
+    const passwordToggle = document.getElementById('passwordToggle');
+    const passwordInput = document.getElementById('passwordInput');
+    if (passwordToggle && passwordInput) {
+        passwordToggle.addEventListener('click', () => {
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
+            // Update icon (you can use emoji or SVG icons)
+            const eyeIcon = passwordToggle.querySelector('.eye-icon');
+            if (eyeIcon) {
+                eyeIcon.textContent = type === 'password' ? '👁️' : '👁️‍🗨️';
+            }
+        });
+    }
+    
     const logoutBtn = document.getElementById('logoutBtn');
     if (logoutBtn) {
         logoutBtn.addEventListener('click', logout);

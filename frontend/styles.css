@@ -273,6 +273,45 @@ body {
     transition: border-color 0.3s;
 }
 
+.password-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.password-input-wrapper input {
+    padding-right: 45px;
+}
+
+.password-toggle {
+    position: absolute;
+    right: 12px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 4px 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+    transition: color 0.3s;
+    z-index: 1;
+}
+
+.password-toggle:hover {
+    color: var(--accent-blue);
+}
+
+.password-toggle:focus {
+    outline: none;
+    color: var(--accent-blue);
+}
+
+.eye-icon {
+    font-size: 1.2rem;
+    user-select: none;
+}
+
 .input-group input:focus {
     outline: none;
     border-color: var(--accent-blue);

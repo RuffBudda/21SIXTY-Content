@@ -53,7 +53,14 @@ class YouTubeService:
                 # Retry options
                 'retries': 10,
                 'fragment_retries': 10,
+                # Cookie support - try to use cookies from browser if available
+                'cookiefile': os.getenv('YOUTUBE_COOKIES_FILE', None),  # Optional: path to cookies.txt file
+                'cookiesfrombrowser': (os.getenv('YOUTUBE_COOKIES_BROWSER', 'chrome').split(',') 
+                                      if os.getenv('YOUTUBE_COOKIES_BROWSER') else None),  # e.g., 'chrome' or 'firefox,chrome'
             }
+            
+            # Remove None values from dict
+            ydl_opts = {k: v for k, v in ydl_opts.items() if v is not None}
             
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 ydl.download([youtube_url])
@@ -127,7 +134,14 @@ class YouTubeService:
                         'player_client': ['android', 'web'],
                     }
                 },
+                # Cookie support - try to use cookies from browser if available
+                'cookiefile': os.getenv('YOUTUBE_COOKIES_FILE', None),
+                'cookiesfrombrowser': (os.getenv('YOUTUBE_COOKIES_BROWSER', 'chrome').split(',') 
+                                      if os.getenv('YOUTUBE_COOKIES_BROWSER') else None),
             }
+            
+            # Remove None values from dict
+            ydl_opts = {k: v for k, v in ydl_opts.items() if v is not None}
             
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 info = ydl.extract_info(youtube_url, download=False)

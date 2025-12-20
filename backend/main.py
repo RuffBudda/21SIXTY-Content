@@ -73,9 +73,17 @@ async def verify_auth(credentials: Optional[HTTPAuthorizationCredentials] = Depe
 frontend_path = os.path.join(os.path.dirname(__file__), "..", "frontend")
 frontend_path = os.path.abspath(frontend_path)
 
-# Serve static files (CSS, JS, images)
+# Images path
+images_path = os.path.join(os.path.dirname(__file__), "..", "images")
+images_path = os.path.abspath(images_path)
+
+# Serve static files (CSS, JS)
 if os.path.exists(frontend_path):
     app.mount("/static", StaticFiles(directory=frontend_path), name="static")
+
+# Serve images
+if os.path.exists(images_path):
+    app.mount("/static/images", StaticFiles(directory=images_path), name="images")
     
     # Serve CSS and JS files
     @app.get("/styles.css")
