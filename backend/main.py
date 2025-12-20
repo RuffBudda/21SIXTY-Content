@@ -13,6 +13,7 @@ from models import ProcessVideoRequest, GenerateContentRequest, ProcessVideoResp
 from services.youtube_service import YouTubeService
 from services.openai_service import OpenAIService
 from services.content_generator import ContentGenerator
+from services.prompts_service import PromptsService
 
 # Load environment variables
 load_dotenv()
@@ -43,7 +44,8 @@ app.add_middleware(
 # Initialize services
 youtube_service = YouTubeService()
 openai_service = OpenAIService()
-content_generator = ContentGenerator(openai_service)
+prompts_service = PromptsService()
+content_generator = ContentGenerator(openai_service, prompts_service)
 
 # Session storage (in production, use Redis or similar)
 authenticated_sessions = set()
@@ -157,13 +159,43 @@ async def generate_content(request: GenerateContentRequest,
 
 @app.get("/api/openai-credits")
 async def get_openai_credits():
-    """Get remaining OpenAI API credits/usage"""
+    """Get remaining OpenAI API credits/usage (no auth required for display)"""
     try:
         credits_info = await openai_service.get_credit_info()
         return credits_info
     except Exception as e:
         logger.error(f"Error fetching credits: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error fetching credits: {str(e)}")
+
+@app.get("/api/prompts")
+async def get_prompts(credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)):
+    """Get all prompts (requires authentication)"""
+    if not verify_auth(credentials):
+        raise HTTPException(status_code=401, detail="Authentication required")
+    try:
+        prompts = prompts_service.get_all_prompts()
+        return {"success": True, "prompts": prompts}
+    except Exception as e:
+        logger.error(f"Error fetching prompts: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error fetching prompts: {str(e)}")
+
+@app.post("/api/prompts")
+async def update_prompts(
+    prompts_data: dict,
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)
+):
+    """Update prompts (requires authentication)"""
+    if not verify_auth(credentials):
+        raise HTTPException(status_code=401, detail="Authentication required")
+    try:
+        prompts = prompts_data.get("prompts", {})
+        prompts_service.update_prompts(prompts)
+        return {"success": True, "message": "Prompts updated successfully"}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error updating prompts: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error updating prompts: {str(e)}")
 
 def cleanup_file(file_path: str):
     """Cleanup temporary file"""

@@ -37,8 +37,62 @@
             </div>
         </header>
 
+        <!-- Navigation Tabs -->
+        <nav class="tabs">
+            <button class="tab-btn active" data-tab="content">Content Generator</button>
+            <button class="tab-btn" data-tab="prompts">Prompts Editor</button>
+        </nav>
+
         <!-- Main Content -->
         <main class="main-content">
+            <!-- Prompts Tab -->
+            <div id="promptsTab" class="tab-content" style="display: none;">
+                <div class="card">
+                    <h2>OpenAI Prompts Editor</h2>
+                    <p class="info-text">Edit the prompts used for generating content. Use placeholders like {guest_name}, {transcript}, etc.</p>
+                    
+                    <div class="prompts-container">
+                        <div class="prompt-section">
+                            <label for="prompt_youtube_summary">YouTube Summary Prompt</label>
+                            <textarea id="prompt_youtube_summary" class="prompt-textarea" rows="10"></textarea>
+                        </div>
+                        
+                        <div class="prompt-section">
+                            <label for="prompt_blog_post">Blog Post Prompt</label>
+                            <textarea id="prompt_blog_post" class="prompt-textarea" rows="15"></textarea>
+                        </div>
+                        
+                        <div class="prompt-section">
+                            <label for="prompt_clickbait_titles">Clickbait Titles Prompt</label>
+                            <textarea id="prompt_clickbait_titles" class="prompt-textarea" rows="12"></textarea>
+                        </div>
+                        
+                        <div class="prompt-section">
+                            <label for="prompt_two_line_summary">Two Line Summary Prompt</label>
+                            <textarea id="prompt_two_line_summary" class="prompt-textarea" rows="8"></textarea>
+                        </div>
+                        
+                        <div class="prompt-section">
+                            <label for="prompt_quotes">Quotes Prompt</label>
+                            <textarea id="prompt_quotes" class="prompt-textarea" rows="12"></textarea>
+                        </div>
+                        
+                        <div class="prompt-section">
+                            <label for="prompt_chapter_timestamps">Chapter Timestamps Prompt</label>
+                            <textarea id="prompt_chapter_timestamps" class="prompt-textarea" rows="12"></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="prompts-actions">
+                        <button class="btn btn-primary" id="savePromptsBtn">Save Prompts</button>
+                        <button class="btn btn-secondary" id="resetPromptsBtn">Reset to Default</button>
+                    </div>
+                    <div id="promptsStatus" class="status-message"></div>
+                </div>
+            </div>
+
+            <!-- Content Generator Tab -->
+            <div id="contentTab" class="tab-content">
             <!-- Step 1: YouTube URL Input -->
             <div class="card" id="step1Card">
                 <h2>Step 1: Enter YouTube URL</h2>
@@ -132,6 +186,7 @@
                     </div>
                     <div class="result-content" id="chapterTimestamps"></div>
                 </div>
+            </div>
             </div>
         </main>
     </div>

@@ -53,6 +53,8 @@ function showLoginModal() {
 function showMainApp() {
     document.getElementById('loginModal').style.display = 'none';
     document.getElementById('mainContainer').style.display = 'block';
+    // Ensure content tab is shown by default
+    switchTab('content');
 }
 
 async function login() {
@@ -131,6 +133,18 @@ function setupEventListeners() {
     if (logoutBtn) {
         logoutBtn.addEventListener('click', logout);
     }
+    
+    // Tab switching
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const tabName = e.target.getAttribute('data-tab');
+            switchTab(tabName);
+        });
+    });
+    
+    // Prompts editor
+    document.getElementById('savePromptsBtn').addEventListener('click', savePrompts);
+    document.getElementById('resetPromptsBtn').addEventListener('click', resetPrompts);
     
     document.getElementById('processVideoBtn').addEventListener('click', processVideo);
     document.getElementById('generateContentBtn').addEventListener('click', generateContent);
@@ -412,6 +426,134 @@ function isValidUrl(url) {
         return true;
     } catch {
         return false;
+    }
+}
+
+// Tab Management
+function switchTab(tabName) {
+    // Hide all tab contents
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.style.display = 'none';
+    });
+    
+    // Remove active class from all tab buttons
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    // Show selected tab content
+    const tabContent = document.getElementById(`${tabName}Tab`);
+    if (tabContent) {
+        tabContent.style.display = 'block';
+    }
+    
+    // Add active class to selected tab button
+    const tabBtn = document.querySelector(`[data-tab="${tabName}"]`);
+    if (tabBtn) {
+        tabBtn.classList.add('active');
+    }
+    
+    // Load prompts if switching to prompts tab
+    if (tabName === 'prompts') {
+        loadPrompts();
+    }
+}
+
+// Prompts Management
+async function loadPrompts() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/prompts`, {
+            headers: {
+                'Authorization': `Bearer ${authToken}`
+            }
+        });
+        
+        if (response.status === 401) {
+            authToken = null;
+            localStorage.removeItem('authToken');
+            showLoginModal();
+            return;
+        }
+        
+        if (!response.ok) {
+            throw new Error('Failed to load prompts');
+        }
+        
+        const data = await response.json();
+        if (data.success && data.prompts) {
+            // Populate textareas with prompts
+            document.getElementById('prompt_youtube_summary').value = data.prompts.youtube_summary || '';
+            document.getElementById('prompt_blog_post').value = data.prompts.blog_post || '';
+            document.getElementById('prompt_clickbait_titles').value = data.prompts.clickbait_titles || '';
+            document.getElementById('prompt_two_line_summary').value = data.prompts.two_line_summary || '';
+            document.getElementById('prompt_quotes').value = data.prompts.quotes || '';
+            document.getElementById('prompt_chapter_timestamps').value = data.prompts.chapter_timestamps || '';
+        }
+    } catch (error) {
+        console.error('Error loading prompts:', error);
+        showStatus(document.getElementById('promptsStatus'), 'Error loading prompts', 'error');
+    }
+}
+
+async function savePrompts() {
+    const statusDiv = document.getElementById('promptsStatus');
+    const saveBtn = document.getElementById('savePromptsBtn');
+    
+    saveBtn.disabled = true;
+    showStatus(statusDiv, 'Saving prompts...', 'info');
+    
+    try {
+        const prompts = {
+            youtube_summary: document.getElementById('prompt_youtube_summary').value,
+            blog_post: document.getElementById('prompt_blog_post').value,
+            clickbait_titles: document.getElementById('prompt_clickbait_titles').value,
+            two_line_summary: document.getElementById('prompt_two_line_summary').value,
+            quotes: document.getElementById('prompt_quotes').value,
+            chapter_timestamps: document.getElementById('prompt_chapter_timestamps').value
+        };
+        
+        const response = await fetch(`${API_BASE_URL}/api/prompts`, {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ prompts })
+        });
+        
+        if (response.status === 401) {
+            authToken = null;
+            localStorage.removeItem('authToken');
+            showLoginModal();
+            return;
+        }
+        
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'Failed to save prompts');
+        }
+        
+        const data = await response.json();
+        if (data.success) {
+            showStatus(statusDiv, 'Prompts saved successfully!', 'success');
+        }
+    } catch (error) {
+        console.error('Error saving prompts:', error);
+        showStatus(statusDiv, error.message || 'Error saving prompts', 'error');
+    } finally {
+        saveBtn.disabled = false;
+    }
+}
+
+async function resetPrompts() {
+    if (!confirm('Are you sure you want to reset all prompts to default? This cannot be undone.')) {
+        return;
+    }
+    
+    try {
+        // Reload prompts from server (which will use defaults if file doesn't exist)
+        await loadPrompts();
+        showStatus(document.getElementById('promptsStatus'), 'Prompts reset to defaults. Click Save to apply.', 'info');
+    } catch (error) {
+        console.error('Error resetting prompts:', error);
+        showStatus(document.getElementById('promptsStatus'), 'Error resetting prompts', 'error');
     }
 }
 

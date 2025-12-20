@@ -1,12 +1,14 @@
 import logging
 from typing import Dict, List
 from services.openai_service import OpenAIService
+from services.prompts_service import PromptsService
 
 logger = logging.getLogger(__name__)
 
 class ContentGenerator:
-    def __init__(self, openai_service: OpenAIService):
+    def __init__(self, openai_service: OpenAIService, prompts_service: PromptsService = None):
         self.openai = openai_service
+        self.prompts_service = prompts_service or PromptsService()
     
     async def generate_all_content(
         self,
@@ -58,22 +60,13 @@ class ContentGenerator:
         self, transcript: str, guest_name: str, guest_title: str, guest_company: str
     ) -> str:
         """Generate 3-paragraph YouTube summary"""
-        prompt = f"""You are writing a summary for a YouTube video description for The Dollar Diaries podcast.
-
-Guest Information:
-- Name: {guest_name}
-- Title: {guest_title}
-- Company: {guest_company}
-
-Transcript:
-{transcript[:8000]}  # Limit transcript length for token efficiency
-
-Please create a compelling 3-paragraph summary for YouTube that:
-1. Introduces the guest and their background in the first paragraph
-2. Highlights the key topics and insights discussed in the second paragraph
-3. Teases what viewers will learn or take away in the third paragraph
-
-Make it engaging, professional, and suitable for a YouTube video description."""
+        prompt = self.prompts_service.format_prompt(
+            'youtube_summary',
+            guest_name=guest_name,
+            guest_title=guest_title,
+            guest_company=guest_company,
+            transcript=transcript
+        )
         
         return await self.openai.generate_text(prompt, max_tokens=600, temperature=0.7)
     
@@ -82,29 +75,14 @@ Make it engaging, professional, and suitable for a YouTube video description."""
         guest_company: str, guest_linkedin: str
     ) -> str:
         """Generate 2000-word blog post with LinkedIn hyperlink in first paragraph"""
-        prompt = f"""You are writing a comprehensive 2000-word blog post based on a podcast episode transcript from The Dollar Diaries podcast.
-
-Guest Information:
-- Name: {guest_name}
-- Title: {guest_title}
-- Company: {guest_company}
-- LinkedIn: {guest_linkedin}
-
-Transcript:
-{transcript[:12000]}  # Use more of transcript for longer blog post
-
-Instructions:
-1. Write a comprehensive 2000-word blog post based on this episode
-2. In the FIRST PARAGRAPH, hyperlink the guest's name to their LinkedIn profile using markdown format: [Name](LinkedIn_URL)
-3. Structure the blog post with engaging subheadings
-4. Include key insights, quotes, and takeaways from the episode
-5. Make it valuable and readable for the audience
-6. End with a strong conclusion
-
-Format the LinkedIn hyperlink in the first paragraph like this:
-In this episode of The Dollar Diaries, we speak with [{guest_name}]({guest_linkedin}), {guest_title} at {guest_company}, about...
-
-Write the full blog post now:"""
+        prompt = self.prompts_service.format_prompt(
+            'blog_post',
+            guest_name=guest_name,
+            guest_title=guest_title,
+            guest_company=guest_company,
+            guest_linkedin=guest_linkedin,
+            transcript=transcript
+        )
         
         return await self.openai.generate_text(prompt, max_tokens=2500, temperature=0.7)
     
@@ -112,25 +90,12 @@ Write the full blog post now:"""
         self, transcript: str, guest_name: str, guest_company: str
     ) -> List[str]:
         """Generate 20 clickbait titles under 100 characters, featuring name and company"""
-        prompt = f"""Generate 20 clickbait-style titles for a podcast episode, each under 100 characters.
-
-Guest: {guest_name} from {guest_company}
-
-Transcript excerpt:
-{transcript[:6000]}
-
-Requirements:
-- Each title must be under 100 characters
-- Include the guest's name ({guest_name}) and/or company ({guest_company})
-- Make them compelling and click-worthy
-- Based on the actual content of the episode
-- Number each title from 1 to 20
-- Return only the titles, one per line, without any other text
-
-Format:
-1. Title here
-2. Title here
-..."""
+        prompt = self.prompts_service.format_prompt(
+            'clickbait_titles',
+            guest_name=guest_name,
+            guest_company=guest_company,
+            transcript=transcript
+        )
         
         response = await self.openai.generate_text(prompt, max_tokens=800, temperature=0.8)
         
@@ -154,43 +119,19 @@ Format:
     
     async def generate_two_line_summary(self, transcript: str) -> str:
         """Generate a two-line summary of the episode"""
-        prompt = f"""Create a concise two-line summary of this podcast episode.
-
-Transcript:
-{transcript[:6000]}
-
-Write exactly two lines that capture the essence of the episode. Make it engaging and informative.
-
-Format:
-Line 1
-Line 2"""
+        prompt = self.prompts_service.format_prompt(
+            'two_line_summary',
+            transcript=transcript
+        )
         
         return await self.openai.generate_text(prompt, max_tokens=200, temperature=0.7)
     
     async def generate_quotes(self, transcript_with_timecodes: List[dict]) -> List[str]:
         """Generate 20 notable quotes from the episode"""
-        # Create a readable format from transcript with timecodes
-        transcript_text = "\n".join([
-            f"[{self._format_timestamp(tc['start'])}] {tc['text']}"
-            for tc in transcript_with_timecodes[:200]  # Limit for efficiency
-        ])
-        
-        prompt = f"""Extract 20 of the most notable, insightful, or quotable statements from this podcast transcript.
-
-Transcript with timestamps:
-{transcript_text}
-
-Requirements:
-- Select the 20 most impactful quotes
-- They should be complete thoughts or statements
-- Include the timestamp in format [HH:MM:SS] before each quote
-- Number each quote from 1 to 20
-- Return only the quotes, one per line
-
-Format:
-1. [HH:MM:SS] Quote text here
-2. [HH:MM:SS] Quote text here
-..."""
+        prompt = self.prompts_service.format_prompt(
+            'quotes',
+            transcript_with_timecodes=transcript_with_timecodes
+        )
         
         response = await self.openai.generate_text(prompt, max_tokens=1000, temperature=0.6)
         
@@ -216,27 +157,11 @@ Format:
         self, transcript_with_timecodes: List[dict], video_duration: float
     ) -> List[str]:
         """Generate YouTube-ready chapter timestamps"""
-        # Analyze transcript to identify natural breaks/topics
-        # For now, we'll create timestamps at regular intervals with AI-generated chapter titles
-        
-        prompt = f"""Analyze this podcast transcript and create YouTube chapter timestamps.
-
-Transcript with timecodes (showing first 300 entries):
-{self._format_transcript_for_chapters(transcript_with_timecodes[:300])}
-
-Video duration: {self._format_timestamp(video_duration)} seconds
-
-Create YouTube-ready chapter timestamps that:
-1. Identify natural topic breaks in the conversation
-2. Use format: 00:00:00 - Chapter Title
-3. Create 8-12 meaningful chapters
-4. Each chapter title should be descriptive and engaging
-5. Timestamps should align with topic transitions
-
-Return only the timestamps in this exact format:
-00:00:00 - Chapter Title 1
-00:05:30 - Chapter Title 2
-..."""
+        prompt = self.prompts_service.format_prompt(
+            'chapter_timestamps',
+            transcript_with_timecodes=transcript_with_timecodes,
+            video_duration=video_duration
+        )
         
         response = await self.openai.generate_text(prompt, max_tokens=600, temperature=0.7)
         

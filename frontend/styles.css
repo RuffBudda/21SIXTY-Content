@@ -84,6 +84,98 @@ body {
     margin-left: 20px;
 }
 
+/* Tabs Navigation */
+.tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 30px;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.tab-btn {
+    background: transparent;
+    border: none;
+    padding: 15px 30px;
+    color: var(--text-secondary);
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: all 0.3s ease;
+}
+
+.tab-btn:hover {
+    color: var(--accent-blue);
+    background-color: var(--bg-card);
+}
+
+.tab-btn.active {
+    color: var(--accent-cyan);
+    border-bottom-color: var(--accent-cyan);
+}
+
+.tab-content {
+    display: block;
+}
+
+.tab-content[style*="display: none"] {
+    display: none !important;
+}
+
+.info-text {
+    color: var(--text-secondary);
+    margin-bottom: 20px;
+    font-size: 0.95rem;
+}
+
+/* Prompts Editor */
+.prompts-container {
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
+}
+
+.prompt-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.prompt-section label {
+    color: var(--accent-cyan);
+    font-weight: 600;
+    font-size: 1.1rem;
+}
+
+.prompt-textarea {
+    width: 100%;
+    min-height: 200px;
+    padding: 15px;
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-primary);
+    font-family: 'Courier New', monospace;
+    font-size: 0.9rem;
+    line-height: 1.6;
+    resize: vertical;
+    transition: border-color 0.3s ease;
+}
+
+.prompt-textarea:focus {
+    outline: none;
+    border-color: var(--accent-blue);
+    box-shadow: 0 0 0 2px rgba(30, 144, 255, 0.2);
+}
+
+.prompts-actions {
+    display: flex;
+    gap: 15px;
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border-color);
+}
+
 /* Cards */
 .card {
     background-color: var(--bg-card);
