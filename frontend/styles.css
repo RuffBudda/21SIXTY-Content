@@ -50,64 +50,6 @@ body {
     width: 60px;
     height: 60px;
     border-radius: 8px;
-    object-fit: contain;
-    background-color: transparent;
-}
-
-.logo[src=""],
-.logo:not([src]) {
-    display: none;
-}
-
-/* Login Modal Logo */
-.login-logo-container {
-    display: flex;
-    justify-content: center;
-    margin-bottom: 20px;
-}
-
-.login-logo {
-    width: 80px;
-    height: 80px;
-    border-radius: 8px;
-    object-fit: contain;
-    background-color: transparent;
-}
-
-.login-logo[src=""],
-.login-logo:not([src]) {
-    display: none;
-}
-
-/* Remember Me Checkbox */
-.remember-me-group {
-    margin-top: 10px;
-    margin-bottom: 15px;
-}
-
-.checkbox-label {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    cursor: pointer;
-    color: var(--text-primary);
-    font-size: 0.95rem;
-    user-select: none;
-}
-
-.checkbox-label input[type="checkbox"] {
-    width: 18px;
-    height: 18px;
-    cursor: pointer;
-    accent-color: var(--accent-blue);
-}
-
-.checkbox-label span {
-    color: var(--text-secondary);
-}
-
-.checkbox-label:hover span {
-    color: var(--text-primary);
 }
 
 .title {
@@ -115,136 +57,8 @@ body {
     font-weight: bold;
     color: var(--accent-cyan);
     margin: 0;
-    display: flex;
-    align-items: center;
-    gap: 8px;
 }
 
-.title .version {
-    font-size: 0.9rem;
-    font-weight: normal;
-    color: var(--text-secondary);
-    background-color: var(--bg-card);
-    padding: 2px 8px;
-    border-radius: 4px;
-    border: 1px solid var(--border-color);
-}
-
-.status-container {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 3px 8px;
-    background-color: var(--bg-card);
-    border-radius: 4px;
-    border: 1px solid var(--border-color);
-}
-
-.status-item {
-    display: flex;
-    align-items: center;
-    gap: 3px;
-}
-
-.status-dot {
-    width: 5px;
-    height: 5px;
-    border-radius: 50%;
-    background-color: #9E9E9E;
-    flex-shrink: 0;
-}
-
-.status-dot.active {
-    background-color: #4CAF50;
-}
-
-.status-dot.warning {
-    background-color: #FFA500;
-}
-
-.status-dot.error {
-    background-color: #f44336;
-}
-
-.status-label {
-    color: var(--text-secondary);
-    font-size: 0.55rem;
-    font-weight: 500;
-    white-space: nowrap;
-}
-
-.status-value {
-    font-weight: 500;
-    font-size: 0.55rem;
-    padding: 1px 4px;
-    border-radius: 8px;
-    background-color: var(--bg-secondary);
-    color: var(--text-primary);
-    white-space: nowrap;
-}
-
-
-/* Cookie Instructions Tab */
-.cookie-instructions {
-    margin-top: 20px;
-}
-
-.cookie-instructions h3 {
-    color: var(--accent-cyan);
-    margin-top: 25px;
-    margin-bottom: 10px;
-    font-size: 1.2rem;
-}
-
-.cookie-instructions h3:first-child {
-    margin-top: 0;
-}
-
-.cookie-instructions ul,
-.cookie-instructions ol {
-    margin: 15px 0;
-    padding-left: 30px;
-    color: var(--text-secondary);
-    line-height: 1.8;
-}
-
-.cookie-instructions li {
-    margin: 8px 0;
-}
-
-.cookie-instructions a {
-    color: var(--accent-blue);
-    text-decoration: underline;
-    transition: color 0.2s;
-}
-
-.cookie-instructions a:hover {
-    color: var(--accent-cyan);
-}
-
-.cookie-instructions code {
-    background-color: var(--bg-secondary);
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-family: 'Courier New', monospace;
-    font-size: 0.9em;
-    color: var(--accent-cyan);
-}
-
-.cookie-note {
-    margin-top: 25px;
-    padding: 15px;
-    background-color: var(--bg-secondary);
-    border-left: 3px solid var(--accent-blue);
-    border-radius: 4px;
-    color: var(--text-secondary);
-}
-
-.cookie-note strong {
-    color: var(--text-primary);
-}
-
-/* Legacy credits-display for backward compatibility */
 .credits-display {
     display: flex;
     align-items: center;
@@ -266,99 +80,7 @@ body {
     font-size: 0.9rem;
 }
 
-/* Cookie Help Section */
-.cookie-help-section {
-    margin-top: 10px;
-    padding: 12px 16px;
-    background-color: var(--bg-card);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    position: relative;
-    font-size: 0.8rem;
-}
-
-.cookie-help-content {
-    position: relative;
-}
-
-.cookie-help-content strong {
-    color: var(--accent-cyan);
-    display: block;
-    margin-bottom: 8px;
-    font-size: 0.85rem;
-}
-
-.cookie-help-links {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 10px;
-    flex-wrap: wrap;
-}
-
-.cookie-help-links a {
-    color: var(--accent-blue);
-    text-decoration: underline;
-    transition: color 0.2s;
-}
-
-.cookie-help-links a:hover {
-    color: var(--accent-cyan);
-}
-
-.cookie-help-links span {
-    color: var(--text-secondary);
-}
-
-.cookie-help-steps {
-    margin: 0;
-    padding-left: 20px;
-    color: var(--text-secondary);
-    line-height: 1.6;
-}
-
-.cookie-help-steps li {
-    margin: 4px 0;
-}
-
-.cookie-help-steps code {
-    background-color: var(--bg-secondary);
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-family: 'Courier New', monospace;
-    font-size: 0.85em;
-    color: var(--accent-cyan);
-}
-
-.cookie-help-close {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    background: transparent;
-    border: none;
-    color: var(--text-secondary);
-    font-size: 1.5rem;
-    cursor: pointer;
-    line-height: 1;
-    padding: 0;
-    width: 24px;
-    height: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 4px;
-    transition: all 0.2s;
-}
-
-.cookie-help-close:hover {
-    background-color: var(--bg-secondary);
-    color: var(--text-primary);
-}
-
-.header-actions {
-    display: flex;
-    align-items: center;
-    gap: 10px;
+.logout-btn {
     margin-left: 20px;
 }
 
@@ -491,45 +213,6 @@ body {
     color: var(--text-primary);
     font-size: 1rem;
     transition: border-color 0.3s;
-}
-
-.password-input-wrapper {
-    position: relative;
-    display: flex;
-    align-items: center;
-}
-
-.password-input-wrapper input {
-    padding-right: 45px;
-}
-
-.password-toggle {
-    position: absolute;
-    right: 12px;
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    padding: 4px 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--text-secondary);
-    transition: color 0.3s;
-    z-index: 1;
-}
-
-.password-toggle:hover {
-    color: var(--accent-blue);
-}
-
-.password-toggle:focus {
-    outline: none;
-    color: var(--accent-blue);
-}
-
-.eye-icon {
-    font-size: 1.2rem;
-    user-select: none;
 }
 
 .input-group input:focus {
@@ -799,18 +482,21 @@ body {
         gap: 20px;
     }
 
-    .status-container {
+    .header-actions {
         width: 100%;
-        flex-wrap: wrap;
-        justify-content: space-between;
+        justify-content: flex-end;
+        margin-left: 0;
+        margin-top: 10px;
+        gap: 8px;
     }
     
-    .status-item {
-        flex: 1 1 auto;
-        min-width: 120px;
+    #uploadCookiesBtn {
+        padding: 4px 8px !important;
+        font-size: 0.6rem !important;
+        height: 20px !important;
+        line-height: 16px !important;
     }
-    
-    
+
     .credits-display {
         width: 100%;
         justify-content: space-between;
@@ -842,4 +528,3 @@ body {
         padding: 20px;
     }
 }
-
