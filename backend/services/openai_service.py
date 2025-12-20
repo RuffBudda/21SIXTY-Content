@@ -67,16 +67,63 @@ class OpenAIService:
                     'error': 'missing_api_key'
                 }
             
+            # Check API key validity by attempting a small API call
             # Note: OpenAI doesn't provide a direct "credits" endpoint via API
-            # Users should check their dashboard for billing information
-            # We'll indicate that the API key is configured
-            return {
-                'success': True,
-                'message': 'API key configured',
-                'note': 'Check your OpenAI dashboard (https://platform.openai.com/usage) for detailed usage and billing information.',
-                'dashboard_url': 'https://platform.openai.com/usage',
-                'model': self.model
-            }
+            # We'll verify the key works and provide dashboard link for actual credits
+            try:
+                # Make a minimal test call (1 token) to verify API key works
+                test_response = self.client.chat.completions.create(
+                    model="gpt-3.5-turbo",
+                    messages=[{"role": "user", "content": "hi"}],
+                    max_tokens=1
+                )
+                
+                # Extract usage information
+                usage = test_response.usage
+                tokens_used = usage.total_tokens if usage else 0
+                
+                # API key is valid and working
+                return {
+                    'success': True,
+                    'message': 'API Active - Check Dashboard for Credits',
+                    'status': 'operational',
+                    'model': self.model,
+                    'test_tokens_used': tokens_used,
+                    'note': 'OpenAI API is active. Check dashboard for remaining credits/balance.',
+                    'dashboard_url': 'https://platform.openai.com/usage',
+                    'balance_url': 'https://platform.openai.com/account/billing',
+                    'credits_note': 'Actual credit balance must be checked in OpenAI dashboard'
+                }
+            except Exception as api_error:
+                # If the API call fails, the key might be invalid or rate limited
+                error_msg = str(api_error)
+                if "insufficient_quota" in error_msg.lower() or "quota" in error_msg.lower():
+                    return {
+                        'success': False,
+                        'message': 'Insufficient Credits/Quota',
+                        'status': 'no_credits',
+                        'error': 'quota_exceeded',
+                        'dashboard_url': 'https://platform.openai.com/account/billing',
+                        'note': 'Please add credits to your OpenAI account.'
+                    }
+                elif "invalid_api_key" in error_msg.lower() or "authentication" in error_msg.lower():
+                    return {
+                        'success': False,
+                        'message': 'Invalid API Key',
+                        'status': 'invalid_key',
+                        'error': 'authentication_failed'
+                    }
+                else:
+                    # Other errors - still show as configured but with warning
+                    logger.warning(f"OpenAI API test call failed: {error_msg}")
+                    return {
+                        'success': True,
+                        'message': 'API Key Configured (Status Unknown)',
+                        'status': 'unknown',
+                        'error_detail': error_msg[:100],  # Truncate long errors
+                        'dashboard_url': 'https://platform.openai.com/usage',
+                        'note': 'Unable to verify API status. Check dashboard for details.'
+                    }
                 
         except Exception as e:
             logger.error(f"Error fetching credit info: {str(e)}", exc_info=True)

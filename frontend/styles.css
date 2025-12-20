@@ -80,6 +80,10 @@ body {
     font-size: 0.9rem;
 }
 
+.logout-btn {
+    margin-left: 20px;
+}
+
 /* Cards */
 .card {
     background-color: var(--bg-card);

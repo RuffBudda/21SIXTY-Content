@@ -7,7 +7,21 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="container">
+    <!-- Login Modal -->
+    <div id="loginModal" class="modal">
+        <div class="modal-content">
+            <h2>Authentication Required</h2>
+            <p>Please enter the master password to access the tool.</p>
+            <div class="input-group">
+                <label for="passwordInput">Master Password</label>
+                <input type="password" id="passwordInput" placeholder="Enter password" autocomplete="current-password" />
+            </div>
+            <div id="loginError" class="error-message" style="display: none;"></div>
+            <button class="btn btn-primary" id="loginBtn">Login</button>
+        </div>
+    </div>
+
+    <div class="container" id="mainContainer" style="display: none;">
         <!-- Header -->
         <header class="header">
             <div class="logo-container">
@@ -15,8 +29,11 @@
                 <h1 class="title">21SIXTY CONTENT GEN</h1>
             </div>
             <div class="credits-display" id="creditsDisplay">
-                <span class="credits-label">OpenAI Credits:</span>
+                <span class="credits-label">OpenAI Status:</span>
                 <span class="credits-value" id="creditsValue">Loading...</span>
+            </div>
+            <div class="logout-btn">
+                <button class="btn btn-secondary" id="logoutBtn">Logout</button>
             </div>
         </header>
 

@@ -3,18 +3,135 @@ const API_BASE_URL = window.location.origin;
 // State
 let transcriptData = null;
 let videoInfo = null;
+let authToken = localStorage.getItem('authToken') || null;
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
-    loadCredits();
+    checkAuthStatus();
     setupEventListeners();
     
-    // Load credits every 30 seconds
-    setInterval(loadCredits, 30000);
+    // Load credits every 30 seconds if authenticated
+    if (authToken) {
+        setInterval(loadCredits, 30000);
+    }
 });
+
+// Authentication
+async function checkAuthStatus() {
+    if (!authToken) {
+        showLoginModal();
+        return;
+    }
+    
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/auth/status`, {
+            headers: {
+                'Authorization': `Bearer ${authToken}`
+            }
+        });
+        const data = await response.json();
+        
+        if (data.authenticated) {
+            showMainApp();
+            loadCredits();
+        } else {
+            authToken = null;
+            localStorage.removeItem('authToken');
+            showLoginModal();
+        }
+    } catch (error) {
+        console.error('Auth check failed:', error);
+        showLoginModal();
+    }
+}
+
+function showLoginModal() {
+    document.getElementById('loginModal').style.display = 'flex';
+    document.getElementById('mainContainer').style.display = 'none';
+}
+
+function showMainApp() {
+    document.getElementById('loginModal').style.display = 'none';
+    document.getElementById('mainContainer').style.display = 'block';
+}
+
+async function login() {
+    const password = document.getElementById('passwordInput').value;
+    const errorDiv = document.getElementById('loginError');
+    
+    if (!password) {
+        errorDiv.textContent = 'Please enter a password';
+        errorDiv.style.display = 'block';
+        return;
+    }
+    
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ password })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
+            authToken = data.token;
+            localStorage.setItem('authToken', authToken);
+            showMainApp();
+            loadCredits();
+            errorDiv.style.display = 'none';
+            document.getElementById('passwordInput').value = '';
+        } else {
+            errorDiv.textContent = 'Invalid password';
+            errorDiv.style.display = 'block';
+        }
+    } catch (error) {
+        console.error('Login error:', error);
+        errorDiv.textContent = 'Login failed. Please try again.';
+        errorDiv.style.display = 'block';
+    }
+}
+
+async function logout() {
+    if (authToken) {
+        try {
+            await fetch(`${API_BASE_URL}/api/auth/logout`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${authToken}`
+                }
+            });
+        } catch (error) {
+            console.error('Logout error:', error);
+        }
+    }
+    
+    authToken = null;
+    localStorage.removeItem('authToken');
+    showLoginModal();
+}
+
+function getAuthHeaders() {
+    return {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`
+    };
+}
 
 // Event Listeners
 function setupEventListeners() {
+    document.getElementById('loginBtn').addEventListener('click', login);
+    document.getElementById('passwordInput').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') login();
+    });
+    
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', logout);
+    }
+    
     document.getElementById('processVideoBtn').addEventListener('click', processVideo);
     document.getElementById('generateContentBtn').addEventListener('click', generateContent);
     
@@ -35,12 +152,25 @@ async function loadCredits() {
         
         const creditsDisplay = document.getElementById('creditsValue');
         if (data.success) {
-            creditsDisplay.textContent = data.message || 'API Key Configured';
-            creditsDisplay.style.color = '#4CAF50';
-            creditsDisplay.title = data.note || 'Check OpenAI dashboard for usage details';
+            if (data.status === 'operational') {
+                creditsDisplay.textContent = 'Active - Check Dashboard';
+                creditsDisplay.style.color = '#4CAF50';
+                creditsDisplay.title = data.credits_note || data.note || 'Check OpenAI dashboard for remaining credits/balance';
+            } else {
+                creditsDisplay.textContent = data.message || 'API Key Configured';
+                creditsDisplay.style.color = '#4CAF50';
+                creditsDisplay.title = data.note || 'Check OpenAI dashboard for usage details';
+            }
         } else {
-            creditsDisplay.textContent = data.message || 'Error loading credits';
-            creditsDisplay.style.color = '#f44336';
+            if (data.status === 'no_credits') {
+                creditsDisplay.textContent = 'Insufficient Credits';
+                creditsDisplay.style.color = '#f44336';
+                creditsDisplay.title = 'Please add credits to your OpenAI account';
+            } else {
+                creditsDisplay.textContent = data.message || 'Error';
+                creditsDisplay.style.color = '#f44336';
+                creditsDisplay.title = data.error || 'Error loading status';
+            }
         }
     } catch (error) {
         console.error('Error loading credits:', error);
@@ -72,11 +202,16 @@ async function processVideo() {
     try {
         const response = await fetch(`${API_BASE_URL}/api/process-video`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            headers: getAuthHeaders(),
             body: JSON.stringify({ youtube_url: youtubeUrl })
         });
+        
+        if (response.status === 401) {
+            authToken = null;
+            localStorage.removeItem('authToken');
+            showLoginModal();
+            return;
+        }
         
         if (!response.ok) {
             const error = await response.json();
@@ -150,11 +285,16 @@ async function generateContent() {
         
         const response = await fetch(`${API_BASE_URL}/api/generate-content`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            headers: getAuthHeaders(),
             body: JSON.stringify(requestBody)
         });
+        
+        if (response.status === 401) {
+            authToken = null;
+            localStorage.removeItem('authToken');
+            showLoginModal();
+            return;
+        }
         
         if (!response.ok) {
             const error = await response.json();

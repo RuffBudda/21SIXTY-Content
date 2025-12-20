@@ -1,0 +1,44 @@
+name: Deploy to DigitalOcean
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+      
+    - name: Deploy to server
+      uses: appleboy/ssh-action@v0.1.7
+      with:
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USER }}
+        port: ${{ secrets.SSH_PORT }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        script: |
+          cd /opt/content-generator
+          git pull origin main
+          cd backend
+          source venv/bin/activate
+          pip install -r requirements.txt --upgrade --quiet
+          sudo systemctl restart content-generator
+          sudo systemctl status content-generator --no-pager -l
+          
+    - name: Verify deployment
+      uses: appleboy/ssh-action@v0.1.7
+      with:
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USER }}
+        port: ${{ secrets.SSH_PORT }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        script: |
+          sleep 5
+          curl -f http://localhost:8001/api/health || exit 1
+          echo "Deployment verified successfully!"
+

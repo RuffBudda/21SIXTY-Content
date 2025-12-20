@@ -1,10 +1,13 @@
-from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi import FastAPI, HTTPException, BackgroundTasks, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import os
 from dotenv import load_dotenv
 import logging
+from typing import Optional
+import hashlib
 
 from models import ProcessVideoRequest, GenerateContentRequest, ProcessVideoResponse, GenerateContentResponse
 from services.youtube_service import YouTubeService
@@ -13,6 +16,10 @@ from services.content_generator import ContentGenerator
 
 # Load environment variables
 load_dotenv()
+
+# Master password
+MASTER_PASSWORD = os.getenv("MASTER_PASSWORD", "AbubakrIsAGenius")
+security = HTTPBearer(auto_error=False)
 
 # Configure logging
 logging.basicConfig(
@@ -37,6 +44,24 @@ app.add_middleware(
 youtube_service = YouTubeService()
 openai_service = OpenAIService()
 content_generator = ContentGenerator(openai_service)
+
+# Session storage (in production, use Redis or similar)
+authenticated_sessions = set()
+
+def verify_password(password: str) -> bool:
+    """Verify master password"""
+    return password == MASTER_PASSWORD
+
+def get_password_hash(password: str) -> str:
+    """Hash password for session token"""
+    return hashlib.sha256(password.encode()).hexdigest()
+
+async def verify_auth(credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)) -> bool:
+    """Verify authentication token"""
+    if not credentials:
+        return False
+    token_hash = credentials.credentials
+    return token_hash in authenticated_sessions
 
 # Frontend path
 frontend_path = os.path.join(os.path.dirname(__file__), "..", "frontend")
@@ -75,8 +100,11 @@ async def health_check():
     return {"status": "healthy"}
 
 @app.post("/api/process-video", response_model=ProcessVideoResponse)
-async def process_video(request: ProcessVideoRequest, background_tasks: BackgroundTasks):
+async def process_video(request: ProcessVideoRequest, background_tasks: BackgroundTasks, 
+                       credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)):
     """Process YouTube video: download MP3 and extract transcript with timecodes"""
+    if not verify_auth(credentials):
+        raise HTTPException(status_code=401, detail="Authentication required")
     try:
         logger.info(f"Processing video: {request.youtube_url}")
         
@@ -102,8 +130,11 @@ async def process_video(request: ProcessVideoRequest, background_tasks: Backgrou
         raise HTTPException(status_code=500, detail=f"Error processing video: {str(e)}")
 
 @app.post("/api/generate-content", response_model=GenerateContentResponse)
-async def generate_content(request: GenerateContentRequest):
+async def generate_content(request: GenerateContentRequest,
+                          credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)):
     """Generate all content using OpenAI based on transcript and guest info"""
+    if not verify_auth(credentials):
+        raise HTTPException(status_code=401, detail="Authentication required")
     try:
         logger.info(f"Generating content for guest: {request.guest_name}")
         
