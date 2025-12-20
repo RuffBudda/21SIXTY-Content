@@ -244,21 +244,21 @@ async function loadCredits() {
         
         if (data.success) {
             if (data.status === 'operational') {
-                creditsDisplay.textContent = 'Active - Check Dashboard';
+                creditsDisplay.textContent = 'Active';
                 creditsDisplay.style.color = '#4CAF50';
                 creditsDisplay.title = data.credits_note || data.note || 'Check OpenAI dashboard for remaining credits/balance';
             } else {
-                creditsDisplay.textContent = data.message || 'API Key Configured';
+                creditsDisplay.textContent = 'Active';
                 creditsDisplay.style.color = '#4CAF50';
                 creditsDisplay.title = data.note || 'Check OpenAI dashboard for usage details';
             }
         } else {
             if (data.status === 'no_credits') {
-                creditsDisplay.textContent = 'Insufficient Credits';
+                creditsDisplay.textContent = 'Inactive';
                 creditsDisplay.style.color = '#f44336';
                 creditsDisplay.title = 'Please add credits to your OpenAI account';
             } else {
-                creditsDisplay.textContent = data.message || 'Error';
+                creditsDisplay.textContent = 'Inactive';
                 creditsDisplay.style.color = '#f44336';
                 creditsDisplay.title = data.error || 'Error loading status';
             }
@@ -267,7 +267,7 @@ async function loadCredits() {
         console.error('Error loading credits:', error);
         const creditsDisplay = document.getElementById('creditsValue');
         if (creditsDisplay) {
-            creditsDisplay.textContent = 'Unable to load';
+            creditsDisplay.textContent = 'Inactive';
             creditsDisplay.style.color = '#f44336';
         }
     }
