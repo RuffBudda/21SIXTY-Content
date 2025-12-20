@@ -120,15 +120,6 @@ class YouTubeService:
             else:
                 logger.warning(f"MP3 file not found at expected path: {mp3_path}")
                 return None
-            
-            # Return the path to the MP3 file
-            mp3_path = os.path.join(self.upload_dir, f"{video_id}.mp3")
-            if os.path.exists(mp3_path):
-                logger.info(f"Successfully downloaded audio to {mp3_path}")
-                return mp3_path
-            else:
-                logger.warning(f"MP3 file not found at expected path: {mp3_path}")
-                return None
                 
         except Exception as e:
             logger.error(f"Error downloading audio: {str(e)}", exc_info=True)
@@ -217,4 +208,3 @@ class YouTubeService:
         except Exception as e:
             logger.warning(f"Could not get video info: {str(e)}")
             return {'title': '', 'duration': 0}
-
