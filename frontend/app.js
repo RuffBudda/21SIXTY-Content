@@ -65,7 +65,9 @@ function showLoginModal() {
     // Reset remember me checkbox when showing login modal
     const rememberMeCheckbox = document.getElementById('rememberMe');
     if (rememberMeCheckbox) {
-        rememberMeCheckbox.checked = false;
+        // Default to checked if no localStorage value exists
+        const savedRememberMe = localStorage.getItem('rememberMe');
+        rememberMeCheckbox.checked = savedRememberMe === 'true' || savedRememberMe === null;
     }
 }
 
