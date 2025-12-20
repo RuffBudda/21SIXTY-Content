@@ -19,6 +19,10 @@ uploads/
 *.mp4
 *.webm
 
+# Cookies (security sensitive)
+cookies.txt
+*.cookies
+
 # IDE
 .vscode/
 .idea/

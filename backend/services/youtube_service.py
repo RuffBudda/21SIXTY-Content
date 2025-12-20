@@ -26,44 +26,100 @@ class YouTubeService:
                 return match.group(1)
         raise ValueError(f"Could not extract video ID from URL: {url}")
     
+    def _build_ydl_opts(self, output_path: str, use_cookies: bool = True) -> dict:
+        """Build yt-dlp options with cookie support"""
+        ydl_opts = {
+            'format': 'bestaudio/best',
+            'outtmpl': output_path,
+            'postprocessors': [{
+                'key': 'FFmpegExtractAudio',
+                'preferredcodec': 'mp3',
+                'preferredquality': '192',
+            }],
+            'quiet': False,
+            'no_warnings': False,
+            # Enhanced bot detection bypass
+            'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'referer': 'https://www.youtube.com/',
+            'extractor_args': {
+                'youtube': {
+                    'skip': ['dash', 'hls'],
+                    'player_client': ['android', 'ios', 'web'],  # Try multiple clients
+                }
+            },
+            # Retry options
+            'retries': 10,
+            'fragment_retries': 10,
+            'ignoreerrors': False,
+        }
+        
+        if use_cookies:
+            # Cookie support - try multiple methods
+            cookies_file = os.getenv('YOUTUBE_COOKIES_FILE', None)
+            cookies_browser = os.getenv('YOUTUBE_COOKIES_BROWSER', None)
+            
+            # Try cookies from browser first (most reliable)
+            if cookies_browser:
+                ydl_opts['cookiesfrombrowser'] = cookies_browser.split(',')
+                logger.info(f"Using cookies from browser: {cookies_browser}")
+            elif cookies_file and os.path.exists(cookies_file):
+                ydl_opts['cookiefile'] = cookies_file
+                logger.info(f"Using cookies file: {cookies_file}")
+            else:
+                # Try to automatically use Chrome cookies (most common)
+                try:
+                    ydl_opts['cookiesfrombrowser'] = ['chrome']
+                    logger.info("Attempting to use Chrome cookies automatically")
+                except Exception as e:
+                    logger.warning(f"Could not use Chrome cookies: {e}")
+        
+        return ydl_opts
+    
     async def download_audio(self, youtube_url: str) -> Optional[str]:
         """Download YouTube video as MP3 and return file path"""
         try:
             video_id = self._extract_video_id(youtube_url)
             output_path = os.path.join(self.upload_dir, f"{video_id}.%(ext)s")
             
-            ydl_opts = {
-                'format': 'bestaudio/best',
-                'outtmpl': output_path,
-                'postprocessors': [{
-                    'key': 'FFmpegExtractAudio',
-                    'preferredcodec': 'mp3',
-                    'preferredquality': '192',
-                }],
-                'quiet': False,
-                'no_warnings': False,
-                # Options to help bypass YouTube bot detection
-                'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                'extractor_args': {
-                    'youtube': {
-                        'skip': ['dash', 'hls'],
-                        'player_client': ['android', 'web'],
-                    }
-                },
-                # Retry options
-                'retries': 10,
-                'fragment_retries': 10,
-                # Cookie support - try to use cookies from browser if available
-                'cookiefile': os.getenv('YOUTUBE_COOKIES_FILE', None),  # Optional: path to cookies.txt file
-                'cookiesfrombrowser': (os.getenv('YOUTUBE_COOKIES_BROWSER', 'chrome').split(',') 
-                                      if os.getenv('YOUTUBE_COOKIES_BROWSER') else None),  # e.g., 'chrome' or 'firefox,chrome'
-            }
+            # Try with cookies first
+            strategies = [
+                (True, "with cookies"),
+                (False, "without cookies (fallback)"),
+            ]
             
-            # Remove None values from dict
-            ydl_opts = {k: v for k, v in ydl_opts.items() if v is not None}
+            last_error = None
+            for use_cookies, strategy_name in strategies:
+                try:
+                    logger.info(f"Attempting download {strategy_name}")
+                    ydl_opts = self._build_ydl_opts(output_path, use_cookies=use_cookies)
+                    
+                    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                        ydl.download([youtube_url])
+                    
+                    # If we get here, download succeeded
+                    break
+                except Exception as e:
+                    error_msg = str(e)
+                    last_error = e
+                    logger.warning(f"Download failed {strategy_name}: {error_msg}")
+                    
+                    # If it's a bot detection error and we haven't tried without cookies yet, continue
+                    if "bot" in error_msg.lower() or "sign in" in error_msg.lower():
+                        if use_cookies:
+                            logger.info("Bot detection error with cookies, trying without cookies...")
+                            continue
+                    # For other errors, re-raise immediately
+                    if not use_cookies:
+                        raise
             
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                ydl.download([youtube_url])
+            # Return the path to the MP3 file
+            mp3_path = os.path.join(self.upload_dir, f"{video_id}.mp3")
+            if os.path.exists(mp3_path):
+                logger.info(f"Successfully downloaded audio to {mp3_path}")
+                return mp3_path
+            else:
+                logger.warning(f"MP3 file not found at expected path: {mp3_path}")
+                return None
             
             # Return the path to the MP3 file
             mp3_path = os.path.join(self.upload_dir, f"{video_id}.mp3")
@@ -128,20 +184,29 @@ class YouTubeService:
                 'quiet': True,
                 'no_warnings': True,
                 'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'referer': 'https://www.youtube.com/',
                 'extractor_args': {
                     'youtube': {
                         'skip': ['dash', 'hls'],
-                        'player_client': ['android', 'web'],
+                        'player_client': ['android', 'ios', 'web'],
                     }
                 },
-                # Cookie support - try to use cookies from browser if available
-                'cookiefile': os.getenv('YOUTUBE_COOKIES_FILE', None),
-                'cookiesfrombrowser': (os.getenv('YOUTUBE_COOKIES_BROWSER', 'chrome').split(',') 
-                                      if os.getenv('YOUTUBE_COOKIES_BROWSER') else None),
             }
             
-            # Remove None values from dict
-            ydl_opts = {k: v for k, v in ydl_opts.items() if v is not None}
+            # Cookie support - try multiple methods
+            cookies_file = os.getenv('YOUTUBE_COOKIES_FILE', None)
+            cookies_browser = os.getenv('YOUTUBE_COOKIES_BROWSER', None)
+            
+            if cookies_browser:
+                ydl_opts['cookiesfrombrowser'] = cookies_browser.split(',')
+            elif cookies_file and os.path.exists(cookies_file):
+                ydl_opts['cookiefile'] = cookies_file
+            else:
+                # Try to automatically use Chrome cookies
+                try:
+                    ydl_opts['cookiesfrombrowser'] = ['chrome']
+                except Exception:
+                    pass  # Continue without cookies if not available
             
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 info = ydl.extract_info(youtube_url, download=False)
