@@ -196,6 +196,8 @@ async function loadCredits() {
         const data = await response.json();
         
         const creditsDisplay = document.getElementById('creditsValue');
+        if (!creditsDisplay) return; // Early return if element doesn't exist
+        
         if (data.success) {
             if (data.status === 'operational') {
                 creditsDisplay.textContent = 'Active - Check Dashboard';
@@ -219,8 +221,11 @@ async function loadCredits() {
         }
     } catch (error) {
         console.error('Error loading credits:', error);
-        document.getElementById('creditsValue').textContent = 'Unable to load';
-        document.getElementById('creditsValue').style.color = '#f44336';
+        const creditsDisplay = document.getElementById('creditsValue');
+        if (creditsDisplay) {
+            creditsDisplay.textContent = 'Unable to load';
+            creditsDisplay.style.color = '#f44336';
+        }
     }
 }
 
