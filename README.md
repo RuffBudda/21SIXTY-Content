@@ -165,22 +165,26 @@ content-generator/
 
 ## Deployment
 
-See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed deployment instructions on DigitalOcean.
+See [DEPLOYMENT.md](DEPLOYMENT.md) for a complete deployment guide including:
+- Server setup and dependencies
+- Application installation and configuration
+- Systemd service setup
+- Nginx reverse proxy configuration
+- SSL/HTTPS setup with Let's Encrypt
+- Troubleshooting and maintenance
 
-Quick deployment steps:
-1. Set up server and install dependencies
-2. Copy application files
-3. Configure environment variables
-4. Set up systemd service
-5. Configure nginx
-6. Set up SSL with Let's Encrypt
+The deployment guide is comprehensive and includes all steps needed to deploy on DigitalOcean with SSL support.
 
 ## Environment Variables
 
-- `OPENAI_API_KEY`: Your OpenAI API key (required)
+Configure these in the `.env` file in the `backend/` directory:
+
+- `OPENAI_API_KEY`: Your OpenAI API key (required) - [Get one here](https://platform.openai.com/api-keys)
 - `OPENAI_MODEL`: Model to use (default: gpt-4)
 - `UPLOAD_DIR`: Directory for temporary files (default: ./uploads)
 - `ALLOWED_ORIGINS`: Comma-separated list of allowed origins for CORS
+
+**Important:** The OpenAI API requires the `openai` Python package version 1.40.0 or higher (specified in `requirements.txt`).
 
 ## License
 
