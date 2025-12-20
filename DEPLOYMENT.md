@@ -21,10 +21,22 @@ sudo apt upgrade -y
 ### Install Required Software
 
 ```bash
-# Install Python 3.11+ and pip
-sudo apt install python3.11 python3.11-venv python3-pip -y
+# Check existing Python version
+python3 --version
 
-# Install nginx
+# Install Python 3.10+ and pip (Ubuntu 20.04+ comes with Python 3.8+ by default)
+# If Python 3.10+ is not available, you can add deadsnakes PPA for Python 3.11+
+sudo apt install software-properties-common -y
+sudo add-apt-repository ppa:deadsnakes/ppa -y
+sudo apt update
+
+# Install Python 3.11 (or use existing Python 3.8+ if available)
+sudo apt install python3.11 python3.11-venv python3.11-dev python3-pip -y
+
+# Alternatively, if you prefer to use the default system Python (usually 3.8 or 3.10):
+# sudo apt install python3 python3-venv python3-pip -y
+
+# Install nginx (check if already installed)
 sudo apt install nginx -y
 
 # Install FFmpeg (required for yt-dlp audio extraction)
@@ -44,11 +56,42 @@ sudo chown $USER:$USER /opt/content-generator
 cd /opt/content-generator
 ```
 
-### Clone or Copy Application Files
+### Check Existing Services
 
-If using git:
+Before proceeding, check what services are already running to avoid conflicts:
+
 ```bash
-git clone <your-repo-url> .
+# Check if nginx is already running and what sites are configured
+sudo systemctl status nginx
+sudo ls -la /etc/nginx/sites-enabled/
+
+# Check if any service is using port 8000
+sudo netstat -tlnp | grep 8000
+# or
+sudo ss -tlnp | grep 8000
+
+# Check existing systemd services
+sudo systemctl list-units --type=service | grep -E 'nginx|python|content'
+
+# If port 8000 is in use, you may need to change the port in:
+# 1. backend/main.py (if running directly)
+# 2. systemd/content-generator.service
+# 3. nginx configuration (proxy_pass port)
+```
+
+### Clone Application Files from GitHub
+
+```bash
+git clone https://github.com/RuffBudda/21SIXTY-Content.git .
+```
+
+Or if the directory already exists:
+```bash
+cd /opt/content-generator
+git clone https://github.com/RuffBudda/21SIXTY-Content.git temp
+mv temp/* .
+mv temp/.git .
+rmdir temp
 ```
 
 Or copy files manually to `/opt/content-generator`:
@@ -64,10 +107,25 @@ content-generator/
 
 ```bash
 cd /opt/content-generator/backend
-python3.11 -m venv venv
+
+# Use python3.11 if installed, otherwise use python3 (system default)
+# Check which Python version is available:
+python3.11 --version 2>/dev/null && PYTHON_CMD=python3.11 || PYTHON_CMD=python3
+
+# Create virtual environment
+$PYTHON_CMD -m venv venv
 source venv/bin/activate
+
+# Upgrade pip
 pip install --upgrade pip
+
+# Install dependencies
 pip install -r requirements.txt
+```
+
+**Note:** If you used the system Python (python3) instead of python3.11, make sure it's version 3.8 or higher:
+```bash
+python3 --version  # Should show 3.8.x or higher
 ```
 
 ### Configure Environment Variables
@@ -123,6 +181,7 @@ User=www-data
 Group=www-data
 WorkingDirectory=/opt/content-generator/backend
 Environment="PATH=/opt/content-generator/backend/venv/bin"
+# If port 8000 is in use, change to another port (e.g., 8001) and update nginx config accordingly
 ExecStart=/opt/content-generator/backend/venv/bin/uvicorn main:app --host 0.0.0.0 --port 8000
 Restart=always
 RestartSec=10
@@ -143,9 +202,12 @@ WantedBy=multi-user.target
 ### Set Permissions
 
 ```bash
-# Fix ownership
+# Fix ownership (use www-data user that nginx runs as)
 sudo chown -R www-data:www-data /opt/content-generator
 sudo chmod -R 755 /opt/content-generator
+
+# Ensure uploads directory is writable
+sudo chmod -R 775 /opt/content-generator/backend/uploads
 ```
 
 ### Enable and Start Service
@@ -158,6 +220,26 @@ sudo systemctl status content-generator
 ```
 
 ## Step 4: Nginx Configuration
+
+### Check Existing Nginx Configuration
+
+Before creating the new configuration, check existing nginx sites to avoid conflicts:
+
+```bash
+# List all enabled sites
+sudo ls -la /etc/nginx/sites-enabled/
+
+# Check if contents.2160.media already exists
+sudo ls -la /etc/nginx/sites-available/ | grep contents
+
+# View existing default configuration (if any)
+sudo cat /etc/nginx/sites-available/default 2>/dev/null || echo "No default config"
+```
+
+If you need to disable the default nginx site:
+```bash
+sudo rm /etc/nginx/sites-enabled/default
+```
 
 ### Create Nginx Configuration
 
