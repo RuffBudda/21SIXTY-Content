@@ -3,7 +3,9 @@ const API_BASE_URL = window.location.origin;
 // State
 let transcriptData = null;
 let videoInfo = null;
-let authToken = localStorage.getItem('authToken') || null;
+// Check both localStorage (remember me) and sessionStorage (session only)
+let authToken = localStorage.getItem('authToken') || sessionStorage.getItem('authToken') || null;
+let rememberMe = localStorage.getItem('rememberMe') === 'true';
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
@@ -18,13 +20,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Authentication
 async function checkAuthStatus() {
+    // Check if we have a stored token and remember me is enabled
+    if (!authToken && !rememberMe) {
+        showLoginModal();
+        return;
+    }
+    
     if (!authToken) {
         showLoginModal();
         return;
     }
     
     try {
-        const response = await fetch(`${API_BASE_URL}/api/auth/status`, {
+        const response = await fetch(`${API_BASE_URL}/api/auth/check`, {
             headers: {
                 'Authorization': `Bearer ${authToken}`
             }
@@ -35,12 +43,20 @@ async function checkAuthStatus() {
             showMainApp();
             loadCredits();
         } else {
+            // Token invalid, clear it
             authToken = null;
             localStorage.removeItem('authToken');
+            localStorage.removeItem('rememberMe');
+            rememberMe = false;
             showLoginModal();
         }
     } catch (error) {
         console.error('Auth check failed:', error);
+        // If remember me is not enabled, clear token on error
+        if (!rememberMe) {
+            authToken = null;
+            localStorage.removeItem('authToken');
+        }
         showLoginModal();
     }
 }
@@ -59,6 +75,7 @@ function showMainApp() {
 
 async function login() {
     const password = document.getElementById('passwordInput').value;
+    const rememberMeCheckbox = document.getElementById('rememberMe');
     const errorDiv = document.getElementById('loginError');
     
     if (!password) {
@@ -80,7 +97,19 @@ async function login() {
         
         if (response.ok && data.success) {
             authToken = data.token;
-            localStorage.setItem('authToken', authToken);
+            rememberMe = rememberMeCheckbox.checked;
+            
+            // Store token and remember me preference
+            if (rememberMe) {
+                localStorage.setItem('authToken', authToken);
+                localStorage.setItem('rememberMe', 'true');
+            } else {
+                // Store in sessionStorage instead (cleared on browser close)
+                sessionStorage.setItem('authToken', authToken);
+                localStorage.removeItem('authToken');
+                localStorage.removeItem('rememberMe');
+            }
+            
             showMainApp();
             loadCredits();
             errorDiv.style.display = 'none';
@@ -112,6 +141,9 @@ async function logout() {
     
     authToken = null;
     localStorage.removeItem('authToken');
+    localStorage.removeItem('rememberMe');
+    sessionStorage.removeItem('authToken');
+    rememberMe = false;
     showLoginModal();
 }
 

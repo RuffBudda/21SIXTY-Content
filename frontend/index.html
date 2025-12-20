@@ -10,11 +10,20 @@
     <!-- Login Modal -->
     <div id="loginModal" class="modal">
         <div class="modal-content">
+            <div class="login-logo-container">
+                <img src="https://scrape.2160.media/logos/logo.png" alt="21SIXTY Logo" class="login-logo" onerror="this.style.display='none';">
+            </div>
             <h2>Authentication Required</h2>
             <p>Please enter the master password to access the tool.</p>
             <div class="input-group">
                 <label for="passwordInput">Master Password</label>
                 <input type="password" id="passwordInput" placeholder="Enter password" autocomplete="current-password" />
+            </div>
+            <div class="input-group remember-me-group">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="rememberMe" checked>
+                    <span>Remember me (stay logged in)</span>
+                </label>
             </div>
             <div id="loginError" class="error-message" style="display: none;"></div>
             <button class="btn btn-primary" id="loginBtn">Login</button>
