@@ -9,14 +9,29 @@ import subprocess
 import sys
 from pathlib import Path
 
+def fetch_from_github():
+    """Fetch the latest changes from GitHub"""
+    try:
+        print("Fetching latest changes from GitHub...")
+        result = subprocess.run(
+            ['git', 'fetch', 'origin', 'main'],
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        print("✓ Successfully fetched from GitHub")
+        return True
+    except subprocess.CalledProcessError as e:
+        print(f"Warning: Failed to fetch from GitHub: {e.stderr}", file=sys.stderr)
+        return False
+
 def get_commit_count():
     """Get the current commit count from GitHub"""
+    # Always fetch first to ensure we have the latest commit count
+    fetch_from_github()
+    
     try:
-        # First, fetch the latest from GitHub
-        subprocess.run(['git', 'fetch', 'origin', 'main'], 
-                      check=False, capture_output=True)
-        
-        # Get commit count from origin/main
+        # Get commit count from origin/main (should be up-to-date after fetch)
         result = subprocess.run(
             ['git', 'rev-list', '--count', 'origin/main'],
             capture_output=True,
@@ -26,7 +41,7 @@ def get_commit_count():
         commit_count = int(result.stdout.strip())
         return commit_count
     except subprocess.CalledProcessError as e:
-        print(f"Error getting commit count: {e}", file=sys.stderr)
+        print(f"Error getting commit count from origin/main: {e}", file=sys.stderr)
         # Fallback: try local commit count
         try:
             result = subprocess.run(
@@ -98,6 +113,61 @@ def update_version_in_file(file_path, new_version):
     print(f"Updated version to v{new_version} in {file_path}")
     return True
 
+def commit_and_push(file_path, version):
+    """Commit and push the version update to GitHub"""
+    try:
+        # Ensure we're up-to-date before pushing
+        fetch_from_github()
+        
+        # Check if there are any uncommitted changes that aren't the version update
+        status_result = subprocess.run(
+            ['git', 'status', '--porcelain'],
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        uncommitted = [line for line in status_result.stdout.strip().split('\n') if line.strip()]
+        version_file_change = [line for line in uncommitted if 'frontend/index.html' in line]
+        
+        if version_file_change:
+            # Stage the version update
+            print(f"Staging version update...")
+            subprocess.run(
+                ['git', 'add', str(file_path)],
+                check=True,
+                capture_output=True
+            )
+            
+            # Commit
+            print(f"Committing version update...")
+            commit_message = f"Update version to v{version}"
+            subprocess.run(
+                ['git', 'commit', '-m', commit_message],
+                check=True,
+                capture_output=True
+            )
+            
+            # Fetch again before push to ensure we're up-to-date
+            fetch_from_github()
+            
+            # Push to GitHub
+            print(f"Pushing to GitHub...")
+            subprocess.run(
+                ['git', 'push', 'origin', 'main'],
+                check=True
+            )
+            print(f"✓ Successfully pushed version v{version} to GitHub")
+            return True
+        else:
+            print("No version file changes to commit")
+            return False
+            
+    except subprocess.CalledProcessError as e:
+        print(f"Error during git operations: {e}", file=sys.stderr)
+        if hasattr(e, 'stderr') and e.stderr:
+            print(f"Error details: {e.stderr.decode() if isinstance(e.stderr, bytes) else e.stderr}", file=sys.stderr)
+        return False
+
 def main():
     """Main function"""
     # Get commit count and add 1
@@ -113,7 +183,15 @@ def main():
     
     if updated:
         print(f"\nVersion updated successfully to v{new_version}")
-        print("Don't forget to commit and push the changes!")
+        
+        # Automatically commit and push
+        if commit_and_push(html_file, new_version):
+            print(f"\n✓ Version v{new_version} has been committed and pushed to GitHub")
+        else:
+            print(f"\n⚠ Version file updated, but git push failed. Please commit and push manually:")
+            print(f"  git add frontend/index.html")
+            print(f"  git commit -m 'Update version to v{new_version}'")
+            print(f"  git push origin main")
     else:
         print("\nWarning: No changes made")
         sys.exit(1)
