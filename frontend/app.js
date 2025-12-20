@@ -16,6 +16,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if (authToken) {
         setInterval(loadCredits, 30000);
     }
+    
+    // Set remember me checkbox state
+    const rememberMeCheckbox = document.getElementById('rememberMe');
+    if (rememberMeCheckbox) {
+        rememberMeCheckbox.checked = rememberMe;
+    }
 });
 
 // Authentication
@@ -255,6 +261,9 @@ async function processVideo() {
         if (response.status === 401) {
             authToken = null;
             localStorage.removeItem('authToken');
+            localStorage.removeItem('rememberMe');
+            sessionStorage.removeItem('authToken');
+            rememberMe = false;
             showLoginModal();
             return;
         }
@@ -353,6 +362,9 @@ async function generateContent() {
         if (response.status === 401) {
             authToken = null;
             localStorage.removeItem('authToken');
+            localStorage.removeItem('rememberMe');
+            sessionStorage.removeItem('authToken');
+            rememberMe = false;
             showLoginModal();
             return;
         }
@@ -518,6 +530,9 @@ async function loadPrompts() {
         if (response.status === 401) {
             authToken = null;
             localStorage.removeItem('authToken');
+            localStorage.removeItem('rememberMe');
+            sessionStorage.removeItem('authToken');
+            rememberMe = false;
             showLoginModal();
             return;
         }
@@ -568,6 +583,9 @@ async function savePrompts() {
         if (response.status === 401) {
             authToken = null;
             localStorage.removeItem('authToken');
+            localStorage.removeItem('rememberMe');
+            sessionStorage.removeItem('authToken');
+            rememberMe = false;
             showLoginModal();
             return;
         }
@@ -616,6 +634,9 @@ async function downloadAudioFile(videoId) {
         if (response.status === 401) {
             authToken = null;
             localStorage.removeItem('authToken');
+            localStorage.removeItem('rememberMe');
+            sessionStorage.removeItem('authToken');
+            rememberMe = false;
             showLoginModal();
             return;
         }
