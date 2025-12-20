@@ -115,47 +115,60 @@ body {
     font-weight: bold;
     color: var(--accent-cyan);
     margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.title .version {
+    font-size: 0.9rem;
+    font-weight: normal;
+    color: var(--text-secondary);
+    background-color: var(--bg-card);
+    padding: 2px 8px;
+    border-radius: 4px;
+    border: 1px solid var(--border-color);
 }
 
 .status-container {
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 6px 16px;
+    gap: 8px;
+    padding: 4px 10px;
     background-color: var(--bg-card);
-    border-radius: 8px;
+    border-radius: 6px;
     border: 1px solid var(--border-color);
 }
 
 .status-item {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 4px;
 }
 
 .status-label {
     color: var(--text-secondary);
-    font-size: 0.75rem;
+    font-size: 0.65rem;
     font-weight: 500;
 }
 
 .status-value {
     font-weight: 600;
-    font-size: 0.75rem;
-    padding: 3px 8px;
-    border-radius: 12px;
+    font-size: 0.65rem;
+    padding: 2px 6px;
+    border-radius: 10px;
     background-color: var(--bg-secondary);
     color: var(--text-primary);
     white-space: nowrap;
 }
 
 .btn-upload-cookies {
-    padding: 4px 12px;
-    font-size: 0.75rem;
+    padding: 3px 8px;
+    font-size: 0.65rem;
     background-color: var(--bg-secondary);
     color: var(--text-primary);
     border: 1px solid var(--border-color);
-    border-radius: 6px;
+    border-radius: 4px;
     cursor: pointer;
     transition: all 0.2s ease;
     white-space: nowrap;
