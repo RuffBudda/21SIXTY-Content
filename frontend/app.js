@@ -642,11 +642,20 @@ async function processVideo() {
         const formData = new FormData();
         formData.append('audio_file', audioFile);
         
-        const response = await fetch(`${API_BASE_URL}/api/process-video`, {
-            method: 'POST',
-            headers: getAuthHeaders(),
-            body: formData
-        });
+        let response;
+        try {
+            response = await fetch(`${API_BASE_URL}/api/process-video`, {
+                method: 'POST',
+                headers: getAuthHeaders(),
+                body: formData
+            });
+        } catch (fetchError) {
+            // Handle network errors (no response received)
+            const networkErrorMsg = fetchError instanceof Error 
+                ? fetchError.message 
+                : String(fetchError);
+            throw new Error(`Network error: ${networkErrorMsg || 'Failed to connect to server'}`);
+        }
         
         if (response.status === 401) {
             authToken = null;
@@ -664,9 +673,26 @@ async function processVideo() {
                 const errorData = await response.json();
                 // Handle FastAPI error format: {detail: "message"} or {message: "message"}
                 if (typeof errorData === 'object' && errorData !== null) {
-                    errorMessage = errorData.detail || errorData.message || JSON.stringify(errorData);
+                    // Extract error message, ensuring nested objects are handled
+                    const detail = errorData.detail;
+                    const message = errorData.message;
+                    
+                    if (typeof detail === 'string' && detail) {
+                        errorMessage = detail;
+                    } else if (typeof message === 'string' && message) {
+                        errorMessage = message;
+                    } else if (detail || message) {
+                        // If detail/message exist but are not strings, stringify them
+                        errorMessage = JSON.stringify(detail || message);
+                    } else {
+                        // Fallback: stringify the entire error object
+                        errorMessage = JSON.stringify(errorData);
+                    }
                 } else if (typeof errorData === 'string') {
                     errorMessage = errorData;
+                } else {
+                    // For any other type, convert to string
+                    errorMessage = String(errorData);
                 }
             } catch (e) {
                 // If response is not JSON, try to get text
@@ -681,6 +707,21 @@ async function processVideo() {
                     errorMessage = `Server error: ${response.status} ${response.statusText}`;
                 }
             }
+            
+            // CRITICAL: Ensure errorMessage is always a string before throwing
+            if (typeof errorMessage !== 'string') {
+                try {
+                    errorMessage = JSON.stringify(errorMessage);
+                } catch (stringifyError) {
+                    errorMessage = String(errorMessage);
+                }
+            }
+            
+            // Additional safeguard: if still not a string or is "[object Object]", use fallback
+            if (!errorMessage || errorMessage === '[object Object]' || errorMessage.includes('[object')) {
+                errorMessage = `Server error: ${response.status} ${response.statusText || 'Unknown error'}`;
+            }
+            
             throw new Error(errorMessage);
         }
         
