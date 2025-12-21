@@ -188,6 +188,27 @@ function setupEventListeners() {
         refreshGalleryBtn.addEventListener('click', loadGallery);
     }
     
+    // Audio file selection button
+    const selectAudioBtn = document.getElementById('selectAudioBtn');
+    const audioFileInput = document.getElementById('audioFile');
+    const audioFileName = document.getElementById('audioFileName');
+    
+    if (selectAudioBtn && audioFileInput) {
+        selectAudioBtn.addEventListener('click', () => {
+            audioFileInput.click();
+        });
+        
+        // Update file name display when file is selected
+        audioFileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file && audioFileName) {
+                audioFileName.textContent = file.name;
+            } else if (audioFileName) {
+                audioFileName.textContent = 'No file selected';
+            }
+        });
+    }
+    
     document.getElementById('processVideoBtn').addEventListener('click', processVideo);
     document.getElementById('generateContentBtn').addEventListener('click', generateContent);
     
