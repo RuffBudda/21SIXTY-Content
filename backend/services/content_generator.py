@@ -48,7 +48,7 @@ class ContentGenerator:
         )
         
         linkedin_post = await self.generate_linkedin_post(
-            transcript, guest_name, guest_title, guest_company
+            transcript, guest_name, guest_title, guest_company, guest_linkedin
         )
         
         keywords = await self.generate_keywords(
@@ -168,7 +168,7 @@ class ContentGenerator:
         return quotes[:20]
     
     async def generate_linkedin_post(
-        self, transcript: str, guest_name: str, guest_title: str, guest_company: str
+        self, transcript: str, guest_name: str, guest_title: str, guest_company: str, guest_linkedin: str
     ) -> str:
         """Generate LinkedIn post with guest description, 3 key takeaways, and CTA"""
         prompt = self.prompts_service.format_prompt(
@@ -176,6 +176,7 @@ class ContentGenerator:
             guest_name=guest_name,
             guest_title=guest_title,
             guest_company=guest_company,
+            guest_linkedin=guest_linkedin,
             transcript=transcript
         )
         
