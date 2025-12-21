@@ -1,4 +1,4 @@
-# 21SIXTY CONTENT GEN v92
+# 21SIXTY CONTENT GEN v93
 
 A web-based tool for processing podcast audio files and generating comprehensive content including summaries, blog posts, titles, quotes, chapter timestamps, and LinkedIn posts using OpenAI APIs.
 
@@ -88,7 +88,7 @@ uvicorn main:app --host 0.0.0.0 --port 8000 --reload
    - Display processing animations with real-time status
    - Note: Transcripts must be provided manually or through speech-to-text integration
 3. **Enter Guest Information**: Fill in the guest's name, title, company, and LinkedIn profile
-4. **Generate Content**: Click "Generate Content" to create all 7 content types using AI
+4. **Generate Content**: Click "Generate Content" to create all 10 content types using AI
 5. **Download or Copy Results**: 
    - Use the download button (📥) to save any deliverable as a TXT file
    - Use the copy button (📋) to copy content to your clipboard
@@ -145,7 +145,9 @@ Generate all content types based on transcript and guest info.
   "two_line_summary": "Line 1\nLine 2",
   "quotes": ["Quote 1", "Quote 2", ...],
   "chapter_timestamps": ["00:00:00 - Chapter 1", ...],
-  "linkedin_post": "LinkedIn post content..."
+  "linkedin_post": "LinkedIn post content...",
+  "keywords": "thedollardiaries, tdd, dubai, guest name, company, role, ...",
+  "hashtags": "#thedollardiaries, #tdd, #dubai, #guestname, ..."
 }
 ```
 
