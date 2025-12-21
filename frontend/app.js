@@ -323,6 +323,11 @@ function setupEventListeners() {
             copyToClipboard(targetId);
         } else if (action === 'download') {
             downloadAsTxt(targetId);
+        } else if (action === 'regenerate') {
+            const contentType = button.getAttribute('data-type');
+            if (contentType) {
+                regenerateContent(contentType, targetId);
+            }
         }
     });
     
@@ -846,13 +851,36 @@ async function processVideo() {
     }
 }
 
-async function generateContent(forceRegenerate = false) {
+async function generateContent(forceRegenerate = false, regenerateType = null) {
     const guestName = document.getElementById('guestName').value.trim();
     const guestTitle = document.getElementById('guestTitle').value.trim();
     const guestCompany = document.getElementById('guestCompany').value.trim();
     const guestLinkedIn = document.getElementById('guestLinkedIn').value.trim();
     const statusDiv = document.getElementById('generatingStatus');
     const generateBtn = document.getElementById('generateContentBtn');
+    
+    // Get fileHash from cache if available (for updating processed data)
+    let fileHash = null;
+    if (videoInfo && videoInfo.video_id) {
+        // Try to find the processed key that matches this video_id
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && key.startsWith('processed_')) {
+                try {
+                    const processedData = localStorage.getItem(key);
+                    if (processedData) {
+                        const parsed = JSON.parse(processedData);
+                        if (parsed.videoInfo && parsed.videoInfo.video_id === videoInfo.video_id) {
+                            fileHash = key.replace('processed_', '');
+                            break;
+                        }
+                    }
+                } catch (e) {
+                    // Continue searching
+                }
+            }
+        }
+    }
     
     // Validate inputs
     if (!guestName || !guestTitle || !guestCompany || !guestLinkedIn) {
@@ -992,16 +1020,47 @@ async function generateContent(forceRegenerate = false) {
 // Display transcript separately (called after processing and when opening projects)
 function displayTranscript() {
     const transcriptElement = document.getElementById('transcript');
-    if (!transcriptElement) return;
+    if (!transcriptElement) {
+        console.error('Transcript element not found');
+        return;
+    }
     
-    if (transcriptData && transcriptData.transcript_with_timecodes && Array.isArray(transcriptData.transcript_with_timecodes) && transcriptData.transcript_with_timecodes.length > 0) {
-        transcriptElement.textContent = formatTranscriptWithTimecodes(transcriptData.transcript_with_timecodes);
+    // Debug logging
+    console.log('displayTranscript called');
+    console.log('transcriptData:', transcriptData);
+    console.log('transcript_with_timecodes:', transcriptData?.transcript_with_timecodes);
+    
+    if (transcriptData && transcriptData.transcript_with_timecodes) {
+        const timecodes = transcriptData.transcript_with_timecodes;
+        console.log('Timecodes type:', typeof timecodes, 'Is array:', Array.isArray(timecodes));
+        
+        if (Array.isArray(timecodes) && timecodes.length > 0) {
+            transcriptElement.textContent = formatTranscriptWithTimecodes(timecodes);
+        } else if (typeof timecodes === 'string' && timecodes.trim()) {
+            // If it's a string, display directly
+            transcriptElement.textContent = timecodes;
+        } else if (typeof timecodes === 'object' && timecodes !== null) {
+            // If it's an object, try to format it or stringify
+            try {
+                transcriptElement.textContent = formatTranscriptWithTimecodes([timecodes]);
+            } catch (e) {
+                console.error('Error formatting timecodes:', e);
+                transcriptElement.textContent = JSON.stringify(timecodes, null, 2);
+            }
+        } else {
+            // Fallback to plain transcript
+            if (transcriptData.transcript) {
+                transcriptElement.textContent = transcriptData.transcript;
+            } else {
+                transcriptElement.textContent = 'No transcript data available. Please ensure the audio file was processed correctly.';
+            }
+        }
     } else if (transcriptData && transcriptData.transcript) {
         // Fallback to plain transcript if timecodes not available
         transcriptElement.textContent = transcriptData.transcript;
     } else {
         // Clear if no transcript data
-        transcriptElement.textContent = '';
+        transcriptElement.textContent = 'No transcript data available. Please process an audio file first.';
     }
 }
 
@@ -1080,6 +1139,108 @@ function formatMarkdownLinks(text) {
     // Convert markdown links to HTML
     const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
     return text.replace(linkRegex, '<a href="$2" target="_blank" style="color: #1E90FF; text-decoration: underline;">$1</a>');
+}
+
+// Regenerate individual content type
+async function regenerateContent(contentType, targetId) {
+    if (!transcriptData) {
+        alert('Please process an audio file first');
+        return;
+    }
+    
+    const guestName = document.getElementById('guestName')?.value.trim() || '';
+    const guestTitle = document.getElementById('guestTitle')?.value.trim() || '';
+    const guestCompany = document.getElementById('guestCompany')?.value.trim() || '';
+    const guestLinkedIn = document.getElementById('guestLinkedIn')?.value.trim() || '';
+    
+    if (!guestName || !guestTitle || !guestCompany || !guestLinkedIn) {
+        alert('Please fill in all guest information fields first');
+        return;
+    }
+    
+    const targetElement = document.getElementById(targetId);
+    if (!targetElement) {
+        console.error(`Target element ${targetId} not found`);
+        return;
+    }
+    
+    // Show loading state
+    const originalContent = targetElement.textContent || targetElement.innerHTML;
+    targetElement.textContent = 'Regenerating...';
+    targetElement.style.opacity = '0.5';
+    
+    try {
+        const requestBody = {
+            transcript: transcriptData.transcript,
+            transcript_with_timecodes: transcriptData.transcript_with_timecodes,
+            guest_name: guestName,
+            guest_title: guestTitle,
+            guest_company: guestCompany,
+            guest_linkedin: guestLinkedIn,
+            video_title: videoInfo?.title || '',
+            video_duration: videoInfo?.duration || 0
+        };
+        
+        const response = await fetch(`${API_BASE_URL}/api/generate-content/${contentType}`, {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify(requestBody)
+        });
+        
+        if (response.status === 401) {
+            authToken = null;
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('rememberMe');
+            sessionStorage.removeItem('authToken');
+            rememberMe = false;
+            showLoginModal();
+            return;
+        }
+        
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'Failed to regenerate content');
+        }
+        
+        const data = await response.json();
+        const newContent = data[contentType];
+        
+        // Update the specific element
+        if (targetId === 'blogPost' || targetId === 'linkedinPost') {
+            targetElement.innerHTML = formatMarkdownLinks(newContent);
+        } else if (targetId === 'clickbaitTitles' || targetId === 'quotes') {
+            targetElement.innerHTML = formatList(Array.isArray(newContent) ? newContent : [newContent]);
+        } else if (targetId === 'chapterTimestamps') {
+            targetElement.textContent = Array.isArray(newContent) ? newContent.join('\n') : newContent;
+        } else {
+            targetElement.textContent = newContent;
+        }
+        
+        // Update cached content
+        if (videoInfo && videoInfo.video_id) {
+            const contentKey = `content_${videoInfo.video_id}`;
+            const cachedContent = localStorage.getItem(contentKey);
+            if (cachedContent) {
+                try {
+                    const content = JSON.parse(cachedContent);
+                    if (content.data) {
+                        content.data[contentType] = newContent;
+                        localStorage.setItem(contentKey, JSON.stringify(content));
+                    }
+                } catch (e) {
+                    console.error('Error updating cached content:', e);
+                }
+            }
+        }
+        
+        targetElement.style.opacity = '1';
+    } catch (error) {
+        console.error(`Error regenerating ${contentType}:`, error);
+        targetElement.textContent = originalContent;
+        targetElement.innerHTML = originalContent;
+        targetElement.style.opacity = '1';
+        alert(`Error regenerating content: ${error.message}`);
+    }
 }
 
 // Utility Functions

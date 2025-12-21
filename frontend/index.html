@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CONTENT GEN v133</title>
+    <title>CONTENT GEN v135</title>
     <link rel="icon" type="image/x-icon" href="/static/images/favicons/favicon.ico">
     <link rel="stylesheet" href="styles.css">
 </head>
@@ -51,7 +51,7 @@
                 <h1 class="title">CONTENT GEN</h1>
             </div>
             <div class="header-pills">
-                <span class="version">v133</span>
+                <span class="version">v135</span>
                 <span class="openai-pill">
                     <span class="openai-label">OpenAI:</span>
                     <span class="openai-value" id="creditsValue">Fetching...</span>
@@ -82,6 +82,7 @@
             <button class="tab-btn active" data-tab="content">Content Generator</button>
             <button class="tab-btn" data-tab="gallery">Projects Gallery</button>
             <button class="tab-btn" data-tab="prompts">Prompts Editor</button>
+            <button class="tab-btn" data-tab="api">Text Gen API</button>
             <!-- COMMENTED OUT: Cookies Setup tab - pytube doesn't support cookies -->
             <!-- <button class="tab-btn" data-tab="cookies">Cookies Setup</button> -->
         </nav>
@@ -455,6 +456,168 @@
                 </div>
             </div>
 
+            <!-- Text Gen API Tab -->
+            <div id="apiTab" class="tab-content" style="display: none;">
+                <div class="card">
+                    <h2>Text Gen API</h2>
+                    <p class="info-text" style="margin-bottom: 20px;">Use the webhook API to generate content programmatically. All endpoints require Bearer token authentication.</p>
+                    
+                    <div style="margin-bottom: 30px;">
+                        <h3 style="color: var(--primary); margin-bottom: 10px;">Webhook URL</h3>
+                        <div style="background: var(--card-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 15px;">
+                            <code id="webhookUrl" style="font-size: 1rem; word-break: break-all; color: var(--primary);"></code>
+                            <button class="btn btn-icon" onclick="copyWebhookUrl()" style="margin-left: 10px; vertical-align: middle;" title="Copy URL">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 30px;">
+                        <h3 style="color: var(--primary); margin-bottom: 15px;">Authentication</h3>
+                        <p>All API requests require Bearer token authentication in the Authorization header:</p>
+                        <pre style="background: var(--card-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); overflow-x: auto;"><code>Authorization: Bearer YOUR_TOKEN_HERE</code></pre>
+                    </div>
+
+                    <div style="margin-bottom: 30px;">
+                        <h3 style="color: var(--primary); margin-bottom: 15px;">Endpoints</h3>
+                        
+                        <div style="margin-bottom: 20px;">
+                            <h4 style="color: var(--text-primary); margin-bottom: 10px;">1. Generate All Content</h4>
+                            <p style="margin-bottom: 10px;"><strong>POST</strong> <code>/api/generate-content</code></p>
+                            <p style="margin-bottom: 10px;">Generates all content types in a single request.</p>
+                            <details style="margin-top: 10px;">
+                                <summary style="cursor: pointer; color: var(--primary); margin-bottom: 10px;">Request Body</summary>
+                                <pre style="background: var(--card-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); overflow-x: auto; margin-top: 10px;"><code>{
+  "transcript": "Full transcript text...",
+  "transcript_with_timecodes": [
+    {"start": 0, "text": "First sentence"},
+    {"start": 5, "text": "Second sentence"}
+  ],
+  "guest_name": "John Doe",
+  "guest_title": "CEO",
+  "guest_company": "Company Name",
+  "guest_linkedin": "https://www.linkedin.com/in/johndoe",
+  "video_title": "Episode Title",
+  "video_duration": 3600
+}</code></pre>
+                            </details>
+                            <details style="margin-top: 10px;">
+                                <summary style="cursor: pointer; color: var(--primary); margin-bottom: 10px;">Response</summary>
+                                <pre style="background: var(--card-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); overflow-x: auto; margin-top: 10px;"><code>{
+  "youtube_summary": "3 paragraph summary...",
+  "blog_post": "2000 word blog post...",
+  "clickbait_titles": ["Title 1", "Title 2", ...],
+  "two_line_summary": "Two line summary...",
+  "quotes": ["Quote 1", "Quote 2", ...],
+  "chapter_timestamps": ["00:00 Introduction", ...],
+  "linkedin_post": "LinkedIn post content...",
+  "keywords": "keyword1, keyword2, ...",
+  "hashtags": "#keyword1 #keyword2 ..."
+}</code></pre>
+                            </details>
+                        </div>
+
+                        <div style="margin-bottom: 20px;">
+                            <h4 style="color: var(--text-primary); margin-bottom: 10px;">2. Generate Single Content Type</h4>
+                            <p style="margin-bottom: 10px;"><strong>POST</strong> <code>/api/generate-content/{content_type}</code></p>
+                            <p style="margin-bottom: 10px;">Generates a single content type. Available types:</p>
+                            <ul style="margin-left: 20px; margin-bottom: 10px;">
+                                <li><code>youtube_summary</code></li>
+                                <li><code>blog_post</code></li>
+                                <li><code>clickbait_titles</code></li>
+                                <li><code>two_line_summary</code></li>
+                                <li><code>quotes</code></li>
+                                <li><code>chapter_timestamps</code></li>
+                                <li><code>linkedin_post</code></li>
+                                <li><code>keywords</code></li>
+                                <li><code>hashtags</code></li>
+                            </ul>
+                            <details style="margin-top: 10px;">
+                                <summary style="cursor: pointer; color: var(--primary); margin-bottom: 10px;">Example Request</summary>
+                                <pre style="background: var(--card-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); overflow-x: auto; margin-top: 10px;"><code>POST /api/generate-content/youtube_summary
+Authorization: Bearer YOUR_TOKEN_HERE
+Content-Type: application/json
+
+{
+  "transcript": "Full transcript text...",
+  "transcript_with_timecodes": [],
+  "guest_name": "John Doe",
+  "guest_title": "CEO",
+  "guest_company": "Company Name",
+  "guest_linkedin": "https://www.linkedin.com/in/johndoe",
+  "video_title": "Episode Title",
+  "video_duration": 3600
+}</code></pre>
+                            </details>
+                            <details style="margin-top: 10px;">
+                                <summary style="cursor: pointer; color: var(--primary); margin-bottom: 10px;">Example Response</summary>
+                                <pre style="background: var(--card-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); overflow-x: auto; margin-top: 10px;"><code>{
+  "youtube_summary": "3 paragraph summary..."
+}</code></pre>
+                            </details>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 30px;">
+                        <h3 style="color: var(--primary); margin-bottom: 15px;">Sample cURL Request</h3>
+                        <pre style="background: var(--card-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); overflow-x: auto;"><code>curl -X POST "https://contents.2160.media/api/generate-content/youtube_summary" \
+  -H "Authorization: Bearer YOUR_TOKEN_HERE" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "transcript": "Full transcript text...",
+    "transcript_with_timecodes": [],
+    "guest_name": "John Doe",
+    "guest_title": "CEO",
+    "guest_company": "Company Name",
+    "guest_linkedin": "https://www.linkedin.com/in/johndoe",
+    "video_title": "Episode Title",
+    "video_duration": 3600
+  }'</code></pre>
+                    </div>
+
+                    <div style="margin-bottom: 30px;">
+                        <h3 style="color: var(--primary); margin-bottom: 15px;">Sample JavaScript Request</h3>
+                        <pre style="background: var(--card-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); overflow-x: auto;"><code>const response = await fetch('https://contents.2160.media/api/generate-content/youtube_summary', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer YOUR_TOKEN_HERE',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    transcript: 'Full transcript text...',
+    transcript_with_timecodes: [],
+    guest_name: 'John Doe',
+    guest_title: 'CEO',
+    guest_company: 'Company Name',
+    guest_linkedin: 'https://www.linkedin.com/in/johndoe',
+    video_title: 'Episode Title',
+    video_duration: 3600
+  })
+});
+
+const data = await response.json();
+console.log(data.youtube_summary);</code></pre>
+                    </div>
+
+                    <div style="margin-bottom: 30px;">
+                        <h3 style="color: var(--primary); margin-bottom: 15px;">Error Responses</h3>
+                        <p>All errors return a JSON object with a <code>detail</code> field:</p>
+                        <pre style="background: var(--card-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); overflow-x: auto;"><code>{
+  "detail": "Error message here"
+}</code></pre>
+                        <p style="margin-top: 10px;">Common status codes:</p>
+                        <ul style="margin-left: 20px;">
+                            <li><strong>401</strong> - Authentication required</li>
+                            <li><strong>400</strong> - Invalid request (missing fields, invalid content type, etc.)</li>
+                            <li><strong>500</strong> - Server error</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
             <!-- COMMENTED OUT: Cookies Setup Tab - pytube doesn't support cookies -->
             <!-- <div id="cookiesTab" class="tab-content" style="display: none;">
                 <div class="card">
@@ -579,6 +742,13 @@
                     <div class="result-header">
                         <h2>3 Paragraph YouTube Summary</h2>
                         <div class="result-actions">
+                            <button class="btn btn-icon" data-action="regenerate" data-type="youtube_summary" data-target="youtubeSummary" title="Regenerate">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="23 4 23 10 17 10"></polyline>
+                                    <polyline points="1 20 1 14 7 14"></polyline>
+                                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                                </svg>
+                            </button>
                             <button class="btn btn-icon" data-action="download" data-target="youtubeSummary" title="Download as TXT">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
@@ -602,6 +772,13 @@
                     <div class="result-header">
                         <h2>2000 Word Blog Post</h2>
                         <div class="result-actions">
+                            <button class="btn btn-icon" data-action="regenerate" data-type="blog_post" data-target="blogPost" title="Regenerate">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="23 4 23 10 17 10"></polyline>
+                                    <polyline points="1 20 1 14 7 14"></polyline>
+                                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                                </svg>
+                            </button>
                             <button class="btn btn-icon" data-action="download" data-target="blogPost" title="Download as TXT">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>

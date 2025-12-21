@@ -275,6 +275,60 @@ async def generate_content(request: GenerateContentRequest,
         logger.error(f"Error generating content: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error generating content: {str(e)}")
 
+@app.post("/api/generate-content/{content_type}")
+async def generate_single_content(
+    content_type: str,
+    request: GenerateContentRequest,
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)
+):
+    """Generate a single content type using OpenAI"""
+    if not verify_auth(credentials):
+        raise HTTPException(status_code=401, detail="Authentication required")
+    
+    valid_types = {
+        'youtube_summary': 'generate_youtube_summary',
+        'blog_post': 'generate_blog_post',
+        'clickbait_titles': 'generate_clickbait_titles',
+        'two_line_summary': 'generate_two_line_summary',
+        'quotes': 'generate_quotes',
+        'chapter_timestamps': 'generate_chapter_timestamps',
+        'linkedin_post': 'generate_linkedin_post',
+        'keywords': 'generate_keywords',
+        'hashtags': 'generate_hashtags'
+    }
+    
+    if content_type not in valid_types:
+        raise HTTPException(status_code=400, detail=f"Invalid content type. Valid types: {', '.join(valid_types.keys())}")
+    
+    try:
+        method_name = valid_types[content_type]
+        method = getattr(content_generator, method_name)
+        
+        if content_type == 'youtube_summary':
+            result = await method(request.transcript, request.guest_name, request.guest_title, request.guest_company)
+        elif content_type == 'blog_post':
+            result = await method(request.transcript, request.guest_name, request.guest_title, request.guest_company, request.guest_linkedin)
+        elif content_type == 'clickbait_titles':
+            result = await method(request.transcript, request.guest_name, request.guest_company)
+        elif content_type == 'two_line_summary':
+            result = await method(request.transcript)
+        elif content_type == 'quotes':
+            result = await method(request.transcript_with_timecodes)
+        elif content_type == 'chapter_timestamps':
+            result = await method(request.transcript_with_timecodes, request.video_duration or 0)
+        elif content_type == 'linkedin_post':
+            result = await method(request.transcript, request.guest_name, request.guest_title, request.guest_company, request.guest_linkedin)
+        elif content_type == 'keywords':
+            result = await method(request.transcript, request.guest_name, request.guest_title, request.guest_company)
+        elif content_type == 'hashtags':
+            keywords = await content_generator.generate_keywords(request.transcript, request.guest_name, request.guest_title, request.guest_company)
+            result = content_generator.generate_hashtags_from_keywords(keywords)
+        
+        return {content_type: result}
+    except Exception as e:
+        logger.error(f"Error generating {content_type}: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error generating {content_type}: {str(e)}")
+
 @app.get("/api/openai-credits")
 async def get_openai_credits():
     """Get remaining OpenAI API credits/usage (no auth required for display)"""
