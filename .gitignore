@@ -45,4 +45,6 @@ logs/
 
 # Documentation folder (internal docs)
 Documentations/
+# Content Generator feature documentation (for AI agents)
+Documentations/ContGen.md
 

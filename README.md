@@ -1,20 +1,25 @@
-# 21SIXTY CONTENT GEN
+# 21SIXTY CONTENT GEN v58
 
-A web-based tool for processing YouTube podcast episodes and generating comprehensive content including summaries, blog posts, titles, quotes, and chapter timestamps using OpenAI APIs.
+A web-based tool for processing podcast audio files and generating comprehensive content including summaries, blog posts, titles, quotes, and chapter timestamps using OpenAI APIs.
 
 ## Features
 
-- **YouTube Video Processing**: Downloads videos as MP3 and extracts transcripts with timecodes
+- **Audio File Upload**: Upload audio files (MP3, WAV, M4A, OGG, FLAC) for processing
+- **YouTube Transcript Extraction**: Extracts transcripts with timecodes from YouTube URLs
+- **LocalStorage Caching**: Intelligent caching system that stores processed data and audio files locally to avoid reprocessing
 - **AI-Powered Content Generation**:
+  - Complete transcript with formatted timecodes
   - 3-paragraph YouTube summary
   - 2000-word blog post with LinkedIn hyperlinks
   - 20 clickbait titles (under 100 characters)
   - 2-line episode summary
   - 20 notable quotes from the episode
   - YouTube-ready chapter timestamps
+- **Download & Copy Features**: Download any deliverable as TXT file or copy to clipboard with SVG icons
+- **Processing Animations**: Real-time visual feedback during processing with step-by-step status updates
 - **Dark Mode UI**: Beautiful dark theme matching the 21SIXTY brand
-- **Copy-to-Clipboard**: Easy copying of all generated content
 - **OpenAI Credit Tracking**: Monitor API usage in real-time
+- **Prompt Editor**: Customize AI prompts for all content types
 
 ## Tech Stack
 
@@ -76,23 +81,29 @@ uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 
 ## Usage
 
-1. **Enter YouTube URL**: Paste a YouTube video URL and click "Process Video"
-2. **Wait for Processing**: The system will download the video and extract the transcript
-3. **Enter Guest Information**: Fill in the guest's name, title, company, and LinkedIn profile
-4. **Generate Content**: Click "Generate Content" to create all content types
-5. **Copy Results**: Use the copy buttons to copy any generated content to your clipboard
+1. **Upload Audio File**: Select an audio file (MP3, WAV, M4A, OGG, or FLAC) using the file selector
+2. **Enter YouTube URL**: Paste the YouTube video URL for transcript extraction
+3. **Process Video**: Click "Process Video" - the system will:
+   - Check localStorage for cached data (if same file was processed before, uses cache)
+   - Upload and save the audio file
+   - Extract transcript with timecodes from YouTube
+   - Display processing animations with real-time status
+4. **Enter Guest Information**: Fill in the guest's name, title, company, and LinkedIn profile
+5. **Generate Content**: Click "Generate Content" to create all 7 content types using AI
+6. **Download or Copy Results**: 
+   - Use the download button (📥) to save any deliverable as a TXT file
+   - Use the copy button (📋) to copy content to your clipboard
 
 ## API Endpoints
 
 ### POST /api/process-video
-Process a YouTube video and extract transcript.
+Process an uploaded audio file and extract transcript from YouTube URL.
 
-**Request:**
-```json
-{
-  "youtube_url": "https://www.youtube.com/watch?v=..."
-}
-```
+**Request:** (multipart/form-data)
+- `audio_file`: Audio file (MP3, WAV, M4A, OGG, FLAC)
+- `youtube_url`: YouTube video URL for transcript extraction
+
+**Note:** The endpoint accepts form data with file upload, not JSON.
 
 **Response:**
 ```json

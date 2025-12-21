@@ -635,6 +635,15 @@ async function generateContent() {
         
         const data = await response.json();
         
+        // Cache generated content
+        if (transcriptData && transcriptData.video_id) {
+            const contentCacheKey = `content_${transcriptData.video_id}`;
+            localStorage.setItem(contentCacheKey, JSON.stringify({
+                data: data,
+                timestamp: Date.now()
+            }));
+        }
+        
         // Display results
         displayResults(data);
         
