@@ -15,56 +15,98 @@ class OpenAIService:
         self.client = OpenAI(api_key=self.api_key)
         # Default to gpt-4o-mini (more accessible) or gpt-3.5-turbo as fallback
         # Users can override via OPENAI_MODEL environment variable
-        self.model = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+        configured_model = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+        # If gpt-4 is configured but not available, fallback to gpt-4o-mini
+        if configured_model == "gpt-4":
+            logger.warning("gpt-4 model configured but may not be available. Using gpt-4o-mini as fallback.")
+            self.model = "gpt-4o-mini"
+        else:
+            self.model = configured_model
+        # List of fallback models to try if primary model fails
+        self.fallback_models = ["gpt-4o-mini", "gpt-3.5-turbo", "gpt-4o"]
         
     async def generate_text(self, prompt: str, max_tokens: int = 2000, temperature: float = 0.7) -> str:
-        """Generate text using OpenAI API"""
-        try:
-            response = self.client.chat.completions.create(
-                model=self.model,
-                messages=[
-                    {"role": "system", "content": "You are a professional content writer specializing in podcast summaries, blog posts, and marketing content."},
-                    {"role": "user", "content": prompt}
-                ],
-                max_tokens=max_tokens,
-                temperature=temperature
-            )
-            
-            return response.choices[0].message.content.strip()
-        except Exception as e:
-            error_msg = str(e)
-            logger.error(f"Error generating text with OpenAI: {error_msg}", exc_info=True)
-            # Provide helpful error message for model access issues
-            if "model_not_found" in error_msg or "does not have access" in error_msg:
-                raise Exception(f"OpenAI API error: Model '{self.model}' is not available. Please set OPENAI_MODEL environment variable to a model your project has access to (e.g., 'gpt-4o-mini', 'gpt-3.5-turbo', 'gpt-4o'). Original error: {error_msg}")
-            raise Exception(f"OpenAI API error: {error_msg}")
+        """Generate text using OpenAI API with automatic fallback to alternative models"""
+        models_to_try = [self.model] + [m for m in self.fallback_models if m != self.model]
+        last_error = None
+        
+        for model_to_try in models_to_try:
+            try:
+                response = self.client.chat.completions.create(
+                    model=model_to_try,
+                    messages=[
+                        {"role": "system", "content": "You are a professional content writer specializing in podcast summaries, blog posts, and marketing content."},
+                        {"role": "user", "content": prompt}
+                    ],
+                    max_tokens=max_tokens,
+                    temperature=temperature
+                )
+                
+                # If we used a fallback model, log it
+                if model_to_try != self.model:
+                    logger.info(f"Successfully used fallback model '{model_to_try}' instead of '{self.model}'")
+                
+                return response.choices[0].message.content.strip()
+            except Exception as e:
+                error_msg = str(e)
+                last_error = e
+                # If it's a model access error, try next fallback
+                if "model_not_found" in error_msg or "does not have access" in error_msg:
+                    logger.warning(f"Model '{model_to_try}' not available, trying fallback models...")
+                    continue
+                # For other errors, break and raise immediately
+                break
+        
+        # If we get here, all models failed
+        error_msg = str(last_error) if last_error else "Unknown error"
+        logger.error(f"Error generating text with OpenAI: {error_msg}", exc_info=True)
+        if "model_not_found" in error_msg or "does not have access" in error_msg:
+            raise Exception(f"OpenAI API error: None of the attempted models are available. Tried: {', '.join(models_to_try)}. Please set OPENAI_MODEL environment variable to a model your project has access to. Original error: {error_msg}")
+        raise Exception(f"OpenAI API error: {error_msg}")
     
     async def generate_text_with_tokens(self, prompt: str, max_tokens: int = 2000, temperature: float = 0.7) -> Dict:
-        """Generate text and return both content and token usage"""
-        try:
-            response = self.client.chat.completions.create(
-                model=self.model,
-                messages=[
-                    {"role": "system", "content": "You are a professional content writer specializing in podcast summaries, blog posts, and marketing content."},
-                    {"role": "user", "content": prompt}
-                ],
-                max_tokens=max_tokens,
-                temperature=temperature
-            )
-            
-            return {
-                'content': response.choices[0].message.content.strip(),
-                'tokens_used': response.usage.total_tokens if response.usage else 0,
-                'prompt_tokens': response.usage.prompt_tokens if response.usage else 0,
-                'completion_tokens': response.usage.completion_tokens if response.usage else 0
-            }
-        except Exception as e:
-            error_msg = str(e)
-            logger.error(f"Error generating text with OpenAI: {error_msg}", exc_info=True)
-            # Provide helpful error message for model access issues
-            if "model_not_found" in error_msg or "does not have access" in error_msg:
-                raise Exception(f"OpenAI API error: Model '{self.model}' is not available. Please set OPENAI_MODEL environment variable to a model your project has access to (e.g., 'gpt-4o-mini', 'gpt-3.5-turbo', 'gpt-4o'). Original error: {error_msg}")
-            raise Exception(f"OpenAI API error: {error_msg}")
+        """Generate text and return both content and token usage with automatic fallback to alternative models"""
+        models_to_try = [self.model] + [m for m in self.fallback_models if m != self.model]
+        last_error = None
+        
+        for model_to_try in models_to_try:
+            try:
+                response = self.client.chat.completions.create(
+                    model=model_to_try,
+                    messages=[
+                        {"role": "system", "content": "You are a professional content writer specializing in podcast summaries, blog posts, and marketing content."},
+                        {"role": "user", "content": prompt}
+                    ],
+                    max_tokens=max_tokens,
+                    temperature=temperature
+                )
+                
+                # If we used a fallback model, log it
+                if model_to_try != self.model:
+                    logger.info(f"Successfully used fallback model '{model_to_try}' instead of '{self.model}'")
+                
+                return {
+                    'content': response.choices[0].message.content.strip(),
+                    'tokens_used': response.usage.total_tokens if response.usage else 0,
+                    'prompt_tokens': response.usage.prompt_tokens if response.usage else 0,
+                    'completion_tokens': response.usage.completion_tokens if response.usage else 0
+                }
+            except Exception as e:
+                error_msg = str(e)
+                last_error = e
+                # If it's a model access error, try next fallback
+                if "model_not_found" in error_msg or "does not have access" in error_msg:
+                    logger.warning(f"Model '{model_to_try}' not available, trying fallback models...")
+                    continue
+                # For other errors, break and raise immediately
+                break
+        
+        # If we get here, all models failed
+        error_msg = str(last_error) if last_error else "Unknown error"
+        logger.error(f"Error generating text with OpenAI: {error_msg}", exc_info=True)
+        if "model_not_found" in error_msg or "does not have access" in error_msg:
+            raise Exception(f"OpenAI API error: None of the attempted models are available. Tried: {', '.join(models_to_try)}. Please set OPENAI_MODEL environment variable to a model your project has access to. Original error: {error_msg}")
+        raise Exception(f"OpenAI API error: {error_msg}")
     
     async def get_credit_info(self) -> Dict:
         """Get OpenAI API credit/usage information"""
