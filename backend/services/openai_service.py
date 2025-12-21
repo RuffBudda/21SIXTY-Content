@@ -13,7 +13,9 @@ class OpenAIService:
             raise ValueError("OPENAI_API_KEY environment variable is required")
         
         self.client = OpenAI(api_key=self.api_key)
-        self.model = os.getenv("OPENAI_MODEL", "gpt-4")  # Default to GPT-4 for better quality
+        # Default to gpt-4o-mini (more accessible) or gpt-3.5-turbo as fallback
+        # Users can override via OPENAI_MODEL environment variable
+        self.model = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
         
     async def generate_text(self, prompt: str, max_tokens: int = 2000, temperature: float = 0.7) -> str:
         """Generate text using OpenAI API"""
@@ -30,8 +32,12 @@ class OpenAIService:
             
             return response.choices[0].message.content.strip()
         except Exception as e:
-            logger.error(f"Error generating text with OpenAI: {str(e)}", exc_info=True)
-            raise Exception(f"OpenAI API error: {str(e)}")
+            error_msg = str(e)
+            logger.error(f"Error generating text with OpenAI: {error_msg}", exc_info=True)
+            # Provide helpful error message for model access issues
+            if "model_not_found" in error_msg or "does not have access" in error_msg:
+                raise Exception(f"OpenAI API error: Model '{self.model}' is not available. Please set OPENAI_MODEL environment variable to a model your project has access to (e.g., 'gpt-4o-mini', 'gpt-3.5-turbo', 'gpt-4o'). Original error: {error_msg}")
+            raise Exception(f"OpenAI API error: {error_msg}")
     
     async def generate_text_with_tokens(self, prompt: str, max_tokens: int = 2000, temperature: float = 0.7) -> Dict:
         """Generate text and return both content and token usage"""
@@ -53,8 +59,12 @@ class OpenAIService:
                 'completion_tokens': response.usage.completion_tokens if response.usage else 0
             }
         except Exception as e:
-            logger.error(f"Error generating text with OpenAI: {str(e)}", exc_info=True)
-            raise Exception(f"OpenAI API error: {str(e)}")
+            error_msg = str(e)
+            logger.error(f"Error generating text with OpenAI: {error_msg}", exc_info=True)
+            # Provide helpful error message for model access issues
+            if "model_not_found" in error_msg or "does not have access" in error_msg:
+                raise Exception(f"OpenAI API error: Model '{self.model}' is not available. Please set OPENAI_MODEL environment variable to a model your project has access to (e.g., 'gpt-4o-mini', 'gpt-3.5-turbo', 'gpt-4o'). Original error: {error_msg}")
+            raise Exception(f"OpenAI API error: {error_msg}")
     
     async def get_credit_info(self) -> Dict:
         """Get OpenAI API credit/usage information"""
