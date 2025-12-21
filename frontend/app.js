@@ -894,8 +894,20 @@ function switchTab(tabName) {
         tabBtn.classList.add('active');
     }
     
-    // Load prompts if switching to prompts tab
+    // Load prompts if switching to prompts tab (requires authentication)
     if (tabName === 'prompts') {
+        if (!authToken) {
+            showLoginModal();
+            // Switch back to content tab if not authenticated
+            setTimeout(() => {
+                switchTab('content');
+                const contentTabBtn = document.querySelector('[data-tab="content"]');
+                if (contentTabBtn) {
+                    contentTabBtn.classList.add('active');
+                }
+            }, 100);
+            return;
+        }
         loadPrompts();
     }
     

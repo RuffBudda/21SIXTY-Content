@@ -91,55 +91,83 @@
             <!-- Prompts Tab -->
             <div id="promptsTab" class="tab-content" style="display: none;">
                 <div class="card">
-                    <h2>OpenAI Prompts Editor</h2>
-                    <p class="info-text">Edit the prompts used for generating content. Use placeholders like {guest_name}, {transcript}, etc.</p>
-                    
-                    <div class="prompts-container">
-                        <div class="prompt-section">
-                            <label for="prompt_youtube_summary">YouTube Summary Prompt</label>
-                            <textarea id="prompt_youtube_summary" class="prompt-textarea" rows="10"></textarea>
+                    <div class="prompts-header">
+                        <div>
+                            <h2>OpenAI Prompts Editor</h2>
+                            <p class="info-text">Edit the prompts used for generating content. Use placeholders like {guest_name}, {transcript}, etc.</p>
                         </div>
-                        
-                        <div class="prompt-section">
-                            <label for="prompt_blog_post">Blog Post Prompt</label>
-                            <textarea id="prompt_blog_post" class="prompt-textarea" rows="15"></textarea>
-                        </div>
-                        
-                        <div class="prompt-section">
-                            <label for="prompt_clickbait_titles">Clickbait Titles Prompt</label>
-                            <textarea id="prompt_clickbait_titles" class="prompt-textarea" rows="12"></textarea>
-                        </div>
-                        
-                        <div class="prompt-section">
-                            <label for="prompt_two_line_summary">Two Line Summary Prompt</label>
-                            <textarea id="prompt_two_line_summary" class="prompt-textarea" rows="8"></textarea>
-                        </div>
-                        
-                        <div class="prompt-section">
-                            <label for="prompt_quotes">Quotes Prompt</label>
-                            <textarea id="prompt_quotes" class="prompt-textarea" rows="12"></textarea>
-                        </div>
-                        
-                        <div class="prompt-section">
-                            <label for="prompt_chapter_timestamps">Chapter Timestamps Prompt</label>
-                            <textarea id="prompt_chapter_timestamps" class="prompt-textarea" rows="12"></textarea>
-                        </div>
-                        
-                        <div class="prompt-section">
-                            <label for="prompt_linkedin_post">LinkedIn Post Prompt</label>
-                            <textarea id="prompt_linkedin_post" class="prompt-textarea" rows="12"></textarea>
-                        </div>
-                        
-                        <div class="prompt-section">
-                            <label for="prompt_keywords">Keywords Prompt</label>
-                            <textarea id="prompt_keywords" class="prompt-textarea" rows="12"></textarea>
+                        <div class="prompts-actions-header">
+                            <button class="btn btn-secondary" id="resetPromptsBtn">Reset to Default</button>
+                            <button class="btn btn-primary" id="savePromptsBtn">Save All Prompts</button>
                         </div>
                     </div>
                     
-                    <div class="prompts-actions">
-                        <button class="btn btn-primary" id="savePromptsBtn">Save Prompts</button>
-                        <button class="btn btn-secondary" id="resetPromptsBtn">Reset to Default</button>
+                    <div class="prompts-grid">
+                        <div class="prompt-card">
+                            <div class="prompt-card-header">
+                                <h3>YouTube Summary</h3>
+                                <span class="prompt-badge">Summary</span>
+                            </div>
+                            <textarea id="prompt_youtube_summary" class="prompt-textarea" placeholder="Enter YouTube summary prompt..."></textarea>
+                        </div>
+                        
+                        <div class="prompt-card">
+                            <div class="prompt-card-header">
+                                <h3>Blog Post</h3>
+                                <span class="prompt-badge">Long Form</span>
+                            </div>
+                            <textarea id="prompt_blog_post" class="prompt-textarea" placeholder="Enter blog post prompt..."></textarea>
+                        </div>
+                        
+                        <div class="prompt-card">
+                            <div class="prompt-card-header">
+                                <h3>Clickbait Titles</h3>
+                                <span class="prompt-badge">Titles</span>
+                            </div>
+                            <textarea id="prompt_clickbait_titles" class="prompt-textarea" placeholder="Enter clickbait titles prompt..."></textarea>
+                        </div>
+                        
+                        <div class="prompt-card">
+                            <div class="prompt-card-header">
+                                <h3>Two Line Summary</h3>
+                                <span class="prompt-badge">Summary</span>
+                            </div>
+                            <textarea id="prompt_two_line_summary" class="prompt-textarea" placeholder="Enter two line summary prompt..."></textarea>
+                        </div>
+                        
+                        <div class="prompt-card">
+                            <div class="prompt-card-header">
+                                <h3>Quotes</h3>
+                                <span class="prompt-badge">Extraction</span>
+                            </div>
+                            <textarea id="prompt_quotes" class="prompt-textarea" placeholder="Enter quotes prompt..."></textarea>
+                        </div>
+                        
+                        <div class="prompt-card">
+                            <div class="prompt-card-header">
+                                <h3>Chapter Timestamps</h3>
+                                <span class="prompt-badge">Structure</span>
+                            </div>
+                            <textarea id="prompt_chapter_timestamps" class="prompt-textarea" placeholder="Enter chapter timestamps prompt..."></textarea>
+                        </div>
+                        
+                        <div class="prompt-card">
+                            <div class="prompt-card-header">
+                                <h3>LinkedIn Post</h3>
+                                <span class="prompt-badge">Social</span>
+                            </div>
+                            <textarea id="prompt_linkedin_post" class="prompt-textarea" placeholder="Enter LinkedIn post prompt..."></textarea>
+                        </div>
+                        
+                        <div class="prompt-card">
+                            <div class="prompt-card-header">
+                                <h3>Keywords</h3>
+                                <span class="prompt-badge">SEO</span>
+                            </div>
+                            <textarea id="prompt_keywords" class="prompt-textarea" placeholder="Enter keywords prompt..."></textarea>
+                        </div>
                     </div>
+                    
                     <div id="promptsStatus" class="status-message"></div>
                 </div>
             </div>
