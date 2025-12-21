@@ -151,11 +151,15 @@ async function logout() {
     showLoginModal();
 }
 
-function getAuthHeaders() {
-    return {
-        'Content-Type': 'application/json',
+function getAuthHeaders(includeContentType = true) {
+    const headers = {
         'Authorization': `Bearer ${authToken}`
     };
+    // Only include Content-Type for JSON requests, not for FormData (file uploads)
+    if (includeContentType) {
+        headers['Content-Type'] = 'application/json';
+    }
+    return headers;
 }
 
 // Event Listeners
@@ -646,7 +650,7 @@ async function processVideo() {
         try {
             response = await fetch(`${API_BASE_URL}/api/process-video`, {
                 method: 'POST',
-                headers: getAuthHeaders(),
+                headers: getAuthHeaders(false), // Don't set Content-Type for FormData - browser sets it automatically
                 body: formData
             });
         } catch (fetchError) {
