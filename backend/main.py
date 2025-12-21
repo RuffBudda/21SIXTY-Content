@@ -1,4 +1,6 @@
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Depends, Header, UploadFile, File, Form
+import hashlib
+import time
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
@@ -114,23 +116,24 @@ async def health_check():
 
 @app.post("/api/process-video", response_model=ProcessVideoResponse)
 async def process_video(
-    youtube_url: str = Form(...),
     audio_file: UploadFile = File(...),
+    youtube_url: Optional[str] = Form(None),
     background_tasks: BackgroundTasks = None,
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)
 ):
-    """Process uploaded audio file and extract transcript from YouTube URL"""
+    """Process uploaded audio file and optionally extract transcript from YouTube URL"""
     if not verify_auth(credentials):
         raise HTTPException(status_code=401, detail="Authentication required")
     try:
-        logger.info(f"Processing video: {youtube_url}")
+        # Generate unique ID from audio file (use filename hash or timestamp)
+        file_content = await audio_file.read()
+        file_hash = hashlib.md5(file_content).hexdigest()[:11]
+        video_id = f"audio_{file_hash}_{int(time.time())}"
         
-        # Extract video ID for storing
-        video_id = youtube_service._extract_video_id(youtube_url)
+        # Reset file pointer for saving
+        await audio_file.seek(0)
         
-        # COMMENTED OUT: YouTube download and conversion feature
-        # # Download video and extract MP3
-        # audio_path = await youtube_service.download_audio(youtube_url)
+        logger.info(f"Processing audio file: {audio_file.filename}")
         
         # Save uploaded audio file
         audio_path = os.path.join(youtube_service.upload_dir, f"{video_id}.mp3")
@@ -142,13 +145,34 @@ async def process_video(
         
         # Save uploaded file
         with open(audio_path, 'wb') as f:
-            content = await audio_file.read()
-            f.write(content)
+            f.write(file_content)
         
-        logger.info(f"Saved uploaded audio file to: {audio_path} (size: {len(content)} bytes)")
+        logger.info(f"Saved uploaded audio file to: {audio_path} (size: {len(file_content)} bytes)")
         
-        # Get transcript with timecodes from YouTube URL
-        transcript_data = await youtube_service.get_transcript(youtube_url)
+        # Get transcript with timecodes from YouTube URL (if provided)
+        transcript_data = None
+        if youtube_url and youtube_url.strip():
+            try:
+                logger.info(f"Extracting transcript from YouTube URL: {youtube_url}")
+                transcript_data = await youtube_service.get_transcript(youtube_url)
+            except Exception as e:
+                logger.warning(f"Failed to extract transcript from YouTube URL: {str(e)}")
+                # Continue without transcript - user can still generate content manually
+                transcript_data = {
+                    "transcript": "",
+                    "transcript_with_timecodes": [],
+                    "title": audio_file.filename or "Audio File",
+                    "duration": 0
+                }
+        else:
+            # No YouTube URL provided - return empty transcript
+            logger.info("No YouTube URL provided - transcript will be empty")
+            transcript_data = {
+                "transcript": "",
+                "transcript_with_timecodes": [],
+                "title": audio_file.filename or "Audio File",
+                "duration": 0
+            }
         
         # Store MP3 file path for download (don't cleanup immediately)
         if audio_path and os.path.exists(audio_path):
@@ -157,9 +181,9 @@ async def process_video(
         
         return ProcessVideoResponse(
             success=True,
-            transcript=transcript_data["transcript"],
-            transcript_with_timecodes=transcript_data["transcript_with_timecodes"],
-            video_title=transcript_data.get("title", ""),
+            transcript=transcript_data.get("transcript", ""),
+            transcript_with_timecodes=transcript_data.get("transcript_with_timecodes", []),
+            video_title=transcript_data.get("title", audio_file.filename or "Audio File"),
             video_duration=transcript_data.get("duration", 0),
             video_id=video_id
         )

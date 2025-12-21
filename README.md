@@ -1,11 +1,11 @@
-# 21SIXTY CONTENT GEN v58
+# 21SIXTY CONTENT GEN v59
 
 A web-based tool for processing podcast audio files and generating comprehensive content including summaries, blog posts, titles, quotes, and chapter timestamps using OpenAI APIs.
 
 ## Features
 
 - **Audio File Upload**: Upload audio files (MP3, WAV, M4A, OGG, FLAC) for processing
-- **YouTube Transcript Extraction**: Extracts transcripts with timecodes from YouTube URLs
+- **Optional YouTube Transcript Extraction**: Optionally extract transcripts with timecodes from YouTube URLs (if provided)
 - **LocalStorage Caching**: Intelligent caching system that stores processed data and audio files locally to avoid reprocessing
 - **AI-Powered Content Generation**:
   - Complete transcript with formatted timecodes
@@ -82,28 +82,27 @@ uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 ## Usage
 
 1. **Upload Audio File**: Select an audio file (MP3, WAV, M4A, OGG, or FLAC) using the file selector
-2. **Enter YouTube URL**: Paste the YouTube video URL for transcript extraction
-3. **Process Video**: Click "Process Video" - the system will:
+2. **Process Audio**: Click "Process Audio" - the system will:
    - Check localStorage for cached data (if same file was processed before, uses cache)
    - Upload and save the audio file
-   - Extract transcript with timecodes from YouTube
    - Display processing animations with real-time status
-4. **Enter Guest Information**: Fill in the guest's name, title, company, and LinkedIn profile
-5. **Generate Content**: Click "Generate Content" to create all 7 content types using AI
-6. **Download or Copy Results**: 
+   - Note: Transcript extraction from YouTube is optional and can be added later if needed
+3. **Enter Guest Information**: Fill in the guest's name, title, company, and LinkedIn profile
+4. **Generate Content**: Click "Generate Content" to create all 7 content types using AI
+5. **Download or Copy Results**: 
    - Use the download button (📥) to save any deliverable as a TXT file
    - Use the copy button (📋) to copy content to your clipboard
 
 ## API Endpoints
 
 ### POST /api/process-video
-Process an uploaded audio file and extract transcript from YouTube URL.
+Process an uploaded audio file and optionally extract transcript from YouTube URL.
 
 **Request:** (multipart/form-data)
-- `audio_file`: Audio file (MP3, WAV, M4A, OGG, FLAC)
-- `youtube_url`: YouTube video URL for transcript extraction
+- `audio_file`: Audio file (MP3, WAV, M4A, OGG, FLAC) - **Required**
+- `youtube_url`: YouTube video URL for transcript extraction - **Optional**
 
-**Note:** The endpoint accepts form data with file upload, not JSON.
+**Note:** The endpoint accepts form data with file upload. YouTube URL is optional - if not provided, transcript will be empty.
 
 **Response:**
 ```json

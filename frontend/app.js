@@ -437,7 +437,6 @@ async function loadCredits() {
 
 async function processVideo() {
     const audioFileInput = document.getElementById('audioFile');
-    const youtubeUrl = document.getElementById('youtubeUrl').value.trim();
     const statusDiv = document.getElementById('processingStatus');
     const processBtn = document.getElementById('processVideoBtn');
     const processingAnimation = document.getElementById('processingAnimation');
@@ -449,22 +448,11 @@ async function processVideo() {
         return;
     }
     
-    if (!youtubeUrl) {
-        showStatus(statusDiv, 'Please enter a YouTube URL', 'error');
-        return;
-    }
-    
-    // Validate YouTube URL
-    if (!isValidYouTubeUrl(youtubeUrl)) {
-        showStatus(statusDiv, 'Please enter a valid YouTube URL', 'error');
-        return;
-    }
-    
     const audioFile = audioFileInput.files[0];
     
     // Check localStorage for cached data
     const fileHash = await getFileHash(audioFile);
-    const cacheKey = `processed_${fileHash}_${youtubeUrl}`;
+    const cacheKey = `processed_${fileHash}`;
     const cachedData = localStorage.getItem(cacheKey);
     
     if (cachedData) {
@@ -485,13 +473,13 @@ async function processVideo() {
     
     processBtn.disabled = true;
     processingAnimation.style.display = 'flex';
-    showLoading('Processing audio and extracting transcript...');
-    showStatus(statusDiv, 'Processing video...', 'info');
+    showLoading('Processing audio file...');
+    showStatus(statusDiv, 'Processing audio...', 'info');
     
     // Update processing animation text
     const steps = [
         'Uploading audio file...',
-        'Extracting transcript from YouTube...',
+        'Processing audio...',
         'Processing data...',
         'Almost done...'
     ];
@@ -506,7 +494,9 @@ async function processVideo() {
     try {
         const formData = new FormData();
         formData.append('audio_file', audioFile);
-        formData.append('youtube_url', youtubeUrl);
+        
+        // YouTube URL is now optional - don't include it in formData if not needed
+        // formData.append('youtube_url', youtubeUrl);  // Removed - YouTube URL no longer required
         
         const response = await fetch(`${API_BASE_URL}/api/process-video`, {
             method: 'POST',

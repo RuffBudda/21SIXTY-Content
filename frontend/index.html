@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>21SIXTY CONTENT GEN v58</title>
+    <title>21SIXTY CONTENT GEN v59</title>
     <link rel="icon" type="image/x-icon" href="/static/images/favicons/favicon.ico">
     <link rel="stylesheet" href="styles.css">
 </head>
@@ -48,7 +48,7 @@
         <header class="header">
             <div class="logo-container">
                 <img src="/static/images/logos/logo.png" alt="21SIXTY Logo" class="logo" onerror="this.onerror=null; this.src='/static/images/logo.svg';">
-                <h1 class="title">21SIXTY CONTENT GEN <span class="version">v58</span></h1>
+                <h1 class="title">21SIXTY CONTENT GEN <span class="version">v59</span></h1>
             </div>
             <div class="status-container">
                 <div class="status-item">
@@ -161,9 +161,9 @@
 
             <!-- Content Generator Tab -->
             <div id="contentTab" class="tab-content">
-            <!-- Step 1: Audio Upload and YouTube URL -->
+            <!-- Step 1: Audio Upload -->
             <div class="card" id="step1Card">
-                <h2>Step 1: Upload Audio File & Enter YouTube URL</h2>
+                <h2>Upload Audio File</h2>
                 <div class="input-group">
                     <label for="audioFile">Audio File * (MP3, WAV, M4A, OGG, FLAC)</label>
                     <div class="file-upload-container">
@@ -179,15 +179,11 @@
                         <span id="audioFileName" class="file-name-display">No file selected</span>
                     </div>
                 </div>
-                <div class="input-group" style="margin-top: 15px;">
-                    <label for="youtubeUrl">YouTube Video URL * (for transcript extraction)</label>
-                    <input type="text" id="youtubeUrl" placeholder="https://www.youtube.com/watch?v=..." />
-                </div>
                 <button class="btn btn-primary" id="processVideoBtn" style="margin-top: 15px;">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
                         <polygon points="5 3 19 12 5 21 5 3"></polygon>
                     </svg>
-                    Process Video
+                    Process Audio
                 </button>
                 <div id="processingStatus" class="status-message"></div>
                 <div id="processingAnimation" class="processing-animation" style="display: none;">
