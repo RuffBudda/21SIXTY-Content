@@ -1,4 +1,4 @@
-# 21SIXTY CONTENT GEN v74
+# 21SIXTY CONTENT GEN v75
 
 A web-based tool for processing podcast audio files and generating comprehensive content including summaries, blog posts, titles, quotes, chapter timestamps, and LinkedIn posts using OpenAI APIs.
 
