@@ -1,4 +1,4 @@
-# 21SIXTY CONTENT GEN v71
+# 21SIXTY CONTENT GEN v72
 
 A web-based tool for processing podcast audio files and generating comprehensive content including summaries, blog posts, titles, quotes, chapter timestamps, and LinkedIn posts using OpenAI APIs.
 
@@ -9,12 +9,12 @@ A web-based tool for processing podcast audio files and generating comprehensive
 - **Projects Gallery**: Browse and manage all your processed projects stored in local storage. Open any project to access its transcript and generated content
 - **AI-Powered Content Generation**:
   - Complete transcript with formatted timecodes
-  - 3-paragraph YouTube summary
+  - 3-paragraph episode summary
   - 2000-word blog post with LinkedIn hyperlinks
   - 20 clickbait titles (under 100 characters)
   - 2-line episode summary
   - 20 notable quotes from the episode
-  - YouTube-ready chapter timestamps
+  - Chapter timestamps (ready-to-use episode markers)
   - LinkedIn post with guest description, 3 key takeaways, and CTA (with placeholder links for YouTube and Newsletter)
 - **Download & Copy Features**: Download any deliverable as TXT file or copy to clipboard with SVG icons
 - **Processing Animations**: Real-time visual feedback during processing with step-by-step status updates
@@ -26,8 +26,6 @@ A web-based tool for processing podcast audio files and generating comprehensive
 
 - **Backend**: Python 3.12+ with FastAPI (tested with Python 3.12.3)
 - **Frontend**: HTML, CSS, JavaScript (vanilla)
-- **YouTube Processing**: yt-dlp
-- **Transcription**: YouTube Transcript API
 - **AI Generation**: OpenAI API (GPT-4)
 - **Deployment**: Nginx reverse proxy
 
@@ -140,12 +138,13 @@ Generate all content types based on transcript and guest info.
 **Response:**
 ```json
 {
-  "youtube_summary": "3 paragraph summary...",
+  "youtube_summary": "3 paragraph episode summary...",
   "blog_post": "2000 word blog post...",
   "clickbait_titles": ["Title 1", "Title 2", ...],
   "two_line_summary": "Line 1\nLine 2",
   "quotes": ["Quote 1", "Quote 2", ...],
-  "chapter_timestamps": ["00:00:00 - Chapter 1", ...]
+  "chapter_timestamps": ["00:00:00 - Chapter 1", ...],
+  "linkedin_post": "LinkedIn post content..."
 }
 ```
 
@@ -163,9 +162,9 @@ content-generator/
 │   ├── main.py                 # FastAPI application
 │   ├── models.py               # Pydantic models
 │   ├── services/
-│   │   ├── youtube_service.py  # YouTube processing
 │   │   ├── openai_service.py   # OpenAI integration
-│   │   └── content_generator.py # Content generation
+│   │   ├── content_generator.py # Content generation
+│   │   └── prompts_service.py  # Prompt management
 │   ├── utils/
 │   │   └── file_handler.py     # File cleanup
 │   └── requirements.txt
