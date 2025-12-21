@@ -266,28 +266,6 @@ body {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
     gap: 20px;
-    max-height: calc(100vh - 300px);
-    overflow-y: auto;
-    padding-right: 8px;
-    margin-right: -8px;
-}
-
-.prompts-tiles-grid::-webkit-scrollbar {
-    width: 8px;
-}
-
-.prompts-tiles-grid::-webkit-scrollbar-track {
-    background: var(--bg-secondary);
-    border-radius: 4px;
-}
-
-.prompts-tiles-grid::-webkit-scrollbar-thumb {
-    background: var(--border-color);
-    border-radius: 4px;
-}
-
-.prompts-tiles-grid::-webkit-scrollbar-thumb:hover {
-    background: var(--accent-blue);
 }
 
 .prompt-tile {
