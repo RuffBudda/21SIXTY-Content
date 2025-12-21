@@ -674,6 +674,56 @@ function formatMarkdownLinks(text) {
 }
 
 // Utility Functions
+function downloadAsTxt(targetId) {
+    const element = document.getElementById(targetId);
+    
+    if (!element) {
+        alert('Nothing to download');
+        return;
+    }
+    
+    let textContent = '';
+    
+    // Get text content based on element type
+    if (element.innerHTML && element.innerHTML !== element.textContent) {
+        // For HTML content (blog post, LinkedIn post), get text content but preserve structure
+        textContent = element.textContent || element.innerText || '';
+    } else {
+        // For plain text content
+        textContent = element.textContent || element.innerText || '';
+    }
+    
+    if (!textContent.trim()) {
+        alert('Nothing to download');
+        return;
+    }
+    
+    // Create filename based on target
+    const filenameMap = {
+        'transcript': 'Transcript_with_Timecodes',
+        'youtubeSummary': 'YouTube_Summary',
+        'blogPost': 'Blog_Post',
+        'twoLineSummary': 'Two_Line_Summary',
+        'clickbaitTitles': 'Clickbait_Titles',
+        'quotes': 'Quotes',
+        'chapterTimestamps': 'Chapter_Timestamps',
+        'linkedinPost': 'LinkedIn_Post'
+    };
+    
+    const filename = (filenameMap[targetId] || targetId) + '.txt';
+    
+    // Create blob and download
+    const blob = new Blob([textContent], { type: 'text/plain;charset=utf-8' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+}
+
 function copyToClipboard(targetId) {
     const element = document.getElementById(targetId);
     const copyBtn = document.querySelector(`[data-target="${targetId}"]`);
