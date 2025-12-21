@@ -1345,6 +1345,19 @@ async function savePrompts() {
         const data = await response.json();
         if (data.success) {
             showStatus(statusDiv, 'Prompts saved successfully!', 'success');
+            
+            // Update prompt previews after successful save
+            updatePromptPreviews();
+            
+            // Re-disable all textareas (set them back to readonly)
+            document.querySelectorAll('.prompt-textarea').forEach(textarea => {
+                textarea.setAttribute('readonly', 'readonly');
+            });
+            
+            // Remove editing class from all tiles
+            document.querySelectorAll('.prompt-tile').forEach(tile => {
+                tile.classList.remove('editing');
+            });
         }
     } catch (error) {
         console.error('Error saving prompts:', error);
@@ -1352,6 +1365,27 @@ async function savePrompts() {
     } finally {
         saveBtn.disabled = false;
     }
+}
+
+// Update prompt previews with truncated versions
+function updatePromptPreviews() {
+    const promptIds = ['youtube_summary', 'blog_post', 'clickbait_titles', 'two_line_summary', 
+                       'quotes', 'chapter_timestamps', 'linkedin_post', 'keywords'];
+    
+    promptIds.forEach(promptId => {
+        const textarea = document.getElementById(`prompt_${promptId}`);
+        const previewDiv = document.querySelector(`[data-preview="${promptId}"]`);
+        
+        if (textarea && previewDiv) {
+            const promptText = textarea.value || '';
+            // Truncate to first 150 characters for preview
+            const previewText = promptText.length > 150 
+                ? promptText.substring(0, 150) + '...' 
+                : promptText;
+            
+            previewDiv.textContent = previewText || 'No prompt set';
+        }
+    });
 }
 
 async function resetPrompts() {
