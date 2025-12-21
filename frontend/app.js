@@ -1470,7 +1470,7 @@ async function savePrompts() {
 }
 
 async function resetPrompts() {
-    if (!confirm('Are you sure you want to reset all prompts to default? This cannot be undone.')) {
+    if (!confirm('⚠️ WARNING: Are you sure you want to reset all prompts to default?\n\nThis will:\n- Reset all prompts to their default values\n- Affect all future content generation\n- Cannot be easily undone\n\nContinue?')) {
         return;
     }
     
