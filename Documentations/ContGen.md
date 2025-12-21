@@ -97,7 +97,7 @@ This document provides a comprehensive overview of all features, architecture, a
   - SVG icons for both actions
   - Filename mapping for each deliverable type
 
-### 7. Prompt Editor (Modern Grid Layout)
+### 7. Prompt Editor (Modern Grid Layout with Variables Reference)
 - **Location**: `frontend/index.html` - Prompts tab, `frontend/styles.css` - Grid styles, `backend/services/prompts_service.py`
 - **Description**: Modern grid-based prompt editor with card layout. Authentication required to access and edit prompts
 - **Implementation**:
@@ -112,13 +112,20 @@ This document provides a comprehensive overview of all features, architecture, a
     - Custom scrollbar styling for grid container
     - Header with action buttons (Save All, Reset) at the top
     - Category badges for each prompt type (Summary, Long Form, Titles, etc.)
+  - **Variables Reference Section**:
+    - Displays all available prompt variables with descriptions
+    - Variables shown: `{guest_name}`, `{guest_title}`, `{guest_company}`, `{guest_linkedin}`, `{transcript}`, `{transcript_with_timecodes}`, `{video_title}`, `{video_duration}`
+    - Each variable has a copy button and can be clicked to copy
+    - Visual feedback when variable is copied (checkmark icon)
+    - Responsive grid layout for variables
   - **Technical Details**:
     - Stores prompts in `backend/prompts.json`
     - Editable textareas for each prompt type (8 prompts total)
     - Save/Reset functionality
-    - Prompts use placeholders: `{guest_name}`, `{transcript}`, `{guest_title}`, `{guest_company}`, `{guest_linkedin}`, etc.
+    - Prompts use placeholders: `{guest_name}`, `{transcript}`, `{guest_title}`, `{guest_company}`, `{guest_linkedin}`, `{transcript_with_timecodes}`, `{video_title}`, `{video_duration}`
     - Grid uses `display: grid` with `grid-template-columns: repeat(auto-fit, minmax(400px, 1fr))`
     - Max height on grid container: `calc(100vh - 300px)` with overflow-y: auto
+    - Variables copy function uses Clipboard API with visual feedback
 
 ### 8. Projects Gallery
 - **Location**: `frontend/index.html` - Gallery tab, `frontend/app.js` - Gallery functions, `frontend/styles.css` - Gallery styles
