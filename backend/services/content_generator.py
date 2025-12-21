@@ -158,6 +158,20 @@ class ContentGenerator:
         
         return quotes[:20]
     
+    async def generate_linkedin_post(
+        self, transcript: str, guest_name: str, guest_title: str, guest_company: str
+    ) -> str:
+        """Generate LinkedIn post with guest description, 3 key takeaways, and CTA"""
+        prompt = self.prompts_service.format_prompt(
+            'linkedin_post',
+            guest_name=guest_name,
+            guest_title=guest_title,
+            guest_company=guest_company,
+            transcript=transcript
+        )
+        
+        return await self.openai.generate_text(prompt, max_tokens=800, temperature=0.7)
+    
     async def generate_chapter_timestamps(
         self, transcript_with_timecodes: List[dict], video_duration: float
     ) -> List[str]:
