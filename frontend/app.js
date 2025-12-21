@@ -885,7 +885,54 @@ function showLoading(text = 'Processing...') {
 }
 
 function hideLoading() {
-    document.getElementById('loadingOverlay').style.display = 'none';
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    if (loadingOverlay) {
+        loadingOverlay.style.display = 'none';
+    }
+}
+
+// Clear old cache entries to free up localStorage space
+function clearOldCache() {
+    try {
+        const keysToRemove = [];
+        const now = Date.now();
+        const maxAge = 30 * 24 * 60 * 60 * 1000; // 30 days in milliseconds
+        
+        // Scan localStorage for old cache entries
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && (key.startsWith('processed_') || key.startsWith('audio_') || key.startsWith('content_'))) {
+                try {
+                    const item = localStorage.getItem(key);
+                    if (item) {
+                        const parsed = JSON.parse(item);
+                        if (parsed.timestamp && (now - parsed.timestamp) > maxAge) {
+                            keysToRemove.push(key);
+                        }
+                    }
+                } catch (e) {
+                    // If can't parse, might be old format, remove it
+                    keysToRemove.push(key);
+                }
+            }
+        }
+        
+        // Remove old entries
+        keysToRemove.forEach(key => {
+            try {
+                localStorage.removeItem(key);
+                console.log(`Removed old cache entry: ${key}`);
+            } catch (e) {
+                console.error(`Error removing cache entry ${key}:`, e);
+            }
+        });
+        
+        if (keysToRemove.length > 0) {
+            console.log(`Cleared ${keysToRemove.length} old cache entries`);
+        }
+    } catch (e) {
+        console.error('Error clearing old cache:', e);
+    }
 }
 
 function isValidYouTubeUrl(url) {
