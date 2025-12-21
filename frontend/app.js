@@ -175,8 +175,18 @@ function setupEventListeners() {
         btn.addEventListener('click', (e) => {
             const tabName = e.target.getAttribute('data-tab');
             switchTab(tabName);
+            // Load gallery when switching to gallery tab
+            if (tabName === 'gallery') {
+                loadGallery();
+            }
         });
     });
+    
+    // Gallery refresh button
+    const refreshGalleryBtn = document.getElementById('refreshGalleryBtn');
+    if (refreshGalleryBtn) {
+        refreshGalleryBtn.addEventListener('click', loadGallery);
+    }
     
     // Prompts editor
     document.getElementById('savePromptsBtn').addEventListener('click', savePrompts);
@@ -508,6 +518,12 @@ async function processVideo() {
             };
             
             // Cache the processed data (cache key based on file hash only)
+            // Ensure cacheKey is set - use file hash or fallback to video_id
+            if (!cacheKey && data.video_id) {
+                // Fallback: use video_id if hash generation failed
+                cacheKey = `processed_${data.video_id}`;
+            }
+            
             if (cacheKey) {
                 try {
                     const cacheData = {
@@ -516,9 +532,12 @@ async function processVideo() {
                         timestamp: Date.now()
                     };
                     localStorage.setItem(cacheKey, JSON.stringify(cacheData));
+                    console.log(`Cached processed data with key: ${cacheKey}`);
                 } catch (e) {
                     console.error('Error caching data:', e);
                 }
+            } else {
+                console.warn('Warning: Could not cache processed data - no cache key available');
             }
             
             // Show download button if video_id is available
