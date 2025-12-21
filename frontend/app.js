@@ -1454,6 +1454,24 @@ function switchTab(tabName) {
     if (tabName === 'gallery') {
         loadGallery();
     }
+    
+    // Update webhook URL if switching to API tab
+    if (tabName === 'api') {
+        const webhookUrlElement = document.getElementById('webhookUrl');
+        if (webhookUrlElement) {
+            webhookUrlElement.textContent = `${API_BASE_URL}/api/generate-content`;
+        }
+    }
+}
+
+function copyWebhookUrl() {
+    const webhookUrl = `${API_BASE_URL}/api/generate-content`;
+    navigator.clipboard.writeText(webhookUrl).then(() => {
+        alert('Webhook URL copied to clipboard!');
+    }).catch(err => {
+        console.error('Failed to copy:', err);
+        alert('Failed to copy URL');
+    });
 }
 
 // Gallery Functions
