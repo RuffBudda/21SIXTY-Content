@@ -51,6 +51,13 @@ class ContentGenerator:
             transcript, guest_name, guest_title, guest_company
         )
         
+        keywords = await self.generate_keywords(
+            transcript, guest_name, guest_title, guest_company
+        )
+        
+        # Generate hashtags from keywords (add # prefix to each keyword)
+        hashtags = self.generate_hashtags_from_keywords(keywords)
+        
         return {
             'youtube_summary': youtube_summary,
             'blog_post': blog_post,
@@ -58,7 +65,9 @@ class ContentGenerator:
             'two_line_summary': two_line_summary,
             'quotes': quotes,
             'chapter_timestamps': chapter_timestamps,
-            'linkedin_post': linkedin_post
+            'linkedin_post': linkedin_post,
+            'keywords': keywords,
+            'hashtags': hashtags
         }
     
     async def generate_youtube_summary(

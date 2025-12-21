@@ -36,4 +36,6 @@ class GenerateContentResponse(BaseModel):
     quotes: List[str] = Field(..., description="20 quotes from episode")
     chapter_timestamps: List[str] = Field(..., description="YouTube-ready timestamps for chapters")
     linkedin_post: str = Field(..., description="LinkedIn post with guest description, 3 key takeaways, and CTA")
+    keywords: str = Field(..., description="Comma-separated keywords based on transcript, max 500 characters")
+    hashtags: str = Field(..., description="Hashtags with # prefix, same keywords as keywords field")
 

@@ -682,6 +682,12 @@ function displayResults(data) {
     // Chapter Timestamps
     const timestampsElement = document.getElementById('chapterTimestamps');
     timestampsElement.textContent = data.chapter_timestamps.join('\n');
+    
+    // Keywords
+    document.getElementById('keywords').textContent = data.keywords || '';
+    
+    // Hashtags
+    document.getElementById('hashtags').textContent = data.hashtags || '';
 }
 
 function formatTranscriptWithTimecodes(timecodes) {

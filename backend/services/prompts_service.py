@@ -55,7 +55,7 @@ class PromptsService:
         try:
             # Validate that all required prompt types are present
             required_types = ["youtube_summary", "blog_post", "clickbait_titles", 
-                            "two_line_summary", "quotes", "chapter_timestamps", "linkedin_post"]
+                            "two_line_summary", "quotes", "chapter_timestamps", "linkedin_post", "keywords"]
             
             for prompt_type in required_types:
                 if prompt_type not in new_prompts:
