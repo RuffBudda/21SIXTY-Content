@@ -182,6 +182,28 @@ function setupEventListeners() {
     document.getElementById('savePromptsBtn').addEventListener('click', savePrompts);
     document.getElementById('resetPromptsBtn').addEventListener('click', resetPrompts);
     
+    // Variable copy buttons
+    document.querySelectorAll('.variable-copy-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const variableItem = btn.closest('.variable-item');
+            const variable = variableItem.getAttribute('data-variable');
+            copyVariable(variable, btn);
+        });
+    });
+    
+    // Also allow clicking the variable item itself to copy
+    document.querySelectorAll('.variable-item').forEach(item => {
+        item.addEventListener('click', (e) => {
+            // Only copy if not clicking the copy button
+            if (!e.target.closest('.variable-copy-btn')) {
+                const variable = item.getAttribute('data-variable');
+                const copyBtn = item.querySelector('.variable-copy-btn');
+                copyVariable(variable, copyBtn);
+            }
+        });
+    });
+    
     // Gallery refresh button
     const refreshGalleryBtn = document.getElementById('refreshGalleryBtn');
     if (refreshGalleryBtn) {
