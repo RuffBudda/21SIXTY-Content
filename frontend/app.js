@@ -661,14 +661,21 @@ async function processVideo() {
         if (!response.ok) {
             let errorMessage = 'Failed to process audio file';
             try {
-                const error = await response.json();
-                errorMessage = error.detail || error.message || errorMessage;
+                const errorData = await response.json();
+                // Handle FastAPI error format: {detail: "message"} or {message: "message"}
+                if (typeof errorData === 'object' && errorData !== null) {
+                    errorMessage = errorData.detail || errorData.message || JSON.stringify(errorData);
+                } else if (typeof errorData === 'string') {
+                    errorMessage = errorData;
+                }
             } catch (e) {
                 // If response is not JSON, try to get text
                 try {
                     const errorText = await response.text();
                     if (errorText) {
                         errorMessage = errorText;
+                    } else {
+                        errorMessage = `Server error: ${response.status} ${response.statusText}`;
                     }
                 } catch (textError) {
                     errorMessage = `Server error: ${response.status} ${response.statusText}`;
@@ -724,7 +731,21 @@ async function processVideo() {
     } catch (error) {
         console.error('Error processing audio file:', error);
         if (statusDiv) {
-            const errorMsg = error.message || 'Unknown error occurred';
+            // Properly extract error message from various error formats
+            let errorMsg = 'Unknown error occurred';
+            if (error instanceof Error) {
+                errorMsg = error.message || String(error);
+            } else if (typeof error === 'string') {
+                errorMsg = error;
+            } else if (error && typeof error === 'object') {
+                errorMsg = error.message || error.detail || error.error || JSON.stringify(error);
+            } else {
+                errorMsg = String(error);
+            }
+            // Ensure error message is not "[object Object]"
+            if (errorMsg === '[object Object]' || errorMsg.includes('[object')) {
+                errorMsg = 'An error occurred while processing the audio file. Please check the console for details.';
+            }
             showStatus(statusDiv, `Error: ${errorMsg}`, 'error');
         }
     } finally {

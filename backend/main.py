@@ -18,6 +18,9 @@ from services.youtube_service import YouTubeService
 from services.openai_service import OpenAIService
 from services.content_generator import ContentGenerator
 from services.prompts_service import PromptsService
+from utils.file_handler import FileHandler
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.interval import IntervalTrigger
 
 # Load environment variables
 load_dotenv()
@@ -51,12 +54,61 @@ openai_service = OpenAIService()
 prompts_service = PromptsService()
 content_generator = ContentGenerator(openai_service, prompts_service)
 
+# Initialize file handler for cleanup (2 weeks = 336 hours)
+file_handler = FileHandler(upload_dir=youtube_service.upload_dir, max_age_hours=336)
+
 # Session storage (in production, use Redis or similar)
 authenticated_sessions = set()
 
 # Store MP3 file paths by video ID (in production, use Redis or database)
 # Format: {video_id: file_path}
 mp3_files = {}
+
+# Initialize scheduler for periodic cleanup
+scheduler = AsyncIOScheduler()
+
+async def periodic_cleanup():
+    """Periodic cleanup task to remove old MP3 files (runs every 2 weeks)"""
+    try:
+        logger.info("Starting periodic cleanup of old MP3 files...")
+        deleted_count = file_handler.cleanup_old_files()
+        
+        # Also clean up mp3_files dictionary entries for deleted files
+        if deleted_count > 0:
+            video_ids_to_remove = []
+            for video_id, file_path in mp3_files.items():
+                if not os.path.exists(file_path):
+                    video_ids_to_remove.append(video_id)
+            
+            for video_id in video_ids_to_remove:
+                del mp3_files[video_id]
+                logger.info(f"Removed video_id {video_id} from mp3_files dictionary")
+        
+        logger.info(f"Periodic cleanup completed. Deleted {deleted_count} files.")
+    except Exception as e:
+        logger.error(f"Error during periodic cleanup: {str(e)}", exc_info=True)
+
+# Schedule periodic cleanup every 2 weeks (14 days = 1209600 seconds)
+scheduler.add_job(
+    periodic_cleanup,
+    trigger=IntervalTrigger(weeks=2),
+    id='cleanup_old_files',
+    name='Cleanup old MP3 files',
+    replace_existing=True
+)
+
+# Start scheduler when app starts
+@app.on_event("startup")
+async def startup_event():
+    scheduler.start()
+    logger.info("Scheduler started. Periodic cleanup will run every 2 weeks.")
+    # Run initial cleanup check
+    await periodic_cleanup()
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    scheduler.shutdown()
+    logger.info("Scheduler stopped.")
 
 # Cookie file directory - COMMENTED OUT: pytube doesn't support cookies
 # COOKIES_DIR = os.path.join(os.path.dirname(__file__), "cookies")
@@ -123,30 +175,41 @@ async def process_video(
     """Process uploaded audio file"""
     if not verify_auth(credentials):
         raise HTTPException(status_code=401, detail="Authentication required")
+    
+    # Validate file type BEFORE reading file content
+    if not audio_file.filename:
+        raise HTTPException(status_code=400, detail="No filename provided. Please ensure your file has a valid name.")
+    
+    file_extension = audio_file.filename.lower()
+    if not file_extension.endswith(('.mp3', '.wav', '.m4a', '.ogg', '.flac')):
+        raise HTTPException(status_code=400, detail="Invalid audio file format. Supported formats: MP3, WAV, M4A, OGG, FLAC")
+    
     try:
         # Generate unique ID from audio file (use filename hash or timestamp)
         file_content = await audio_file.read()
+        
+        # Validate file size (optional: prevent extremely large files)
+        max_file_size = 500 * 1024 * 1024  # 500MB
+        if len(file_content) > max_file_size:
+            raise HTTPException(status_code=400, detail=f"File too large. Maximum size is {max_file_size / (1024*1024):.0f}MB")
+        
+        if len(file_content) == 0:
+            raise HTTPException(status_code=400, detail="File is empty. Please upload a valid audio file.")
+        
         file_hash = hashlib.md5(file_content).hexdigest()[:11]
         video_id = f"audio_{file_hash}_{int(time.time())}"
         
-        # Reset file pointer for saving
-        await audio_file.seek(0)
-        
-        logger.info(f"Processing audio file: {audio_file.filename}")
+        logger.info(f"Processing audio file: {audio_file.filename} (size: {len(file_content)} bytes)")
         
         # Save uploaded audio file
         audio_path = os.path.join(youtube_service.upload_dir, f"{video_id}.mp3")
         os.makedirs(youtube_service.upload_dir, exist_ok=True)
         
-        # Validate file type
-        if not audio_file.filename or not audio_file.filename.lower().endswith(('.mp3', '.wav', '.m4a', '.ogg', '.flac')):
-            raise HTTPException(status_code=400, detail="Invalid audio file format. Supported formats: MP3, WAV, M4A, OGG, FLAC")
-        
         # Save uploaded file
         with open(audio_path, 'wb') as f:
             f.write(file_content)
         
-        logger.info(f"Saved uploaded audio file to: {audio_path} (size: {len(file_content)} bytes)")
+        logger.info(f"Saved uploaded audio file to: {audio_path}")
         
         # Return empty transcript - user will need to provide transcript manually or use speech-to-text
         transcript_data = {
@@ -169,6 +232,9 @@ async def process_video(
             video_duration=transcript_data.get("duration", 0),
             video_id=video_id
         )
+    except HTTPException:
+        # Re-raise HTTP exceptions as-is
+        raise
     except Exception as e:
         logger.error(f"Error processing video: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error processing video: {str(e)}")

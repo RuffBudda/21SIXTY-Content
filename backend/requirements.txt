@@ -8,4 +8,5 @@ yt-dlp>=2023.11.16
 # pytube>=15.0.0  # Commented out - replaced with yt-dlp due to HTTP 400 errors
 youtube-transcript-api==0.6.1
 aiofiles==23.2.1
+apscheduler==3.10.4
 

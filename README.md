@@ -1,4 +1,4 @@
-# CONTENT GEN v112
+# CONTENT GEN v123
 
 A web-based tool for processing podcast audio files and generating comprehensive content including summaries, blog posts, titles, quotes, chapter timestamps, and LinkedIn posts using OpenAI APIs.
 
@@ -24,6 +24,7 @@ A web-based tool for processing podcast audio files and generating comprehensive
 - **OpenAI Credit Tracking**: Monitor API usage in real-time with pill-style display matching version badge
 - **Prompt Editor**: Modern grid-based prompt editor with card layout (no nested scrolling). Authentication required to access and edit prompts. Includes variables reference with copy functionality
 - **Unified Header Pills**: Version and OpenAI credits displayed as matching pills on the same line
+- **Automatic File Cleanup**: Periodic cleanup runs every 2 weeks to automatically remove old MP3 files and prevent disk space issues
 
 ## Tech Stack
 
@@ -170,7 +171,7 @@ content-generator/
 │   │   ├── content_generator.py # Content generation
 │   │   └── prompts_service.py  # Prompt management
 │   ├── utils/
-│   │   └── file_handler.py     # File cleanup
+│   │   └── file_handler.py     # File cleanup utilities (periodic cleanup every 2 weeks)
 │   └── requirements.txt
 ├── frontend/
 │   ├── index.html

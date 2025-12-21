@@ -1,6 +1,6 @@
 # 21SIXTY Content Generator - Feature Documentation
 
-**Version:** v112  
+**Version:** v123  
 **Last Updated:** 2024-12-21
 
 This document provides a comprehensive overview of all features, architecture, and implementation details for AI agents working on this codebase.
@@ -160,6 +160,17 @@ This document provides a comprehensive overview of all features, architecture, a
   - Displays status in header (Active/Inactive)
   - Updates every 30 seconds when authenticated
 
+### 10. Periodic File Cleanup
+- **Location**: `backend/main.py` - `periodic_cleanup()`, `backend/utils/file_handler.py`
+- **Description**: Automatically removes old MP3 files every 2 weeks to prevent disk space issues
+- **Implementation**:
+  - Uses APScheduler to run cleanup task every 2 weeks (14 days)
+  - Removes files older than 336 hours (2 weeks) from `backend/uploads/` directory
+  - Cleans up `mp3_files` dictionary entries for deleted files
+  - Logs cleanup activity including number of files deleted and total size freed
+  - Runs automatically on server startup and then every 2 weeks
+  - Default cleanup period: 336 hours (configurable in FileHandler)
+
 ---
 
 ## Architecture Overview
@@ -167,14 +178,14 @@ This document provides a comprehensive overview of all features, architecture, a
 ### Backend Structure
 ```
 backend/
-├── main.py                    # FastAPI app, routes, auth
+├── main.py                    # FastAPI app, routes, auth, periodic cleanup scheduler
 ├── models.py                  # Pydantic models for requests/responses
 ├── services/
 │   ├── openai_service.py     # OpenAI API integration
 │   ├── content_generator.py   # Content generation orchestration
 │   └── prompts_service.py    # Prompt management
 └── utils/
-    └── file_handler.py        # File cleanup utilities
+    └── file_handler.py        # File cleanup utilities (periodic cleanup every 2 weeks)
 ```
 
 ### Frontend Structure
@@ -325,7 +336,11 @@ Display All Deliverables
 - **Location**: `backend/uploads/`
 - **Naming**: `{videoId}.mp3`
 - **Cleanup**: Files stored temporarily, can be downloaded via `/api/download-audio/{videoId}`
-- **Note**: Files not automatically cleaned up (stored for download)
+- **Automatic Cleanup**: Periodic cleanup runs every 2 weeks (336 hours) to remove old MP3 files
+  - Implemented using APScheduler
+  - Removes files older than 2 weeks
+  - Also cleans up `mp3_files` dictionary entries for deleted files
+  - Logs cleanup activity including number of files deleted and total size freed
 
 ---
 
@@ -491,7 +506,7 @@ Display All Deliverables
 ## Important Notes for AI Agents
 
 ### Version Management
-- **Current Version**: v58
+- **Current Version**: v123
 - **Version Location**: `frontend/index.html` (title and header)
 - **Update**: Change in both places when incrementing version
 
