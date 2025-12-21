@@ -182,6 +182,12 @@ function setupEventListeners() {
     document.getElementById('savePromptsBtn').addEventListener('click', savePrompts);
     document.getElementById('resetPromptsBtn').addEventListener('click', resetPrompts);
     
+    // Gallery refresh button
+    const refreshGalleryBtn = document.getElementById('refreshGalleryBtn');
+    if (refreshGalleryBtn) {
+        refreshGalleryBtn.addEventListener('click', loadGallery);
+    }
+    
     document.getElementById('processVideoBtn').addEventListener('click', processVideo);
     document.getElementById('generateContentBtn').addEventListener('click', generateContent);
     
