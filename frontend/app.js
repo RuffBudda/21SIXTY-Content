@@ -1295,6 +1295,9 @@ async function loadPrompts() {
             document.getElementById('prompt_chapter_timestamps').value = data.prompts.chapter_timestamps || '';
             document.getElementById('prompt_linkedin_post').value = data.prompts.linkedin_post || '';
             document.getElementById('prompt_keywords').value = data.prompts.keywords || '';
+            
+            // Update previews after loading
+            updatePromptPreviews();
         }
     } catch (error) {
         console.error('Error loading prompts:', error);
