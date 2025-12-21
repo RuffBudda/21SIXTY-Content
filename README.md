@@ -1,11 +1,10 @@
-# 21SIXTY CONTENT GEN v60
+# 21SIXTY CONTENT GEN v61
 
 A web-based tool for processing podcast audio files and generating comprehensive content including summaries, blog posts, titles, quotes, and chapter timestamps using OpenAI APIs.
 
 ## Features
 
 - **Audio File Upload**: Upload audio files (MP3, WAV, M4A, OGG, FLAC) for processing
-- **Optional YouTube Transcript Extraction**: Optionally extract transcripts with timecodes from YouTube URLs (if provided)
 - **LocalStorage Caching**: Intelligent caching system that stores processed data and audio files locally to avoid reprocessing
 - **Projects Gallery**: Browse and manage all your processed projects stored in local storage. Open any project to access its transcript and generated content
 - **AI-Powered Content Generation**:
@@ -87,7 +86,7 @@ uvicorn main:app --host 0.0.0.0 --port 8000 --reload
    - Check localStorage for cached data (if same file was processed before, uses cache)
    - Upload and save the audio file
    - Display processing animations with real-time status
-   - Note: Transcript extraction from YouTube is optional and can be added later if needed
+   - Note: Transcripts must be provided manually or through speech-to-text integration
 3. **Enter Guest Information**: Fill in the guest's name, title, company, and LinkedIn profile
 4. **Generate Content**: Click "Generate Content" to create all 7 content types using AI
 5. **Download or Copy Results**: 
@@ -102,13 +101,12 @@ uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 ## API Endpoints
 
 ### POST /api/process-video
-Process an uploaded audio file and optionally extract transcript from YouTube URL.
+Process an uploaded audio file.
 
 **Request:** (multipart/form-data)
 - `audio_file`: Audio file (MP3, WAV, M4A, OGG, FLAC) - **Required**
-- `youtube_url`: YouTube video URL for transcript extraction - **Optional**
 
-**Note:** The endpoint accepts form data with file upload. YouTube URL is optional - if not provided, transcript will be empty.
+**Note:** The endpoint accepts form data with file upload. Transcripts must be provided manually or through speech-to-text integration.
 
 **Response:**
 ```json

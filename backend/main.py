@@ -117,11 +117,10 @@ async def health_check():
 @app.post("/api/process-video", response_model=ProcessVideoResponse)
 async def process_video(
     audio_file: UploadFile = File(...),
-    youtube_url: Optional[str] = Form(None),
     background_tasks: BackgroundTasks = None,
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)
 ):
-    """Process uploaded audio file and optionally extract transcript from YouTube URL"""
+    """Process uploaded audio file"""
     if not verify_auth(credentials):
         raise HTTPException(status_code=401, detail="Authentication required")
     try:
@@ -149,30 +148,13 @@ async def process_video(
         
         logger.info(f"Saved uploaded audio file to: {audio_path} (size: {len(file_content)} bytes)")
         
-        # Get transcript with timecodes from YouTube URL (if provided)
-        transcript_data = None
-        if youtube_url and youtube_url.strip():
-            try:
-                logger.info(f"Extracting transcript from YouTube URL: {youtube_url}")
-                transcript_data = await youtube_service.get_transcript(youtube_url)
-            except Exception as e:
-                logger.warning(f"Failed to extract transcript from YouTube URL: {str(e)}")
-                # Continue without transcript - user can still generate content manually
-                transcript_data = {
-                    "transcript": "",
-                    "transcript_with_timecodes": [],
-                    "title": audio_file.filename or "Audio File",
-                    "duration": 0
-                }
-        else:
-            # No YouTube URL provided - return empty transcript
-            logger.info("No YouTube URL provided - transcript will be empty")
-            transcript_data = {
-                "transcript": "",
-                "transcript_with_timecodes": [],
-                "title": audio_file.filename or "Audio File",
-                "duration": 0
-            }
+        # Return empty transcript - user will need to provide transcript manually or use speech-to-text
+        transcript_data = {
+            "transcript": "",
+            "transcript_with_timecodes": [],
+            "title": audio_file.filename or "Audio File",
+            "duration": 0
+        }
         
         # Store MP3 file path for download (don't cleanup immediately)
         if audio_path and os.path.exists(audio_path):
