@@ -191,6 +191,206 @@ Configure these in the `.env` file in the `backend/` directory:
 
 **Important:** The OpenAI API requires the `openai` Python package version 1.40.0 or higher (specified in `requirements.txt`).
 
+## AI Prompts
+
+The application uses customizable prompts for generating different content types. All prompts can be edited through the Prompts Editor in the web interface. Below are the default prompts:
+
+### YouTube Summary Prompt
+```
+You are writing a summary for a YouTube video description for The Dollar Diaries podcast.
+
+Guest Information:
+- Name: {guest_name}
+- Title: {guest_title}
+- Company: {guest_company}
+
+Transcript:
+{transcript}
+
+Please create a compelling 3-paragraph summary for YouTube that:
+1. Introduces the guest and their background in the first paragraph
+2. Highlights the key topics and insights discussed in the second paragraph
+3. Teases what viewers will learn or take away in the third paragraph
+
+Make it engaging, professional, and suitable for a YouTube video description.
+```
+
+### Blog Post Prompt
+```
+You are writing a comprehensive 2000-word blog post based on a podcast episode transcript from The Dollar Diaries podcast.
+
+Guest Information:
+- Name: {guest_name}
+- Title: {guest_title}
+- Company: {guest_company}
+- LinkedIn: {guest_linkedin}
+
+Transcript:
+{transcript}
+
+Instructions:
+1. Write a comprehensive 2000-word blog post based on this episode
+2. In the FIRST PARAGRAPH, hyperlink the guest's name to their LinkedIn profile using markdown format: [Name](LinkedIn_URL)
+3. Structure the blog post with engaging subheadings
+4. Include key insights, quotes, and takeaways from the episode
+5. Make it valuable and readable for the audience
+6. End with a strong conclusion
+
+Format the LinkedIn hyperlink in the first paragraph like this:
+In this episode of The Dollar Diaries, we speak with [{guest_name}]({guest_linkedin}), {guest_title} at {guest_company}, about...
+
+Write the full blog post now:
+```
+
+### Clickbait Titles Prompt
+```
+Generate 20 clickbait-style titles for a podcast episode, each under 100 characters.
+
+Guest: {guest_name} from {guest_company}
+
+Transcript excerpt:
+{transcript}
+
+Requirements:
+- Each title must be under 100 characters
+- Include the guest's name ({guest_name}) and/or company ({guest_company})
+- Make them compelling and click-worthy
+- Based on the actual content of the episode
+- Number each title from 1 to 20
+- Return only the titles, one per line, without any other text
+
+Format:
+1. Title here
+2. Title here
+...
+```
+
+### Two Line Summary Prompt
+```
+Create a concise two-line summary of this podcast episode.
+
+Transcript:
+{transcript}
+
+Write exactly two lines that capture the essence of the episode. Make it engaging and informative.
+
+Format:
+Line 1
+Line 2
+```
+
+### Quotes Prompt
+```
+Extract 20 of the most notable, insightful, or quotable statements from this podcast transcript.
+
+Transcript with timestamps:
+{transcript_with_timecodes}
+
+Requirements:
+- Select the 20 most impactful quotes
+- They should be complete thoughts or statements
+- Include the timestamp in format [HH:MM:SS] before each quote
+- Number each quote from 1 to 20
+- Return only the quotes, one per line
+
+Format:
+1. [HH:MM:SS] Quote text here
+2. [HH:MM:SS] Quote text here
+...
+```
+
+### Chapter Timestamps Prompt
+```
+Analyze this podcast transcript and create YouTube chapter timestamps.
+
+Transcript with timecodes:
+{transcript_with_timecodes}
+
+Video duration: {video_duration} seconds
+
+Create YouTube-ready chapter timestamps that:
+1. Identify natural topic breaks in the conversation
+2. Use format: 00:00:00 - Chapter Title
+3. Create 8-12 meaningful chapters
+4. Each chapter title should be descriptive and engaging
+5. Timestamps should align with topic transitions
+
+Return only the timestamps in this exact format:
+00:00:00 - Chapter Title 1
+00:05:30 - Chapter Title 2
+...
+```
+
+### LinkedIn Post Prompt
+```
+You are creating a professional LinkedIn post for The Dollar Diaries podcast episode.
+
+Guest Information:
+- Name: {guest_name}
+- Title: {guest_title}
+- Company: {guest_company}
+- LinkedIn: {guest_linkedin}
+
+Transcript:
+{transcript}
+
+Instructions:
+1. **Opening Hook**: Start with an engaging hook that introduces the guest and episode topic. Mention the guest's name and link to their LinkedIn profile using markdown format: [{guest_name}]({guest_linkedin})
+
+2. **Guest Description**: Write 2-3 sentences describing the guest's background, expertise, achievements, and why they're an interesting guest. Make it compelling and highlight their credibility.
+
+3. **Three Key Takeaways**: Present exactly three key takeaways from the episode. Format them as:
+   • Takeaway 1: [Clear, actionable insight]
+   • Takeaway 2: [Clear, actionable insight]
+   • Takeaway 3: [Clear, actionable insight]
+   
+   Each takeaway should be:
+   - Specific and actionable
+   - Based on actual content from the transcript
+   - Valuable to the LinkedIn audience
+   - 1-2 sentences each
+
+4. **Call-to-Action (CTA)**: End with a clear CTA that includes:
+   - Placeholder link to watch the episode: [Watch on YouTube](YOUTUBE_LINK_PLACEHOLDER)
+   - Placeholder link to read the newsletter: [Read in Newsletter](NEWSLETTER_LINK_PLACEHOLDER)
+   - Make the CTA engaging and encourage engagement (likes, comments, shares)
+
+Formatting Requirements:
+- Use line breaks (double line breaks) between sections for readability
+- Keep total length between 300-500 words (optimal for LinkedIn engagement)
+- Use professional but conversational tone
+- Include relevant hashtags if appropriate (2-3 max)
+- Make it scannable with clear structure
+- Optimize for LinkedIn's algorithm (engagement-focused)
+
+Write the complete LinkedIn post now:
+```
+
+### Keywords Prompt
+```
+Generate a comma-separated list of keywords based on this podcast episode transcript.
+
+Guest Information:
+- Name: {guest_name}
+- Title: {guest_title}
+- Company: {guest_company}
+
+Transcript:
+{transcript}
+
+Requirements:
+- MUST include these exact keywords: 'thedollardiaries', 'tdd', 'dubai', '{guest_name}', '{guest_company}', '{guest_title}'
+- Add additional relevant keywords based on the conversation topics, themes, and content
+- All keywords should be lowercase
+- Separate keywords with commas and a single space: ', '
+- Total character count (including commas and spaces) must NOT exceed 500 characters
+- Focus on topics discussed, industries mentioned, key concepts, and relevant terms
+- Return ONLY the comma-separated keywords, nothing else
+
+Format:
+keyword1, keyword2, keyword3, ...
+```
+
 ## License
 
 See [LICENSE.md](LICENSE.md) for details.
