@@ -1392,31 +1392,8 @@ function createProjectCard(project) {
         minute: '2-digit'
     });
     
-    // Get guest name from cached content if available
-    let guestName = 'Untitled Project';
-    if (project.hasContent && videoInfo && videoInfo.video_id) {
-        const contentKey = `content_${videoInfo.video_id}`;
-        const contentData = localStorage.getItem(contentKey);
-        if (contentData) {
-            try {
-                const content = JSON.parse(contentData);
-                // Try to get guest name from the content data or from a separate cache
-                // For now, use video title as fallback, but we'll need to store guest info separately
-            } catch (e) {
-                console.error('Error parsing content for guest name:', e);
-            }
-        }
-    }
-    
-    // Try to get guest name from the most recent generation attempt
-    // Check if there's a guest info stored with the project
-    const guestNameFromCache = project.guestName || project.videoInfo?.guest_name || null;
-    if (guestNameFromCache) {
-        guestName = guestNameFromCache;
-    } else {
-        // Fallback to video title
-        guestName = project.videoInfo?.title || 'Untitled Project';
-    }
+    // Get guest name - prioritize stored guestName, fallback to video title
+    const guestName = project.guestName || project.videoInfo?.title || 'Untitled Project';
     
     card.innerHTML = `
         <div class="gallery-card-header">
