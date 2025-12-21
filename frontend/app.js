@@ -1109,6 +1109,7 @@ async function loadPrompts() {
             document.getElementById('prompt_quotes').value = data.prompts.quotes || '';
             document.getElementById('prompt_chapter_timestamps').value = data.prompts.chapter_timestamps || '';
             document.getElementById('prompt_linkedin_post').value = data.prompts.linkedin_post || '';
+            document.getElementById('prompt_keywords').value = data.prompts.keywords || '';
         }
     } catch (error) {
         console.error('Error loading prompts:', error);
