@@ -615,7 +615,6 @@ body {
     
     .prompts-tiles-grid {
         grid-template-columns: 1fr;
-        max-height: calc(100vh - 350px);
     }
 }
 
