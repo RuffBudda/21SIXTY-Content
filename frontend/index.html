@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CONTENT GEN v131</title>
+    <title>CONTENT GEN v133</title>
     <link rel="icon" type="image/x-icon" href="/static/images/favicons/favicon.ico">
     <link rel="stylesheet" href="styles.css">
 </head>
@@ -51,7 +51,7 @@
                 <h1 class="title">CONTENT GEN</h1>
             </div>
             <div class="header-pills">
-                <span class="version">v131</span>
+                <span class="version">v133</span>
                 <span class="openai-pill">
                     <span class="openai-label">OpenAI:</span>
                     <span class="openai-value" id="creditsValue">Fetching...</span>
@@ -542,7 +542,10 @@
                         <input type="text" id="guestLinkedIn" placeholder="https://www.linkedin.com/in/..." />
                     </div>
                 </div>
-                <button class="btn btn-primary" id="generateContentBtn">Generate Content</button>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <button class="btn btn-primary" id="generateContentBtn">Generate Content</button>
+                    <button class="btn btn-secondary" id="regenerateContentBtn" style="display: none;">Regenerate</button>
+                </div>
                 <div id="generatingStatus" class="status-message"></div>
             </div>
 

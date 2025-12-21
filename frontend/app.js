@@ -303,7 +303,11 @@ function setupEventListeners() {
     }
     
     document.getElementById('processVideoBtn').addEventListener('click', processVideo);
-    document.getElementById('generateContentBtn').addEventListener('click', generateContent);
+    document.getElementById('generateContentBtn').addEventListener('click', () => generateContent(false));
+    const regenerateBtn = document.getElementById('regenerateContentBtn');
+    if (regenerateBtn) {
+        regenerateBtn.addEventListener('click', () => generateContent(true));
+    }
     
     // Event delegation for result action buttons (copy and download)
     document.addEventListener('click', (e) => {
@@ -798,6 +802,11 @@ async function processVideo() {
                 }
             }
             
+            // Display transcript immediately after processing
+            if (transcriptData) {
+                displayTranscript();
+            }
+            
             if (statusDiv) {
                 showStatus(statusDiv, 'Audio processed successfully! Please fill in guest information.', 'success');
             }
@@ -837,7 +846,7 @@ async function processVideo() {
     }
 }
 
-async function generateContent() {
+async function generateContent(forceRegenerate = false) {
     const guestName = document.getElementById('guestName').value.trim();
     const guestTitle = document.getElementById('guestTitle').value.trim();
     const guestCompany = document.getElementById('guestCompany').value.trim();
@@ -860,6 +869,30 @@ async function generateContent() {
     if (!isValidUrl(guestLinkedIn)) {
         showStatus(statusDiv, 'Please enter a valid LinkedIn URL', 'error');
         return;
+    }
+    
+    // Check cache for existing content (unless forcing regenerate)
+    if (!forceRegenerate && videoInfo && videoInfo.video_id) {
+        const contentKey = `content_${videoInfo.video_id}`;
+        const cachedContent = localStorage.getItem(contentKey);
+        if (cachedContent) {
+            try {
+                const content = JSON.parse(cachedContent);
+                if (content.data) {
+                    // Check if guest info matches (simple check - could be enhanced)
+                    const useCached = confirm('Content already generated for this project. Use cached content? Click OK to use cached, Cancel to regenerate.');
+                    if (useCached) {
+                        displayResults(content.data);
+                        document.getElementById('resultsContainer').style.display = 'block';
+                        document.getElementById('resultsContainer').scrollIntoView({ behavior: 'smooth' });
+                        showStatus(statusDiv, 'Using cached content!', 'success');
+                        return;
+                    }
+                }
+            } catch (e) {
+                console.error('Error parsing cached content:', e);
+            }
+        }
     }
     
     generateBtn.disabled = true;
@@ -911,9 +944,24 @@ async function generateContent() {
                 const contentData = {
                     data: data,
                     video_id: videoInfo.video_id,
+                    guest_name: guestName,
                     timestamp: Date.now()
                 };
                 localStorage.setItem(contentKey, JSON.stringify(contentData));
+                
+                // Also store guest name in the processed data for gallery display
+                const processedKey = `processed_${fileHash || videoInfo.video_id}`;
+                const processedData = localStorage.getItem(processedKey);
+                if (processedData) {
+                    try {
+                        const parsed = JSON.parse(processedData);
+                        parsed.guestName = guestName;
+                        localStorage.setItem(processedKey, JSON.stringify(parsed));
+                    } catch (e) {
+                        console.error('Error updating processed data with guest name:', e);
+                    }
+                }
+                
                 console.log(`Cached generated content with key: ${contentKey}`);
             } catch (e) {
                 console.error('Error caching generated content:', e);
@@ -926,6 +974,12 @@ async function generateContent() {
         document.getElementById('resultsContainer').style.display = 'block';
         document.getElementById('resultsContainer').scrollIntoView({ behavior: 'smooth' });
         
+        // Show regenerate button
+        const regenerateBtn = document.getElementById('regenerateContentBtn');
+        if (regenerateBtn) {
+            regenerateBtn.style.display = 'inline-block';
+        }
+        
     } catch (error) {
         console.error('Error generating content:', error);
         showStatus(statusDiv, `Error: ${error.message}`, 'error');
@@ -935,10 +989,11 @@ async function generateContent() {
     }
 }
 
-// Display Results
-function displayResults(data) {
-    // Transcript with Timecodes - Always show if available
+// Display transcript separately (called after processing and when opening projects)
+function displayTranscript() {
     const transcriptElement = document.getElementById('transcript');
+    if (!transcriptElement) return;
+    
     if (transcriptData && transcriptData.transcript_with_timecodes && Array.isArray(transcriptData.transcript_with_timecodes) && transcriptData.transcript_with_timecodes.length > 0) {
         transcriptElement.textContent = formatTranscriptWithTimecodes(transcriptData.transcript_with_timecodes);
     } else if (transcriptData && transcriptData.transcript) {
@@ -948,6 +1003,12 @@ function displayResults(data) {
         // Clear if no transcript data
         transcriptElement.textContent = '';
     }
+}
+
+// Display Results
+function displayResults(data) {
+    // Display transcript if available
+    displayTranscript();
     
     // LinkedIn Post (with markdown rendering for links)
     if (data.linkedin_post) {
@@ -1062,6 +1123,54 @@ function copyToClipboard(targetId) {
         console.error('Failed to copy:', err);
         alert('Failed to copy to clipboard');
     });
+}
+
+function downloadAsTxt(targetId) {
+    const element = document.getElementById(targetId);
+    
+    if (!element) {
+        alert('Content not found');
+        return;
+    }
+    
+    let textToDownload = '';
+    
+    if (element) {
+        // If it's HTML content (blog post, LinkedIn post), get text content
+        textToDownload = element.textContent || element.innerText || '';
+    }
+    
+    if (!textToDownload.trim()) {
+        alert('Nothing to download');
+        return;
+    }
+    
+    // Filename mapping
+    const filenameMap = {
+        'transcript': 'transcript-with-timecodes.txt',
+        'youtubeSummary': 'youtube-summary.txt',
+        'blogPost': 'blog-post.txt',
+        'twoLineSummary': 'two-line-summary.txt',
+        'clickbaitTitles': 'clickbait-titles.txt',
+        'quotes': 'quotes.txt',
+        'chapterTimestamps': 'chapter-timestamps.txt',
+        'linkedinPost': 'linkedin-post.txt',
+        'keywords': 'keywords.txt',
+        'hashtags': 'hashtags.txt'
+    };
+    
+    const filename = filenameMap[targetId] || `${targetId}.txt`;
+    
+    // Create blob and download
+    const blob = new Blob([textToDownload], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
 }
 
 function showStatus(element, message, type) {
@@ -1223,6 +1332,12 @@ function loadGallery() {
                         }
                     }
                     
+                    // Try to extract guest name from processed data or content
+                    let guestName = data.guestName || null;
+                    if (!guestName && generatedContent) {
+                        guestName = generatedContent.guest_name || null;
+                    }
+                    
                     projects.push({
                         id: projectId,
                         key: key,
@@ -1230,7 +1345,8 @@ function loadGallery() {
                         transcriptData: data.transcriptData,
                         timestamp: data.timestamp || Date.now(),
                         hasContent: !!generatedContent,
-                        contentKey: contentKey
+                        contentKey: contentKey,
+                        guestName: guestName
                     });
                 }
             } catch (e) {
@@ -1276,35 +1392,38 @@ function createProjectCard(project) {
         minute: '2-digit'
     });
     
-    const title = project.videoInfo?.title || 'Untitled Project';
-    const duration = project.videoInfo?.duration || 0;
-    const durationStr = formatDuration(duration);
+    // Get guest name from cached content if available
+    let guestName = 'Untitled Project';
+    if (project.hasContent && videoInfo && videoInfo.video_id) {
+        const contentKey = `content_${videoInfo.video_id}`;
+        const contentData = localStorage.getItem(contentKey);
+        if (contentData) {
+            try {
+                const content = JSON.parse(contentData);
+                // Try to get guest name from the content data or from a separate cache
+                // For now, use video title as fallback, but we'll need to store guest info separately
+            } catch (e) {
+                console.error('Error parsing content for guest name:', e);
+            }
+        }
+    }
+    
+    // Try to get guest name from the most recent generation attempt
+    // Check if there's a guest info stored with the project
+    const guestNameFromCache = project.guestName || project.videoInfo?.guest_name || null;
+    if (guestNameFromCache) {
+        guestName = guestNameFromCache;
+    } else {
+        // Fallback to video title
+        guestName = project.videoInfo?.title || 'Untitled Project';
+    }
     
     card.innerHTML = `
         <div class="gallery-card-header">
-            <h3 class="gallery-card-title">${escapeHtml(title)}</h3>
+            <h3 class="gallery-card-title">${escapeHtml(guestName)}</h3>
             <span class="gallery-card-date">${dateStr}</span>
         </div>
         <div class="gallery-card-body">
-            <div class="gallery-card-info">
-                <span class="gallery-card-info-item">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <polyline points="12 6 12 12 16 14"></polyline>
-                    </svg>
-                    ${durationStr}
-                </span>
-                <span class="gallery-card-info-item ${project.hasContent ? 'has-content' : ''}">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                        <polyline points="14 2 14 8 20 8"></polyline>
-                        <line x1="16" y1="13" x2="8" y2="13"></line>
-                        <line x1="16" y1="17" x2="8" y2="17"></line>
-                        <polyline points="10 9 9 9 8 9"></polyline>
-                    </svg>
-                    ${project.hasContent ? 'Content Generated' : 'Transcript Only'}
-                </span>
-            </div>
             <div class="gallery-card-actions">
                 <button class="btn btn-primary btn-sm" onclick="openProject('${project.id}')">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
@@ -1359,10 +1478,25 @@ function openProject(projectId) {
         // Switch to content tab
         switchTab('content');
         
+        // Display transcript
+        displayTranscript();
+        
         // Show step 2 (guest info) if transcript is loaded
         if (transcriptData) {
             document.getElementById('step2Card').style.display = 'block';
             document.getElementById('step1Card').scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        // Show regenerate button if content exists
+        if (videoInfo && videoInfo.video_id) {
+            const contentKey = `content_${videoInfo.video_id}`;
+            const contentData = localStorage.getItem(contentKey);
+            if (contentData) {
+                const regenerateBtn = document.getElementById('regenerateContentBtn');
+                if (regenerateBtn) {
+                    regenerateBtn.style.display = 'inline-block';
+                }
+            }
         }
         
         // Show success message
