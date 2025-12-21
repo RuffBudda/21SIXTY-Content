@@ -1,4 +1,4 @@
-# 21SIXTY CONTENT GEN v59
+# 21SIXTY CONTENT GEN v60
 
 A web-based tool for processing podcast audio files and generating comprehensive content including summaries, blog posts, titles, quotes, and chapter timestamps using OpenAI APIs.
 
@@ -7,6 +7,7 @@ A web-based tool for processing podcast audio files and generating comprehensive
 - **Audio File Upload**: Upload audio files (MP3, WAV, M4A, OGG, FLAC) for processing
 - **Optional YouTube Transcript Extraction**: Optionally extract transcripts with timecodes from YouTube URLs (if provided)
 - **LocalStorage Caching**: Intelligent caching system that stores processed data and audio files locally to avoid reprocessing
+- **Projects Gallery**: Browse and manage all your processed projects stored in local storage. Open any project to access its transcript and generated content
 - **AI-Powered Content Generation**:
   - Complete transcript with formatted timecodes
   - 3-paragraph YouTube summary
@@ -92,6 +93,11 @@ uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 5. **Download or Copy Results**: 
    - Use the download button (📥) to save any deliverable as a TXT file
    - Use the copy button (📋) to copy content to your clipboard
+6. **Projects Gallery**: 
+   - Navigate to the "Projects Gallery" tab to view all your processed projects
+   - Each project card shows the title, date, duration, and whether content has been generated
+   - Click "Open Project" to load a project and access its transcript and generated content
+   - Delete projects you no longer need directly from the gallery
 
 ## API Endpoints
 

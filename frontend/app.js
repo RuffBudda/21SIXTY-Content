@@ -175,42 +175,31 @@ function setupEventListeners() {
         btn.addEventListener('click', (e) => {
             const tabName = e.target.getAttribute('data-tab');
             switchTab(tabName);
+            // Load gallery when switching to gallery tab
+            if (tabName === 'gallery') {
+                loadGallery();
+            }
         });
     });
+    
+    // Gallery refresh button
+    const refreshGalleryBtn = document.getElementById('refreshGalleryBtn');
+    if (refreshGalleryBtn) {
+        refreshGalleryBtn.addEventListener('click', loadGallery);
+    }
     
     // Prompts editor
     document.getElementById('savePromptsBtn').addEventListener('click', savePrompts);
     document.getElementById('resetPromptsBtn').addEventListener('click', resetPrompts);
     
-    // Audio file selection
-    const selectAudioBtn = document.getElementById('selectAudioBtn');
-    const audioFileInput = document.getElementById('audioFile');
-    if (selectAudioBtn && audioFileInput) {
-        selectAudioBtn.addEventListener('click', () => {
-            audioFileInput.click();
-        });
-        audioFileInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                document.getElementById('audioFileName').textContent = file.name;
-                document.getElementById('audioFileName').style.color = 'var(--accent-cyan)';
-            }
-        });
-    }
-    
     document.getElementById('processVideoBtn').addEventListener('click', processVideo);
     document.getElementById('generateContentBtn').addEventListener('click', generateContent);
     
-    // Copy and Download buttons
-    document.querySelectorAll('.btn-icon').forEach(btn => {
+    // Copy buttons
+    document.querySelectorAll('.btn-copy').forEach(btn => {
         btn.addEventListener('click', (e) => {
-            const action = e.currentTarget.getAttribute('data-action');
-            const targetId = e.currentTarget.getAttribute('data-target');
-            if (action === 'copy') {
-                copyToClipboard(targetId, e.currentTarget);
-            } else if (action === 'download') {
-                downloadAsTxt(targetId);
-            }
+            const targetId = e.target.getAttribute('data-target');
+            copyToClipboard(targetId);
         });
     });
     
@@ -436,77 +425,31 @@ async function loadCredits() {
 // }
 
 async function processVideo() {
-    const audioFileInput = document.getElementById('audioFile');
+    const youtubeUrl = document.getElementById('youtubeUrl').value.trim();
     const statusDiv = document.getElementById('processingStatus');
     const processBtn = document.getElementById('processVideoBtn');
-    const processingAnimation = document.getElementById('processingAnimation');
-    const processingText = document.getElementById('processingText');
     
-    // Validate inputs
-    if (!audioFileInput.files || audioFileInput.files.length === 0) {
-        showStatus(statusDiv, 'Please select an audio file', 'error');
+    if (!youtubeUrl) {
+        showStatus(statusDiv, 'Please enter a YouTube URL', 'error');
         return;
     }
     
-    const audioFile = audioFileInput.files[0];
-    
-    // Check localStorage for cached data
-    const fileHash = await getFileHash(audioFile);
-    const cacheKey = `processed_${fileHash}`;
-    const cachedData = localStorage.getItem(cacheKey);
-    
-    if (cachedData) {
-        try {
-            const parsed = JSON.parse(cachedData);
-            transcriptData = parsed.transcriptData;
-            videoInfo = parsed.videoInfo;
-            
-            showStatus(statusDiv, 'Using cached data from previous processing', 'success');
-            document.getElementById('step2Card').style.display = 'block';
-            document.getElementById('step1Card').scrollIntoView({ behavior: 'smooth' });
-            return;
-        } catch (e) {
-            console.error('Error parsing cached data:', e);
-            // Continue with processing if cache is invalid
-        }
+    // Validate YouTube URL
+    if (!isValidYouTubeUrl(youtubeUrl)) {
+        showStatus(statusDiv, 'Please enter a valid YouTube URL', 'error');
+        return;
     }
     
     processBtn.disabled = true;
-    processingAnimation.style.display = 'flex';
-    showLoading('Processing audio file...');
-    showStatus(statusDiv, 'Processing audio...', 'info');
-    
-    // Update processing animation text
-    const steps = [
-        'Uploading audio file...',
-        'Processing audio...',
-        'Processing data...',
-        'Almost done...'
-    ];
-    let stepIndex = 0;
-    const stepInterval = setInterval(() => {
-        if (stepIndex < steps.length) {
-            processingText.textContent = steps[stepIndex];
-            stepIndex++;
-        }
-    }, 2000);
+    showLoading('Downloading video and extracting transcript...');
+    showStatus(statusDiv, 'Processing video...', 'info');
     
     try {
-        const formData = new FormData();
-        formData.append('audio_file', audioFile);
-        
-        // YouTube URL is now optional - don't include it in formData if not needed
-        // formData.append('youtube_url', youtubeUrl);  // Removed - YouTube URL no longer required
-        
         const response = await fetch(`${API_BASE_URL}/api/process-video`, {
             method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${authToken}`
-            },
-            body: formData
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ youtube_url: youtubeUrl })
         });
-        
-        clearInterval(stepInterval);
         
         if (response.status === 401) {
             authToken = null;
@@ -533,17 +476,19 @@ async function processVideo() {
                 video_id: data.video_id
             };
             
-            // Cache the processed data
-            const cacheData = {
-                transcriptData: data,
-                videoInfo: videoInfo,
-                timestamp: Date.now()
-            };
-            localStorage.setItem(cacheKey, JSON.stringify(cacheData));
-            
-            // Also cache the audio file (as base64 for localStorage)
-            const audioBase64 = await fileToBase64(audioFile);
-            localStorage.setItem(`audio_${fileHash}`, audioBase64);
+            // Show download button if video_id is available
+            if (data.video_id) {
+                const downloadContainer = document.getElementById('audioDownloadContainer');
+                const downloadBtn = document.getElementById('downloadAudioBtn');
+                downloadContainer.style.display = 'block';
+                downloadBtn.href = `${API_BASE_URL}/api/download-audio/${data.video_id}`;
+                
+                // Add auth header for download (using fetch to handle auth)
+                downloadBtn.onclick = async (e) => {
+                    e.preventDefault();
+                    await downloadAudioFile(data.video_id);
+                };
+            }
             
             showStatus(statusDiv, 'Video processed successfully! Please fill in guest information.', 'success');
             document.getElementById('step2Card').style.display = 'block';
@@ -556,7 +501,6 @@ async function processVideo() {
         showStatus(statusDiv, `Error: ${error.message}`, 'error');
     } finally {
         processBtn.disabled = false;
-        processingAnimation.style.display = 'none';
         hideLoading();
     }
 }
@@ -625,15 +569,6 @@ async function generateContent() {
         
         const data = await response.json();
         
-        // Cache generated content
-        if (transcriptData && transcriptData.video_id) {
-            const contentCacheKey = `content_${transcriptData.video_id}`;
-            localStorage.setItem(contentCacheKey, JSON.stringify({
-                data: data,
-                timestamp: Date.now()
-            }));
-        }
-        
         // Display results
         displayResults(data);
         
@@ -652,12 +587,6 @@ async function generateContent() {
 
 // Display Results
 function displayResults(data) {
-    // Transcript with Timecodes
-    if (transcriptData && transcriptData.transcript_with_timecodes) {
-        const transcriptElement = document.getElementById('transcript');
-        transcriptElement.innerHTML = formatTranscriptWithTimecodes(transcriptData.transcript_with_timecodes);
-    }
-    
     // YouTube Summary
     document.getElementById('youtubeSummary').textContent = data.youtube_summary;
     
@@ -692,13 +621,14 @@ function formatMarkdownLinks(text) {
 }
 
 // Utility Functions
-function copyToClipboard(targetId, buttonElement) {
+function copyToClipboard(targetId) {
     const element = document.getElementById(targetId);
+    const copyBtn = document.querySelector(`[data-target="${targetId}"]`);
     
     let textToCopy = '';
     
     if (element) {
-        // If it's HTML content (blog post, transcript), get text content
+        // If it's HTML content (blog post), get text content
         textToCopy = element.textContent || element.innerText || '';
     }
     
@@ -709,99 +639,17 @@ function copyToClipboard(targetId, buttonElement) {
     
     navigator.clipboard.writeText(textToCopy).then(() => {
         // Visual feedback
-        const originalHTML = buttonElement.innerHTML;
-        buttonElement.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
-        buttonElement.style.color = '#4CAF50';
+        const originalText = copyBtn.textContent;
+        copyBtn.textContent = 'Copied!';
+        copyBtn.classList.add('copied');
         
         setTimeout(() => {
-            buttonElement.innerHTML = originalHTML;
-            buttonElement.style.color = '';
+            copyBtn.textContent = originalText;
+            copyBtn.classList.remove('copied');
         }, 2000);
     }).catch(err => {
         console.error('Failed to copy:', err);
         alert('Failed to copy to clipboard');
-    });
-}
-
-function downloadAsTxt(targetId) {
-    const element = document.getElementById(targetId);
-    
-    if (!element) {
-        alert('Nothing to download');
-        return;
-    }
-    
-    const textContent = element.textContent || element.innerText || '';
-    
-    if (!textContent.trim()) {
-        alert('Nothing to download');
-        return;
-    }
-    
-    // Create filename based on target
-    const filenameMap = {
-        'transcript': 'Transcript_with_Timecodes',
-        'youtubeSummary': 'YouTube_Summary',
-        'blogPost': 'Blog_Post',
-        'twoLineSummary': 'Two_Line_Summary',
-        'clickbaitTitles': 'Clickbait_Titles',
-        'quotes': 'Quotes',
-        'chapterTimestamps': 'Chapter_Timestamps'
-    };
-    
-    const filename = (filenameMap[targetId] || targetId) + '.txt';
-    
-    // Create blob and download
-    const blob = new Blob([textContent], { type: 'text/plain' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    window.URL.revokeObjectURL(url);
-    document.body.removeChild(a);
-}
-
-function formatTranscriptWithTimecodes(transcript) {
-    if (!transcript || !Array.isArray(transcript)) {
-        return '';
-    }
-    
-    return transcript.map((entry, index) => {
-        const startTime = formatTime(entry.start);
-        const endTime = formatTime(entry.end || entry.start + entry.duration);
-        return `<div class="transcript-entry" style="margin-bottom: 10px; padding: 8px; background: rgba(30, 144, 255, 0.1); border-left: 3px solid var(--accent-blue);">
-            <span class="timecode" style="color: var(--accent-cyan); font-weight: bold; margin-right: 10px;">[${startTime} - ${endTime}]</span>
-            <span class="text">${entry.text}</span>
-        </div>`;
-    }).join('');
-}
-
-function formatTime(seconds) {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const secs = Math.floor(seconds % 60);
-    
-    if (hours > 0) {
-        return `${hours}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-    }
-    return `${minutes}:${String(secs).padStart(2, '0')}`;
-}
-
-async function getFileHash(file) {
-    const arrayBuffer = await file.arrayBuffer();
-    const hashBuffer = await crypto.subtle.digest('SHA-256', arrayBuffer);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-}
-
-function fileToBase64(file) {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
     });
 }
 
@@ -834,6 +682,245 @@ function isValidUrl(url) {
 }
 
 // Tab Management
+// Gallery Functions
+function loadGallery() {
+    const galleryContainer = document.getElementById('galleryContainer');
+    const galleryEmpty = document.getElementById('galleryEmpty');
+    
+    if (!galleryContainer) return;
+    
+    // Scan localStorage for projects
+    const projects = [];
+    
+    // Get all localStorage keys
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        
+        // Skip auth-related keys
+        if (key === 'authToken' || key === 'rememberMe') continue;
+        
+        // Check for processed data (transcript + video info)
+        if (key.startsWith('processed_')) {
+            try {
+                const data = JSON.parse(localStorage.getItem(key));
+                if (data && data.transcriptData) {
+                    const projectId = key.replace('processed_', '');
+                    const videoInfo = data.videoInfo || {};
+                    const contentKey = `content_${videoInfo.video_id || projectId}`;
+                    let generatedContent = null;
+                    
+                    // Check if there's generated content
+                    const contentData = localStorage.getItem(contentKey);
+                    if (contentData) {
+                        try {
+                            generatedContent = JSON.parse(contentData);
+                        } catch (e) {
+                            console.error('Error parsing content data:', e);
+                        }
+                    }
+                    
+                    projects.push({
+                        id: projectId,
+                        key: key,
+                        videoInfo: videoInfo,
+                        transcriptData: data.transcriptData,
+                        timestamp: data.timestamp || Date.now(),
+                        hasContent: !!generatedContent,
+                        contentKey: contentKey
+                    });
+                }
+            } catch (e) {
+                console.error(`Error parsing project ${key}:`, e);
+            }
+        }
+    }
+    
+    // Sort by timestamp (newest first)
+    projects.sort((a, b) => b.timestamp - a.timestamp);
+    
+    // Clear gallery
+    galleryContainer.innerHTML = '';
+    
+    if (projects.length === 0) {
+        galleryEmpty.style.display = 'block';
+        return;
+    }
+    
+    galleryEmpty.style.display = 'none';
+    
+    // Create project cards
+    projects.forEach(project => {
+        const card = createProjectCard(project);
+        galleryContainer.appendChild(card);
+    });
+}
+
+function createProjectCard(project) {
+    const card = document.createElement('div');
+    card.className = 'gallery-card';
+    
+    const date = new Date(project.timestamp);
+    const dateStr = date.toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+    
+    const title = project.videoInfo?.title || 'Untitled Project';
+    const duration = project.videoInfo?.duration || 0;
+    const durationStr = formatDuration(duration);
+    
+    card.innerHTML = `
+        <div class="gallery-card-header">
+            <h3 class="gallery-card-title">${escapeHtml(title)}</h3>
+            <span class="gallery-card-date">${dateStr}</span>
+        </div>
+        <div class="gallery-card-body">
+            <div class="gallery-card-info">
+                <span class="gallery-card-info-item">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                    ${durationStr}
+                </span>
+                <span class="gallery-card-info-item ${project.hasContent ? 'has-content' : ''}">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                        <polyline points="10 9 9 9 8 9"></polyline>
+                    </svg>
+                    ${project.hasContent ? 'Content Generated' : 'Transcript Only'}
+                </span>
+            </div>
+            <div class="gallery-card-actions">
+                <button class="btn btn-primary btn-sm" onclick="openProject('${project.id}')">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
+                        <path d="M5 12h14M12 5l7 7-7 7"></path>
+                    </svg>
+                    Open Project
+                </button>
+                <button class="btn btn-secondary btn-sm" onclick="deleteProject('${project.id}', '${project.key}')">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    </svg>
+                    Delete
+                </button>
+            </div>
+        </div>
+    `;
+    
+    return card;
+}
+
+function openProject(projectId) {
+    // Find the project in localStorage
+    const cacheKey = `processed_${projectId}`;
+    const cachedData = localStorage.getItem(cacheKey);
+    
+    if (!cachedData) {
+        alert('Project not found in local storage.');
+        return;
+    }
+    
+    try {
+        const parsed = JSON.parse(cachedData);
+        transcriptData = parsed.transcriptData;
+        videoInfo = parsed.videoInfo;
+        
+        // Check for generated content
+        if (videoInfo && videoInfo.video_id) {
+            const contentKey = `content_${videoInfo.video_id}`;
+            const contentData = localStorage.getItem(contentKey);
+            if (contentData) {
+                try {
+                    const content = JSON.parse(contentData);
+                    displayResults(content.data);
+                    document.getElementById('resultsContainer').style.display = 'block';
+                } catch (e) {
+                    console.error('Error parsing content:', e);
+                }
+            }
+        }
+        
+        // Switch to content tab
+        switchTab('content');
+        
+        // Show step 2 (guest info) if transcript is loaded
+        if (transcriptData) {
+            document.getElementById('step2Card').style.display = 'block';
+            document.getElementById('step1Card').scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        // Show success message
+        const statusDiv = document.getElementById('processingStatus');
+        if (statusDiv) {
+            showStatus(statusDiv, 'Project loaded successfully!', 'success');
+        }
+    } catch (e) {
+        console.error('Error loading project:', e);
+        alert('Error loading project: ' + e.message);
+    }
+}
+
+function deleteProject(projectId, cacheKey) {
+    if (!confirm('Are you sure you want to delete this project? This action cannot be undone.')) {
+        return;
+    }
+    
+    try {
+        // Delete processed data
+        localStorage.removeItem(cacheKey);
+        
+        // Delete audio file if exists
+        localStorage.removeItem(`audio_${projectId}`);
+        
+        // Delete generated content if exists
+        const contentKey = `content_${projectId}`;
+        const contentData = localStorage.getItem(contentKey);
+        if (contentData) {
+            try {
+                const content = JSON.parse(contentData);
+                if (content.data && content.data.video_id) {
+                    localStorage.removeItem(`content_${content.data.video_id}`);
+                }
+            } catch (e) {
+                // Try to delete by projectId
+                localStorage.removeItem(contentKey);
+            }
+        }
+        
+        // Reload gallery
+        loadGallery();
+    } catch (e) {
+        console.error('Error deleting project:', e);
+        alert('Error deleting project: ' + e.message);
+    }
+}
+
+function formatDuration(seconds) {
+    if (!seconds || seconds === 0) return 'N/A';
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = Math.floor(seconds % 60);
+    
+    if (hours > 0) {
+        return `${hours}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    }
+    return `${minutes}:${String(secs).padStart(2, '0')}`;
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
 function switchTab(tabName) {
     // Hide all tab contents
     document.querySelectorAll('.tab-content').forEach(content => {
