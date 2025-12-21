@@ -1103,7 +1103,8 @@ async function savePrompts() {
             clickbait_titles: document.getElementById('prompt_clickbait_titles').value,
             two_line_summary: document.getElementById('prompt_two_line_summary').value,
             quotes: document.getElementById('prompt_quotes').value,
-            chapter_timestamps: document.getElementById('prompt_chapter_timestamps').value
+            chapter_timestamps: document.getElementById('prompt_chapter_timestamps').value,
+            linkedin_post: document.getElementById('prompt_linkedin_post').value
         };
         
         const response = await fetch(`${API_BASE_URL}/api/prompts`, {
