@@ -170,21 +170,8 @@ content-generator/
 │   ├── styles.css
 │   └── app.js
 ├── nginx/                      # Nginx configuration
-├── systemd/                    # Systemd service file
-└── DEPLOYMENT.md              # Deployment guide
+└── systemd/                    # Systemd service file
 ```
-
-## Deployment
-
-See [DEPLOYMENT.md](DEPLOYMENT.md) for a complete deployment guide including:
-- Server setup and dependencies
-- Application installation and configuration
-- Systemd service setup
-- Nginx reverse proxy configuration
-- SSL/HTTPS setup with Let's Encrypt
-- Troubleshooting and maintenance
-
-The deployment guide is comprehensive and includes all steps needed to deploy on DigitalOcean with SSL support.
 
 ## Environment Variables
 
