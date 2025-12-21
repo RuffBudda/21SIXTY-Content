@@ -22,7 +22,7 @@ A web-based tool for processing podcast audio files and generating comprehensive
 - **Processing Animations**: Real-time visual feedback during processing with step-by-step status updates
 - **Dark Mode UI**: Beautiful dark theme matching the 21SIXTY brand
 - **OpenAI Credit Tracking**: Monitor API usage in real-time with pill-style display matching version badge
-- **Prompt Editor**: Modern grid-based prompt editor with card layout (no nested scrolling). Authentication required to access and edit prompts
+- **Prompt Editor**: Modern grid-based prompt editor with card layout (no nested scrolling). Authentication required to access and edit prompts. Includes variables reference with copy functionality
 - **Unified Header Pills**: Version and OpenAI credits displayed as matching pills on the same line
 
 ## Tech Stack
