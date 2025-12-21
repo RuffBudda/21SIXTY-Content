@@ -185,11 +185,16 @@ function setupEventListeners() {
     document.getElementById('processVideoBtn').addEventListener('click', processVideo);
     document.getElementById('generateContentBtn').addEventListener('click', generateContent);
     
-    // Copy buttons
-    document.querySelectorAll('.btn-copy').forEach(btn => {
+    // Copy and Download buttons
+    document.querySelectorAll('.btn-icon').forEach(btn => {
         btn.addEventListener('click', (e) => {
-            const targetId = e.target.getAttribute('data-target');
-            copyToClipboard(targetId);
+            const action = e.currentTarget.getAttribute('data-action');
+            const targetId = e.currentTarget.getAttribute('data-target');
+            if (action === 'copy') {
+                copyToClipboard(targetId);
+            } else if (action === 'download') {
+                downloadAsTxt(targetId);
+            }
         });
     });
     
