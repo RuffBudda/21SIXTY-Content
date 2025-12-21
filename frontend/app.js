@@ -204,6 +204,67 @@ function setupEventListeners() {
         });
     });
     
+    // Prompt tile expand/collapse buttons
+    document.querySelectorAll('.btn-expand').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const targetId = btn.getAttribute('data-target');
+            togglePromptExpand(targetId, btn);
+        });
+    });
+    
+    // Prompt tile edit buttons
+    document.querySelectorAll('.btn-edit').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const targetId = btn.getAttribute('data-target');
+            showEditPasswordModal(targetId);
+        });
+    });
+    
+    // Edit password modal submit
+    const confirmEditBtn = document.getElementById('confirmEditBtn');
+    if (confirmEditBtn) {
+        confirmEditBtn.addEventListener('click', verifyEditPassword);
+    }
+    
+    // Edit password modal cancel
+    const cancelEditBtn = document.getElementById('cancelEditBtn');
+    if (cancelEditBtn) {
+        cancelEditBtn.addEventListener('click', () => {
+            document.getElementById('editPasswordModal').style.display = 'none';
+            document.getElementById('editPasswordInput').value = '';
+        });
+    }
+    
+    // Save warnings modal confirm
+    const confirmSaveBtn = document.getElementById('confirmSaveBtn');
+    if (confirmSaveBtn) {
+        confirmSaveBtn.addEventListener('click', () => {
+            document.getElementById('saveWarningsModal').style.display = 'none';
+            // Proceed with actual save
+            performSavePrompts();
+        });
+    }
+    
+    // Save warnings modal cancel
+    const cancelSaveBtn = document.getElementById('cancelSaveBtn');
+    if (cancelSaveBtn) {
+        cancelSaveBtn.addEventListener('click', () => {
+            document.getElementById('saveWarningsModal').style.display = 'none';
+        });
+    }
+    
+    // Allow Enter key in edit password input
+    const editPasswordInput = document.getElementById('editPasswordInput');
+    if (editPasswordInput) {
+        editPasswordInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                verifyEditPassword();
+            }
+        });
+    }
+    
     // Gallery refresh button
     const refreshGalleryBtn = document.getElementById('refreshGalleryBtn');
     if (refreshGalleryBtn) {
@@ -1306,6 +1367,12 @@ async function loadPrompts() {
 }
 
 async function savePrompts() {
+    // Show warnings modal first
+    showSaveWarnings();
+}
+
+// Actual save function (called after warnings confirmation)
+async function performSavePrompts() {
     const statusDiv = document.getElementById('promptsStatus');
     const saveBtn = document.getElementById('savePromptsBtn');
     
@@ -1389,6 +1456,113 @@ function updatePromptPreviews() {
             previewDiv.textContent = previewText || 'No prompt set';
         }
     });
+}
+
+// Toggle prompt tile expand/collapse
+function togglePromptExpand(promptId, button) {
+    const tile = document.querySelector(`[data-prompt-id="${promptId}"]`);
+    const contentDiv = tile?.querySelector('.prompt-tile-content');
+    const previewDiv = tile?.querySelector('.prompt-tile-preview');
+    const expandIcon = button?.querySelector('svg');
+    
+    if (!tile || !contentDiv) return;
+    
+    const isExpanded = contentDiv.style.display !== 'none';
+    
+    if (isExpanded) {
+        // Collapse
+        contentDiv.style.display = 'none';
+        if (previewDiv) previewDiv.style.display = 'block';
+        if (expandIcon) {
+            expandIcon.innerHTML = '<path d="M6 9l6 6 6-6"/>';
+        }
+    } else {
+        // Expand
+        contentDiv.style.display = 'block';
+        if (previewDiv) previewDiv.style.display = 'none';
+        if (expandIcon) {
+            expandIcon.innerHTML = '<path d="M6 15l6-6 6 6"/>';
+        }
+    }
+}
+
+// Show edit password modal
+function showEditPasswordModal(promptId) {
+    const modal = document.getElementById('editPasswordModal');
+    if (!modal) return;
+    
+    // Store the prompt ID for verification
+    modal.setAttribute('data-prompt-id', promptId);
+    document.getElementById('editPasswordInput').value = '';
+    modal.style.display = 'flex';
+}
+
+// Verify edit password and enable editing
+async function verifyEditPassword() {
+    const modal = document.getElementById('editPasswordModal');
+    const passwordInput = document.getElementById('editPasswordInput');
+    const promptId = modal?.getAttribute('data-prompt-id');
+    
+    if (!promptId || !passwordInput) return;
+    
+    const enteredPassword = passwordInput.value;
+    
+    if (!enteredPassword) {
+        alert('Please enter a password');
+        return;
+    }
+    
+    // Check password by attempting API call
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ password: enteredPassword })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
+            // Password is correct - enable editing for this prompt
+            const textarea = document.getElementById(`prompt_${promptId}`);
+            const tile = document.querySelector(`[data-prompt-id="${promptId}"]`);
+            
+            if (textarea) {
+                textarea.removeAttribute('readonly');
+                textarea.focus();
+            }
+            
+            if (tile) {
+                tile.classList.add('editing');
+            }
+            
+            // Close modal
+            modal.style.display = 'none';
+            passwordInput.value = '';
+        } else {
+            alert('Incorrect password. Access denied.');
+            passwordInput.value = '';
+            passwordInput.focus();
+        }
+    } catch (error) {
+        console.error('Password verification error:', error);
+        alert('Password verification failed. Please try again.');
+        passwordInput.value = '';
+        passwordInput.focus();
+    }
+}
+
+// Show save warnings modal
+function showSaveWarnings() {
+    const modal = document.getElementById('saveWarningsModal');
+    if (!modal) {
+        // If modal doesn't exist, proceed with save directly
+        performSavePrompts();
+        return;
+    }
+    modal.style.display = 'flex';
 }
 
 async function resetPrompts() {
