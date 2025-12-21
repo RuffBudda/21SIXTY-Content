@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>21SIXTY CONTENT GEN v93</title>
+    <title>21SIXTY CONTENT GEN v94</title>
     <link rel="icon" type="image/x-icon" href="/static/images/favicons/favicon.ico">
     <link rel="stylesheet" href="styles.css">
 </head>
@@ -48,12 +48,19 @@
         <header class="header">
             <div class="logo-container">
                 <img src="/static/images/logos/logo.png" alt="21SIXTY Logo" class="logo" onerror="this.onerror=null; this.src='/static/images/logo.svg';">
-                <h1 class="title">21SIXTY CONTENT GEN<span class="version">v93</span></h1>
+                <h1 class="title">21SIXTY CONTENT GEN</h1>
             </div>
-            <div class="status-container">
+            <div class="header-pills">
+                <span class="version">v94</span>
+                <span class="openai-pill">
+                    <span class="openai-label">OpenAI:</span>
+                    <span class="openai-value" id="creditsValue">Fetching...</span>
+                </span>
+            </div>
+            <div class="status-container" style="display: none;">
                 <div class="status-item">
                     <span class="status-label">OpenAI:</span>
-                    <span class="status-value" id="creditsValue">Fetching...</span>
+                    <span class="status-value" id="creditsValueOld">Fetching...</span>
                 </div>
                 <!-- COMMENTED OUT: Cookie status - pytube doesn't support cookies -->
                 <!-- <div class="status-item">

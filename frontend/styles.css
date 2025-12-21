@@ -59,6 +59,12 @@ body {
     margin: 0;
 }
 
+.header-pills {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
 .version {
     display: inline-block;
     padding: 2px 8px;
@@ -69,8 +75,30 @@ body {
     font-size: 0.75rem;
     font-weight: normal;
     color: var(--text-secondary);
-    margin-left: 8px;
     vertical-align: middle;
+}
+
+.openai-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 8px;
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    font-size: 0.75rem;
+}
+
+.openai-label {
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+}
+
+.openai-value {
+    color: var(--accent-blue);
+    font-weight: bold;
+    font-size: 0.75rem;
+    font-family: 'Courier New', Courier, monospace;
 }
 
 .credits-display {

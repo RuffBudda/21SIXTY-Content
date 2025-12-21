@@ -1,4 +1,4 @@
-# 21SIXTY CONTENT GEN v93
+# 21SIXTY CONTENT GEN v94
 
 A web-based tool for processing podcast audio files and generating comprehensive content including summaries, blog posts, titles, quotes, chapter timestamps, and LinkedIn posts using OpenAI APIs.
 
@@ -21,8 +21,9 @@ A web-based tool for processing podcast audio files and generating comprehensive
 - **Download & Copy Features**: Download any deliverable as TXT file or copy to clipboard with SVG icons
 - **Processing Animations**: Real-time visual feedback during processing with step-by-step status updates
 - **Dark Mode UI**: Beautiful dark theme matching the 21SIXTY brand
-- **OpenAI Credit Tracking**: Monitor API usage in real-time
+- **OpenAI Credit Tracking**: Monitor API usage in real-time with pill-style display matching version badge
 - **Prompt Editor**: Customize AI prompts for all content types
+- **Unified Header Pills**: Version and OpenAI credits displayed as matching pills on the same line
 
 ## Tech Stack
 
