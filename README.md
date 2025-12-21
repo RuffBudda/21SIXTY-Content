@@ -397,7 +397,33 @@ See [LICENSE.md](LICENSE.md) for details.
 
 **Summary**: You can use, modify, and distribute this code freely, but you cannot use the 21SIXTY name, logo, or branding in your version.
 
+## Need Professional Help?
+
+**🚀 Ready to take your content generation to the next level?**
+
+This open-source tool gives you the foundation, but deploying and customizing it for your specific needs can be challenging. Whether you're looking to:
+
+- **Deploy your own production-ready instance** with enterprise-grade security and scalability
+- **Customize the AI prompts** to match your brand voice and content strategy
+- **Integrate with your existing workflow** and content management systems
+- **Scale for high-volume processing** with optimized infrastructure
+- **Get expert guidance** on best practices and advanced configurations
+
+**We're here to help you succeed!**
+
+👉 **Visit [21sixty.media](https://21sixty.media)** to explore our full suite of content generation solutions and see how we can transform your podcast content workflow.
+
+📧 **Email [info@21sixty.media](mailto:info@21sixty.media)** for:
+- **Free consultation** on deployment strategies tailored to your needs
+- **Personalized implementation support** from our technical experts
+- **Enterprise solutions** with dedicated support and custom features
+- **Quick answers** to your deployment and customization questions
+
+Don't let technical hurdles slow you down. Let our team help you get up and running quickly with a solution that's perfectly tailored to your requirements. **Reach out today and let's build something amazing together!**
+
 ## Support
 
-For issues or questions, please open an issue on the repository.
+For issues or questions about the open-source codebase, please open an issue on the repository.
+
+For deployment assistance, custom solutions, or professional consultations, contact us at [info@21sixty.media](mailto:info@21sixty.media) or visit [21sixty.media](https://21sixty.media).
 
