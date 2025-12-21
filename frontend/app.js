@@ -726,12 +726,18 @@ function downloadAsTxt(targetId) {
 
 function copyToClipboard(targetId) {
     const element = document.getElementById(targetId);
-    const copyBtn = document.querySelector(`[data-target="${targetId}"]`);
+    // Find the copy button specifically (not download button)
+    const copyBtn = document.querySelector(`[data-action="copy"][data-target="${targetId}"]`);
+    
+    if (!element) {
+        alert('Nothing to copy');
+        return;
+    }
     
     let textToCopy = '';
     
     if (element) {
-        // If it's HTML content (blog post), get text content
+        // If it's HTML content (blog post, LinkedIn post), get text content
         textToCopy = element.textContent || element.innerText || '';
     }
     
@@ -741,15 +747,19 @@ function copyToClipboard(targetId) {
     }
     
     navigator.clipboard.writeText(textToCopy).then(() => {
-        // Visual feedback
-        const originalText = copyBtn.textContent;
-        copyBtn.textContent = 'Copied!';
-        copyBtn.classList.add('copied');
-        
-        setTimeout(() => {
-            copyBtn.textContent = originalText;
-            copyBtn.classList.remove('copied');
-        }, 2000);
+        // Visual feedback - preserve SVG icon and show checkmark
+        if (copyBtn) {
+            const originalHTML = copyBtn.innerHTML;
+            copyBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+            copyBtn.style.color = '#4CAF50';
+            copyBtn.classList.add('copied');
+            
+            setTimeout(() => {
+                copyBtn.innerHTML = originalHTML;
+                copyBtn.style.color = '';
+                copyBtn.classList.remove('copied');
+            }, 2000);
+        }
     }).catch(err => {
         console.error('Failed to copy:', err);
         alert('Failed to copy to clipboard');
