@@ -441,31 +441,112 @@ async function loadCredits() {
 //     }
 // }
 
+// Utility function to generate SHA-256 hash
+async function getFileHash(file) {
+    const arrayBuffer = await file.arrayBuffer();
+    const hashBuffer = await crypto.subtle.digest('SHA-256', arrayBuffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// Utility function to convert file to base64
+function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+}
+
 async function processVideo() {
-    const youtubeUrl = document.getElementById('youtubeUrl').value.trim();
+    const audioFileInput = document.getElementById('audioFile');
     const statusDiv = document.getElementById('processingStatus');
     const processBtn = document.getElementById('processVideoBtn');
     
-    if (!youtubeUrl) {
-        showStatus(statusDiv, 'Please enter a YouTube URL', 'error');
+    if (!audioFileInput) {
+        console.error('Audio file input not found');
         return;
     }
     
-    // Validate YouTube URL
-    if (!isValidYouTubeUrl(youtubeUrl)) {
-        showStatus(statusDiv, 'Please enter a valid YouTube URL', 'error');
+    const audioFile = audioFileInput.files[0];
+    
+    if (!audioFile) {
+        if (statusDiv) {
+            showStatus(statusDiv, 'Please select an audio file', 'error');
+        }
+        return;
+    }
+    
+    // Validate file type
+    const validExtensions = ['.mp3', '.wav', '.m4a', '.ogg', '.flac'];
+    const fileExtension = '.' + audioFile.name.split('.').pop().toLowerCase();
+    if (!validExtensions.includes(fileExtension)) {
+        if (statusDiv) {
+            showStatus(statusDiv, 'Invalid file format. Supported formats: MP3, WAV, M4A, OGG, FLAC', 'error');
+        }
+        return;
+    }
+    
+    if (!processBtn) {
+        console.error('Process button not found');
         return;
     }
     
     processBtn.disabled = true;
-    showLoading('Downloading video and extracting transcript...');
-    showStatus(statusDiv, 'Processing video...', 'info');
+    
+    // Generate file hash for caching
+    let fileHash = null;
+    let cacheKey = null;
     
     try {
+        fileHash = await getFileHash(audioFile);
+        cacheKey = `processed_${fileHash}`;
+        
+        // Check cache
+        const cachedData = localStorage.getItem(cacheKey);
+        if (cachedData) {
+            try {
+                const parsed = JSON.parse(cachedData);
+                transcriptData = parsed.transcriptData;
+                videoInfo = parsed.videoInfo;
+                
+                showStatus(statusDiv, 'Using cached data!', 'success');
+                document.getElementById('step2Card').style.display = 'block';
+                processBtn.disabled = false;
+                return;
+            } catch (e) {
+                console.error('Error parsing cached data:', e);
+            }
+        }
+        
+        // Cache audio file as base64
+        const audioBase64 = await fileToBase64(audioFile);
+        localStorage.setItem(`audio_${fileHash}`, audioBase64);
+        
+    } catch (e) {
+        console.error('Error generating file hash:', e);
+    }
+    
+    showLoading('Uploading audio file...');
+    if (statusDiv) {
+        showStatus(statusDiv, 'Processing audio file...', 'info');
+    }
+    
+    // Show processing animation
+    const processingAnimation = document.getElementById('processingAnimation');
+    if (processingAnimation) {
+        processingAnimation.style.display = 'block';
+    }
+    
+    try {
+        const formData = new FormData();
+        formData.append('audio_file', audioFile);
+        
         const response = await fetch(`${API_BASE_URL}/api/process-video`, {
             method: 'POST',
             headers: getAuthHeaders(),
-            body: JSON.stringify({ youtube_url: youtubeUrl })
+            body: formData
         });
         
         if (response.status === 401) {
@@ -480,7 +561,7 @@ async function processVideo() {
         
         if (!response.ok) {
             const error = await response.json();
-            throw new Error(error.detail || 'Failed to process video');
+            throw new Error(error.detail || 'Failed to process audio file');
         }
         
         const data = await response.json();
@@ -493,13 +574,7 @@ async function processVideo() {
                 video_id: data.video_id
             };
             
-            // Cache the processed data (cache key based on file hash only)
-            // Ensure cacheKey is set - use file hash or fallback to video_id
-            if (!cacheKey && data.video_id) {
-                // Fallback: use video_id if hash generation failed
-                cacheKey = `processed_${data.video_id}`;
-            }
-            
+            // Cache the processed data
             if (cacheKey) {
                 try {
                     const cacheData = {
@@ -510,38 +585,35 @@ async function processVideo() {
                     localStorage.setItem(cacheKey, JSON.stringify(cacheData));
                     console.log(`Cached processed data with key: ${cacheKey}`);
                 } catch (e) {
-                    console.error('Error caching data:', e);
+                    console.error('Error caching processed data:', e);
                 }
-            } else {
-                console.warn('Warning: Could not cache processed data - no cache key available');
             }
             
-            // Show download button if video_id is available
-            if (data.video_id) {
-                const downloadContainer = document.getElementById('audioDownloadContainer');
-                const downloadBtn = document.getElementById('downloadAudioBtn');
-                downloadContainer.style.display = 'block';
-                downloadBtn.href = `${API_BASE_URL}/api/download-audio/${data.video_id}`;
-                
-                // Add auth header for download (using fetch to handle auth)
-                downloadBtn.onclick = async (e) => {
-                    e.preventDefault();
-                    await downloadAudioFile(data.video_id);
-                };
+            if (statusDiv) {
+                showStatus(statusDiv, 'Audio processed successfully! Please fill in guest information.', 'success');
             }
-            
-            showStatus(statusDiv, 'Video processed successfully! Please fill in guest information.', 'success');
-            document.getElementById('step2Card').style.display = 'block';
-            document.getElementById('step1Card').scrollIntoView({ behavior: 'smooth' });
+            const step2Card = document.getElementById('step2Card');
+            if (step2Card) {
+                step2Card.style.display = 'block';
+            }
+            const step1Card = document.getElementById('step1Card');
+            if (step1Card) {
+                step1Card.scrollIntoView({ behavior: 'smooth' });
+            }
         } else {
             throw new Error('Processing failed');
         }
     } catch (error) {
-        console.error('Error processing video:', error);
-        showStatus(statusDiv, `Error: ${error.message}`, 'error');
+        console.error('Error processing audio file:', error);
+        if (statusDiv) {
+            showStatus(statusDiv, `Error: ${error.message}`, 'error');
+        }
     } finally {
         processBtn.disabled = false;
         hideLoading();
+        if (processingAnimation) {
+            processingAnimation.style.display = 'none';
+        }
     }
 }
 
