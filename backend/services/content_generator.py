@@ -47,13 +47,18 @@ class ContentGenerator:
             transcript_with_timecodes, video_duration
         )
         
+        linkedin_post = await self.generate_linkedin_post(
+            transcript, guest_name, guest_title, guest_company
+        )
+        
         return {
             'youtube_summary': youtube_summary,
             'blog_post': blog_post,
             'clickbait_titles': clickbait_titles,
             'two_line_summary': two_line_summary,
             'quotes': quotes,
-            'chapter_timestamps': chapter_timestamps
+            'chapter_timestamps': chapter_timestamps,
+            'linkedin_post': linkedin_post
         }
     
     async def generate_youtube_summary(

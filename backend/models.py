@@ -35,4 +35,5 @@ class GenerateContentResponse(BaseModel):
     two_line_summary: str = Field(..., description="Two line summary of episode")
     quotes: List[str] = Field(..., description="20 quotes from episode")
     chapter_timestamps: List[str] = Field(..., description="YouTube-ready timestamps for chapters")
+    linkedin_post: str = Field(..., description="LinkedIn post with guest description, 3 key takeaways, and CTA")
 

@@ -415,32 +415,30 @@ async function loadCredits() {
 // }
 
 async function processVideo() {
-    const audioFileInput = document.getElementById('audioFile');
+    const youtubeUrl = document.getElementById('youtubeUrl').value.trim();
     const statusDiv = document.getElementById('processingStatus');
     const processBtn = document.getElementById('processVideoBtn');
     
-    // Validate inputs
-    if (!audioFileInput.files || audioFileInput.files.length === 0) {
-        showStatus(statusDiv, 'Please select an audio file', 'error');
+    if (!youtubeUrl) {
+        showStatus(statusDiv, 'Please enter a YouTube URL', 'error');
         return;
     }
     
-    const audioFile = audioFileInput.files[0];
+    // Validate YouTube URL
+    if (!isValidYouTubeUrl(youtubeUrl)) {
+        showStatus(statusDiv, 'Please enter a valid YouTube URL', 'error');
+        return;
+    }
     
     processBtn.disabled = true;
-    showLoading('Processing audio file...');
-    showStatus(statusDiv, 'Processing audio...', 'info');
+    showLoading('Downloading video and extracting transcript...');
+    showStatus(statusDiv, 'Processing video...', 'info');
     
     try {
-        const formData = new FormData();
-        formData.append('audio_file', audioFile);
-        
         const response = await fetch(`${API_BASE_URL}/api/process-video`, {
             method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${authToken}`
-            },
-            body: formData
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ youtube_url: youtubeUrl })
         });
         
         if (response.status === 401) {
@@ -455,7 +453,7 @@ async function processVideo() {
         
         if (!response.ok) {
             const error = await response.json();
-            throw new Error(error.detail || 'Failed to process audio');
+            throw new Error(error.detail || 'Failed to process video');
         }
         
         const data = await response.json();
@@ -472,26 +470,24 @@ async function processVideo() {
             if (data.video_id) {
                 const downloadContainer = document.getElementById('audioDownloadContainer');
                 const downloadBtn = document.getElementById('downloadAudioBtn');
-                if (downloadContainer && downloadBtn) {
-                    downloadContainer.style.display = 'block';
-                    downloadBtn.href = `${API_BASE_URL}/api/download-audio/${data.video_id}`;
-                    
-                    // Add auth header for download (using fetch to handle auth)
-                    downloadBtn.onclick = async (e) => {
-                        e.preventDefault();
-                        await downloadAudioFile(data.video_id);
-                    };
-                }
+                downloadContainer.style.display = 'block';
+                downloadBtn.href = `${API_BASE_URL}/api/download-audio/${data.video_id}`;
+                
+                // Add auth header for download (using fetch to handle auth)
+                downloadBtn.onclick = async (e) => {
+                    e.preventDefault();
+                    await downloadAudioFile(data.video_id);
+                };
             }
             
-            showStatus(statusDiv, 'Audio processed successfully! Please fill in guest information.', 'success');
+            showStatus(statusDiv, 'Video processed successfully! Please fill in guest information.', 'success');
             document.getElementById('step2Card').style.display = 'block';
             document.getElementById('step1Card').scrollIntoView({ behavior: 'smooth' });
         } else {
             throw new Error('Processing failed');
         }
     } catch (error) {
-        console.error('Error processing audio:', error);
+        console.error('Error processing video:', error);
         showStatus(statusDiv, `Error: ${error.message}`, 'error');
     } finally {
         processBtn.disabled = false;
@@ -602,6 +598,12 @@ function displayResults(data) {
     // Chapter Timestamps
     const timestampsElement = document.getElementById('chapterTimestamps');
     timestampsElement.textContent = data.chapter_timestamps.join('\n');
+    
+    // LinkedIn Post (with markdown rendering for links)
+    const linkedinPostElement = document.getElementById('linkedinPost');
+    if (linkedinPostElement && data.linkedin_post) {
+        linkedinPostElement.innerHTML = formatMarkdownLinks(data.linkedin_post);
+    }
 }
 
 function formatList(items) {
@@ -659,6 +661,11 @@ function showLoading(text = 'Processing...') {
 
 function hideLoading() {
     document.getElementById('loadingOverlay').style.display = 'none';
+}
+
+function isValidYouTubeUrl(url) {
+    const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+/;
+    return youtubeRegex.test(url);
 }
 
 function isValidUrl(url) {
@@ -732,6 +739,7 @@ async function loadPrompts() {
             document.getElementById('prompt_two_line_summary').value = data.prompts.two_line_summary || '';
             document.getElementById('prompt_quotes').value = data.prompts.quotes || '';
             document.getElementById('prompt_chapter_timestamps').value = data.prompts.chapter_timestamps || '';
+            document.getElementById('prompt_linkedin_post').value = data.prompts.linkedin_post || '';
         }
     } catch (error) {
         console.error('Error loading prompts:', error);
@@ -753,7 +761,8 @@ async function savePrompts() {
             clickbait_titles: document.getElementById('prompt_clickbait_titles').value,
             two_line_summary: document.getElementById('prompt_two_line_summary').value,
             quotes: document.getElementById('prompt_quotes').value,
-            chapter_timestamps: document.getElementById('prompt_chapter_timestamps').value
+            chapter_timestamps: document.getElementById('prompt_chapter_timestamps').value,
+            linkedin_post: document.getElementById('prompt_linkedin_post').value
         };
         
         const response = await fetch(`${API_BASE_URL}/api/prompts`, {
