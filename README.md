@@ -16,6 +16,8 @@ A web-based tool for processing podcast audio files and generating comprehensive
   - 20 notable quotes from the episode
   - Chapter timestamps (ready-to-use episode markers)
   - LinkedIn post with guest description, 3 key takeaways, and CTA (with placeholder links for YouTube and Newsletter)
+  - Keywords (comma-separated, max 500 characters, includes thedollardiaries, tdd, dubai, guest name, company, role)
+  - Hashtags (same keywords with # prefix)
 - **Download & Copy Features**: Download any deliverable as TXT file or copy to clipboard with SVG icons
 - **Processing Animations**: Real-time visual feedback during processing with step-by-step status updates
 - **Dark Mode UI**: Beautiful dark theme matching the 21SIXTY brand

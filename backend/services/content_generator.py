@@ -181,6 +181,32 @@ class ContentGenerator:
         
         return await self.openai.generate_text(prompt, max_tokens=800, temperature=0.7)
     
+    async def generate_keywords(
+        self, transcript: str, guest_name: str, guest_title: str, guest_company: str
+    ) -> str:
+        """Generate comma-separated keywords based on transcript, max 500 characters"""
+        prompt = self.prompts_service.format_prompt(
+            'keywords',
+            guest_name=guest_name,
+            guest_title=guest_title,
+            guest_company=guest_company,
+            transcript=transcript
+        )
+        keywords = await self.openai.generate_text(prompt, max_tokens=200, temperature=0.5)
+        # Ensure it doesn't exceed 500 characters
+        if len(keywords) > 500:
+            keywords = keywords[:497] + '...'
+        return keywords.strip()
+    
+    def generate_hashtags_from_keywords(self, keywords: str) -> str:
+        """Convert keywords to hashtags by adding # prefix to each keyword"""
+        if not keywords:
+            return ''
+        # Split by comma, trim whitespace, add # prefix, rejoin
+        keyword_list = [kw.strip() for kw in keywords.split(',') if kw.strip()]
+        hashtags = ', '.join([f'#{kw}' for kw in keyword_list])
+        return hashtags
+    
     async def generate_chapter_timestamps(
         self, transcript_with_timecodes: List[dict], video_duration: float
     ) -> List[str]:
