@@ -415,30 +415,66 @@ async function loadCredits() {
 // }
 
 async function processVideo() {
-    const youtubeUrl = document.getElementById('youtubeUrl').value.trim();
+    const audioFileInput = document.getElementById('audioFile');
     const statusDiv = document.getElementById('processingStatus');
     const processBtn = document.getElementById('processVideoBtn');
     
-    if (!youtubeUrl) {
-        showStatus(statusDiv, 'Please enter a YouTube URL', 'error');
+    // Validate inputs
+    if (!audioFileInput.files || audioFileInput.files.length === 0) {
+        showStatus(statusDiv, 'Please select an audio file', 'error');
         return;
     }
     
-    // Validate YouTube URL
-    if (!isValidYouTubeUrl(youtubeUrl)) {
-        showStatus(statusDiv, 'Please enter a valid YouTube URL', 'error');
-        return;
+    const audioFile = audioFileInput.files[0];
+    
+    // Check localStorage for cached data (cache key based on file hash only)
+    let fileHash = null;
+    let cacheKey = null;
+    let cachedData = null;
+    
+    try {
+        // Generate file hash for caching
+        const arrayBuffer = await audioFile.arrayBuffer();
+        const hashBuffer = await crypto.subtle.digest('SHA-256', arrayBuffer);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        fileHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        cacheKey = `processed_${fileHash}`;
+        cachedData = localStorage.getItem(cacheKey);
+        
+        if (cachedData) {
+            try {
+                const parsed = JSON.parse(cachedData);
+                transcriptData = parsed.transcriptData;
+                videoInfo = parsed.videoInfo;
+                
+                showStatus(statusDiv, 'Using cached data from previous processing', 'success');
+                document.getElementById('step2Card').style.display = 'block';
+                document.getElementById('step1Card').scrollIntoView({ behavior: 'smooth' });
+                return;
+            } catch (e) {
+                console.error('Error parsing cached data:', e);
+                // Continue with processing if cache is invalid
+            }
+        }
+    } catch (e) {
+        console.error('Error generating file hash:', e);
+        // Continue with processing if hash generation fails
     }
     
     processBtn.disabled = true;
-    showLoading('Downloading video and extracting transcript...');
-    showStatus(statusDiv, 'Processing video...', 'info');
+    showLoading('Processing audio file...');
+    showStatus(statusDiv, 'Processing audio...', 'info');
     
     try {
+        const formData = new FormData();
+        formData.append('audio_file', audioFile);
+        
         const response = await fetch(`${API_BASE_URL}/api/process-video`, {
             method: 'POST',
-            headers: getAuthHeaders(),
-            body: JSON.stringify({ youtube_url: youtubeUrl })
+            headers: {
+                'Authorization': `Bearer ${authToken}`
+            },
+            body: formData
         });
         
         if (response.status === 401) {
@@ -453,7 +489,7 @@ async function processVideo() {
         
         if (!response.ok) {
             const error = await response.json();
-            throw new Error(error.detail || 'Failed to process video');
+            throw new Error(error.detail || 'Failed to process audio');
         }
         
         const data = await response.json();
@@ -466,28 +502,44 @@ async function processVideo() {
                 video_id: data.video_id
             };
             
+            // Cache the processed data (cache key based on file hash only)
+            if (cacheKey) {
+                try {
+                    const cacheData = {
+                        transcriptData: data,
+                        videoInfo: videoInfo,
+                        timestamp: Date.now()
+                    };
+                    localStorage.setItem(cacheKey, JSON.stringify(cacheData));
+                } catch (e) {
+                    console.error('Error caching data:', e);
+                }
+            }
+            
             // Show download button if video_id is available
             if (data.video_id) {
                 const downloadContainer = document.getElementById('audioDownloadContainer');
                 const downloadBtn = document.getElementById('downloadAudioBtn');
-                downloadContainer.style.display = 'block';
-                downloadBtn.href = `${API_BASE_URL}/api/download-audio/${data.video_id}`;
-                
-                // Add auth header for download (using fetch to handle auth)
-                downloadBtn.onclick = async (e) => {
-                    e.preventDefault();
-                    await downloadAudioFile(data.video_id);
-                };
+                if (downloadContainer && downloadBtn) {
+                    downloadContainer.style.display = 'block';
+                    downloadBtn.href = `${API_BASE_URL}/api/download-audio/${data.video_id}`;
+                    
+                    // Add auth header for download (using fetch to handle auth)
+                    downloadBtn.onclick = async (e) => {
+                        e.preventDefault();
+                        await downloadAudioFile(data.video_id);
+                    };
+                }
             }
             
-            showStatus(statusDiv, 'Video processed successfully! Please fill in guest information.', 'success');
+            showStatus(statusDiv, 'Audio processed successfully! Please fill in guest information.', 'success');
             document.getElementById('step2Card').style.display = 'block';
             document.getElementById('step1Card').scrollIntoView({ behavior: 'smooth' });
         } else {
             throw new Error('Processing failed');
         }
     } catch (error) {
-        console.error('Error processing video:', error);
+        console.error('Error processing audio:', error);
         showStatus(statusDiv, `Error: ${error.message}`, 'error');
     } finally {
         processBtn.disabled = false;
@@ -663,10 +715,6 @@ function hideLoading() {
     document.getElementById('loadingOverlay').style.display = 'none';
 }
 
-function isValidYouTubeUrl(url) {
-    const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+/;
-    return youtubeRegex.test(url);
-}
 
 function isValidUrl(url) {
     try {
