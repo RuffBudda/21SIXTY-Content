@@ -179,8 +179,48 @@ function setupEventListeners() {
     });
     
     // Prompts editor
-    document.getElementById('savePromptsBtn').addEventListener('click', savePrompts);
+    document.getElementById('savePromptsBtn').addEventListener('click', () => showSaveWarnings());
     document.getElementById('resetPromptsBtn').addEventListener('click', resetPrompts);
+    
+    // Prompt tile expand/collapse and edit buttons
+    document.querySelectorAll('[data-action="expand"]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const targetId = btn.getAttribute('data-target');
+            togglePromptExpand(targetId);
+        });
+    });
+    
+    document.querySelectorAll('[data-action="edit"]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const targetId = btn.getAttribute('data-target');
+            showEditPasswordModal(targetId);
+        });
+    });
+    
+    // Password modal for edit
+    document.getElementById('cancelEditBtn').addEventListener('click', () => {
+        document.getElementById('editPasswordModal').style.display = 'none';
+        document.getElementById('editPasswordInput').value = '';
+        document.getElementById('editPasswordError').style.display = 'none';
+        currentEditingPrompt = null;
+    });
+    
+    document.getElementById('confirmEditBtn').addEventListener('click', verifyEditPassword);
+    document.getElementById('editPasswordInput').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') verifyEditPassword();
+    });
+    
+    // Save warnings modal
+    document.getElementById('cancelSaveBtn').addEventListener('click', () => {
+        document.getElementById('saveWarningsModal').style.display = 'none';
+    });
+    
+    document.getElementById('confirmSaveBtn').addEventListener('click', () => {
+        document.getElementById('saveWarningsModal').style.display = 'none';
+        savePrompts();
+    });
     
     // Gallery refresh button
     const refreshGalleryBtn = document.getElementById('refreshGalleryBtn');
@@ -1186,18 +1226,194 @@ async function loadPrompts() {
         const data = await response.json();
         if (data.success && data.prompts) {
             // Populate textareas with prompts
-            document.getElementById('prompt_youtube_summary').value = data.prompts.youtube_summary || '';
-            document.getElementById('prompt_blog_post').value = data.prompts.blog_post || '';
-            document.getElementById('prompt_clickbait_titles').value = data.prompts.clickbait_titles || '';
-            document.getElementById('prompt_two_line_summary').value = data.prompts.two_line_summary || '';
-            document.getElementById('prompt_quotes').value = data.prompts.quotes || '';
-            document.getElementById('prompt_chapter_timestamps').value = data.prompts.chapter_timestamps || '';
-            document.getElementById('prompt_linkedin_post').value = data.prompts.linkedin_post || '';
-            document.getElementById('prompt_keywords').value = data.prompts.keywords || '';
+            const prompts = {
+                youtube_summary: data.prompts.youtube_summary || '',
+                blog_post: data.prompts.blog_post || '',
+                clickbait_titles: data.prompts.clickbait_titles || '',
+                two_line_summary: data.prompts.two_line_summary || '',
+                quotes: data.prompts.quotes || '',
+                chapter_timestamps: data.prompts.chapter_timestamps || '',
+                linkedin_post: data.prompts.linkedin_post || '',
+                keywords: data.prompts.keywords || ''
+            };
+            
+            // Update textareas
+            Object.keys(prompts).forEach(key => {
+                const textarea = document.getElementById(`prompt_${key}`);
+                if (textarea) {
+                    textarea.value = prompts[key];
+                }
+            });
+            
+            // Update previews
+            updatePromptPreviews(prompts);
         }
     } catch (error) {
         console.error('Error loading prompts:', error);
         showStatus(document.getElementById('promptsStatus'), 'Error loading prompts', 'error');
+    }
+}
+
+function updatePromptPreviews(prompts) {
+    Object.keys(prompts).forEach(key => {
+        const previewEl = document.querySelector(`[data-preview="${key}"]`);
+        if (previewEl) {
+            const text = prompts[key] || 'No prompt set';
+            previewEl.textContent = text.length > 200 ? text.substring(0, 200) + '...' : text;
+        }
+    });
+}
+
+function togglePromptExpand(promptId) {
+    const tile = document.querySelector(`[data-prompt-id="${promptId}"]`);
+    const content = tile.querySelector('.prompt-tile-content');
+    const preview = tile.querySelector('.prompt-tile-preview');
+    const expandBtn = tile.querySelector('[data-action="expand"]');
+    
+    if (content.style.display === 'none') {
+        content.style.display = 'block';
+        preview.style.display = 'none';
+        tile.classList.add('expanded');
+        expandBtn.classList.add('expanded');
+        expandBtn.querySelector('svg').style.transform = 'rotate(180deg)';
+    } else {
+        content.style.display = 'none';
+        preview.style.display = 'block';
+        tile.classList.remove('expanded');
+        expandBtn.classList.remove('expanded');
+        expandBtn.querySelector('svg').style.transform = 'rotate(0deg)';
+    }
+}
+
+function showEditPasswordModal(promptId) {
+    currentEditingPrompt = promptId;
+    document.getElementById('editPasswordModal').style.display = 'flex';
+    document.getElementById('editPasswordInput').value = '';
+    document.getElementById('editPasswordInput').focus();
+    document.getElementById('editPasswordError').style.display = 'none';
+}
+
+async function verifyEditPassword() {
+    const password = document.getElementById('editPasswordInput').value;
+    const errorDiv = document.getElementById('editPasswordError');
+    
+    if (!password) {
+        errorDiv.textContent = 'Please enter password';
+        errorDiv.style.display = 'block';
+        return;
+    }
+    
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ password })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Password verified, enable editing
+            document.getElementById('editPasswordModal').style.display = 'none';
+            document.getElementById('editPasswordInput').value = '';
+            
+            // Enable editing for the specific prompt
+            if (currentEditingPrompt) {
+                const textarea = document.getElementById(`prompt_${currentEditingPrompt}`);
+                const tile = document.querySelector(`[data-prompt-id="${currentEditingPrompt}"]`);
+                
+                if (textarea && tile) {
+                    textarea.removeAttribute('readonly');
+                    tile.classList.add('editing');
+                    textarea.focus();
+                    
+                    // Expand if not already expanded
+                    const content = tile.querySelector('.prompt-tile-content');
+                    if (content.style.display === 'none') {
+                        togglePromptExpand(currentEditingPrompt);
+                    }
+                }
+            }
+            currentEditingPrompt = null;
+        } else {
+            errorDiv.textContent = 'Invalid password';
+            errorDiv.style.display = 'block';
+        }
+    } catch (error) {
+        console.error('Error verifying password:', error);
+        errorDiv.textContent = 'Error verifying password';
+        errorDiv.style.display = 'block';
+    }
+}
+
+function showSaveWarnings() {
+    document.getElementById('saveWarningsModal').style.display = 'flex';
+}
+
+async function savePrompts() {
+    const statusDiv = document.getElementById('promptsStatus');
+    const saveBtn = document.getElementById('savePromptsBtn');
+    
+    saveBtn.disabled = true;
+    showStatus(statusDiv, 'Saving prompts...', 'info');
+    
+    try {
+        const prompts = {
+            youtube_summary: document.getElementById('prompt_youtube_summary').value,
+            blog_post: document.getElementById('prompt_blog_post').value,
+            clickbait_titles: document.getElementById('prompt_clickbait_titles').value,
+            two_line_summary: document.getElementById('prompt_two_line_summary').value,
+            quotes: document.getElementById('prompt_quotes').value,
+            chapter_timestamps: document.getElementById('prompt_chapter_timestamps').value,
+            linkedin_post: document.getElementById('prompt_linkedin_post').value,
+            keywords: document.getElementById('prompt_keywords').value
+        };
+        
+        const response = await fetch(`${API_BASE_URL}/api/prompts`, {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ prompts })
+        });
+        
+        if (response.status === 401) {
+            authToken = null;
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('rememberMe');
+            sessionStorage.removeItem('authToken');
+            rememberMe = false;
+            showLoginModal();
+            return;
+        }
+        
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'Failed to save prompts');
+        }
+        
+        const data = await response.json();
+        if (data.success) {
+            // Update previews
+            updatePromptPreviews(prompts);
+            
+            // Re-disable all textareas
+            document.querySelectorAll('.prompt-textarea').forEach(textarea => {
+                textarea.setAttribute('readonly', 'readonly');
+            });
+            
+            // Remove editing class from all tiles
+            document.querySelectorAll('.prompt-tile').forEach(tile => {
+                tile.classList.remove('editing');
+            });
+            
+            showStatus(statusDiv, 'Prompts saved successfully! All future content generation will use these prompts.', 'success');
+        }
+    } catch (error) {
+        console.error('Error saving prompts:', error);
+        showStatus(statusDiv, error.message || 'Error saving prompts', 'error');
+    } finally {
+        saveBtn.disabled = false;
     }
 }
 
