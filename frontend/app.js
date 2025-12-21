@@ -1565,6 +1565,27 @@ function showSaveWarnings() {
     modal.style.display = 'flex';
 }
 
+// Copy variable to clipboard
+function copyVariable(variable, button) {
+    if (!variable) {
+        alert('Nothing to copy');
+        return;
+    }
+    
+    navigator.clipboard.writeText(variable).then(() => {
+        // Visual feedback
+        if (button) {
+            button.classList.add('copied');
+            setTimeout(() => {
+                button.classList.remove('copied');
+            }, 2000);
+        }
+    }).catch(err => {
+        console.error('Failed to copy variable:', err);
+        alert('Failed to copy variable to clipboard');
+    });
+}
+
 async function resetPrompts() {
     if (!confirm('Are you sure you want to reset all prompts to default? This cannot be undone.')) {
         return;
