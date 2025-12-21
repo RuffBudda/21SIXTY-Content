@@ -73,18 +73,19 @@ async def periodic_cleanup():
         logger.info("Starting periodic cleanup of old MP3 files...")
         deleted_count = file_handler.cleanup_old_files()
         
-        # Also clean up mp3_files dictionary entries for deleted files
-        if deleted_count > 0:
-            video_ids_to_remove = []
-            for video_id, file_path in mp3_files.items():
-                if not os.path.exists(file_path):
-                    video_ids_to_remove.append(video_id)
-            
-            for video_id in video_ids_to_remove:
-                del mp3_files[video_id]
-                logger.info(f"Removed video_id {video_id} from mp3_files dictionary")
+        # Always clean up mp3_files dictionary entries for orphaned files
+        # (files deleted by cleanup task, manual deletions, or external processes)
+        video_ids_to_remove = []
+        for video_id, file_path in mp3_files.items():
+            if not os.path.exists(file_path):
+                video_ids_to_remove.append(video_id)
         
-        logger.info(f"Periodic cleanup completed. Deleted {deleted_count} files.")
+        orphaned_count = len(video_ids_to_remove)
+        for video_id in video_ids_to_remove:
+            del mp3_files[video_id]
+            logger.info(f"Removed orphaned video_id {video_id} from mp3_files dictionary")
+        
+        logger.info(f"Periodic cleanup completed. Deleted {deleted_count} files, removed {orphaned_count} orphaned dictionary entries.")
     except Exception as e:
         logger.error(f"Error during periodic cleanup: {str(e)}", exc_info=True)
 
