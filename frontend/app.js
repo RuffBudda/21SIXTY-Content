@@ -182,14 +182,35 @@ function setupEventListeners() {
     document.getElementById('savePromptsBtn').addEventListener('click', savePrompts);
     document.getElementById('resetPromptsBtn').addEventListener('click', resetPrompts);
     
+    // Audio file selection
+    const selectAudioBtn = document.getElementById('selectAudioBtn');
+    const audioFileInput = document.getElementById('audioFile');
+    if (selectAudioBtn && audioFileInput) {
+        selectAudioBtn.addEventListener('click', () => {
+            audioFileInput.click();
+        });
+        audioFileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                document.getElementById('audioFileName').textContent = file.name;
+                document.getElementById('audioFileName').style.color = 'var(--accent-cyan)';
+            }
+        });
+    }
+    
     document.getElementById('processVideoBtn').addEventListener('click', processVideo);
     document.getElementById('generateContentBtn').addEventListener('click', generateContent);
     
-    // Copy buttons
-    document.querySelectorAll('.btn-copy').forEach(btn => {
+    // Copy and Download buttons
+    document.querySelectorAll('.btn-icon').forEach(btn => {
         btn.addEventListener('click', (e) => {
-            const targetId = e.target.getAttribute('data-target');
-            copyToClipboard(targetId);
+            const action = e.currentTarget.getAttribute('data-action');
+            const targetId = e.currentTarget.getAttribute('data-target');
+            if (action === 'copy') {
+                copyToClipboard(targetId, e.currentTarget);
+            } else if (action === 'download') {
+                downloadAsTxt(targetId);
+            }
         });
     });
     
@@ -415,9 +436,18 @@ async function loadCredits() {
 // }
 
 async function processVideo() {
+    const audioFileInput = document.getElementById('audioFile');
     const youtubeUrl = document.getElementById('youtubeUrl').value.trim();
     const statusDiv = document.getElementById('processingStatus');
     const processBtn = document.getElementById('processVideoBtn');
+    const processingAnimation = document.getElementById('processingAnimation');
+    const processingText = document.getElementById('processingText');
+    
+    // Validate inputs
+    if (!audioFileInput.files || audioFileInput.files.length === 0) {
+        showStatus(statusDiv, 'Please select an audio file', 'error');
+        return;
+    }
     
     if (!youtubeUrl) {
         showStatus(statusDiv, 'Please enter a YouTube URL', 'error');
@@ -430,16 +460,63 @@ async function processVideo() {
         return;
     }
     
+    const audioFile = audioFileInput.files[0];
+    
+    // Check localStorage for cached data
+    const fileHash = await getFileHash(audioFile);
+    const cacheKey = `processed_${fileHash}_${youtubeUrl}`;
+    const cachedData = localStorage.getItem(cacheKey);
+    
+    if (cachedData) {
+        try {
+            const parsed = JSON.parse(cachedData);
+            transcriptData = parsed.transcriptData;
+            videoInfo = parsed.videoInfo;
+            
+            showStatus(statusDiv, 'Using cached data from previous processing', 'success');
+            document.getElementById('step2Card').style.display = 'block';
+            document.getElementById('step1Card').scrollIntoView({ behavior: 'smooth' });
+            return;
+        } catch (e) {
+            console.error('Error parsing cached data:', e);
+            // Continue with processing if cache is invalid
+        }
+    }
+    
     processBtn.disabled = true;
-    showLoading('Downloading video and extracting transcript...');
+    processingAnimation.style.display = 'flex';
+    showLoading('Processing audio and extracting transcript...');
     showStatus(statusDiv, 'Processing video...', 'info');
     
+    // Update processing animation text
+    const steps = [
+        'Uploading audio file...',
+        'Extracting transcript from YouTube...',
+        'Processing data...',
+        'Almost done...'
+    ];
+    let stepIndex = 0;
+    const stepInterval = setInterval(() => {
+        if (stepIndex < steps.length) {
+            processingText.textContent = steps[stepIndex];
+            stepIndex++;
+        }
+    }, 2000);
+    
     try {
+        const formData = new FormData();
+        formData.append('audio_file', audioFile);
+        formData.append('youtube_url', youtubeUrl);
+        
         const response = await fetch(`${API_BASE_URL}/api/process-video`, {
             method: 'POST',
-            headers: getAuthHeaders(),
-            body: JSON.stringify({ youtube_url: youtubeUrl })
+            headers: {
+                'Authorization': `Bearer ${authToken}`
+            },
+            body: formData
         });
+        
+        clearInterval(stepInterval);
         
         if (response.status === 401) {
             authToken = null;
@@ -466,19 +543,17 @@ async function processVideo() {
                 video_id: data.video_id
             };
             
-            // Show download button if video_id is available
-            if (data.video_id) {
-                const downloadContainer = document.getElementById('audioDownloadContainer');
-                const downloadBtn = document.getElementById('downloadAudioBtn');
-                downloadContainer.style.display = 'block';
-                downloadBtn.href = `${API_BASE_URL}/api/download-audio/${data.video_id}`;
-                
-                // Add auth header for download (using fetch to handle auth)
-                downloadBtn.onclick = async (e) => {
-                    e.preventDefault();
-                    await downloadAudioFile(data.video_id);
-                };
-            }
+            // Cache the processed data
+            const cacheData = {
+                transcriptData: data,
+                videoInfo: videoInfo,
+                timestamp: Date.now()
+            };
+            localStorage.setItem(cacheKey, JSON.stringify(cacheData));
+            
+            // Also cache the audio file (as base64 for localStorage)
+            const audioBase64 = await fileToBase64(audioFile);
+            localStorage.setItem(`audio_${fileHash}`, audioBase64);
             
             showStatus(statusDiv, 'Video processed successfully! Please fill in guest information.', 'success');
             document.getElementById('step2Card').style.display = 'block';
@@ -491,6 +566,7 @@ async function processVideo() {
         showStatus(statusDiv, `Error: ${error.message}`, 'error');
     } finally {
         processBtn.disabled = false;
+        processingAnimation.style.display = 'none';
         hideLoading();
     }
 }
@@ -577,6 +653,12 @@ async function generateContent() {
 
 // Display Results
 function displayResults(data) {
+    // Transcript with Timecodes
+    if (transcriptData && transcriptData.transcript_with_timecodes) {
+        const transcriptElement = document.getElementById('transcript');
+        transcriptElement.innerHTML = formatTranscriptWithTimecodes(transcriptData.transcript_with_timecodes);
+    }
+    
     // YouTube Summary
     document.getElementById('youtubeSummary').textContent = data.youtube_summary;
     
@@ -611,14 +693,13 @@ function formatMarkdownLinks(text) {
 }
 
 // Utility Functions
-function copyToClipboard(targetId) {
+function copyToClipboard(targetId, buttonElement) {
     const element = document.getElementById(targetId);
-    const copyBtn = document.querySelector(`[data-target="${targetId}"]`);
     
     let textToCopy = '';
     
     if (element) {
-        // If it's HTML content (blog post), get text content
+        // If it's HTML content (blog post, transcript), get text content
         textToCopy = element.textContent || element.innerText || '';
     }
     
@@ -629,17 +710,99 @@ function copyToClipboard(targetId) {
     
     navigator.clipboard.writeText(textToCopy).then(() => {
         // Visual feedback
-        const originalText = copyBtn.textContent;
-        copyBtn.textContent = 'Copied!';
-        copyBtn.classList.add('copied');
+        const originalHTML = buttonElement.innerHTML;
+        buttonElement.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+        buttonElement.style.color = '#4CAF50';
         
         setTimeout(() => {
-            copyBtn.textContent = originalText;
-            copyBtn.classList.remove('copied');
+            buttonElement.innerHTML = originalHTML;
+            buttonElement.style.color = '';
         }, 2000);
     }).catch(err => {
         console.error('Failed to copy:', err);
         alert('Failed to copy to clipboard');
+    });
+}
+
+function downloadAsTxt(targetId) {
+    const element = document.getElementById(targetId);
+    
+    if (!element) {
+        alert('Nothing to download');
+        return;
+    }
+    
+    const textContent = element.textContent || element.innerText || '';
+    
+    if (!textContent.trim()) {
+        alert('Nothing to download');
+        return;
+    }
+    
+    // Create filename based on target
+    const filenameMap = {
+        'transcript': 'Transcript_with_Timecodes',
+        'youtubeSummary': 'YouTube_Summary',
+        'blogPost': 'Blog_Post',
+        'twoLineSummary': 'Two_Line_Summary',
+        'clickbaitTitles': 'Clickbait_Titles',
+        'quotes': 'Quotes',
+        'chapterTimestamps': 'Chapter_Timestamps'
+    };
+    
+    const filename = (filenameMap[targetId] || targetId) + '.txt';
+    
+    // Create blob and download
+    const blob = new Blob([textContent], { type: 'text/plain' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+}
+
+function formatTranscriptWithTimecodes(transcript) {
+    if (!transcript || !Array.isArray(transcript)) {
+        return '';
+    }
+    
+    return transcript.map((entry, index) => {
+        const startTime = formatTime(entry.start);
+        const endTime = formatTime(entry.end || entry.start + entry.duration);
+        return `<div class="transcript-entry" style="margin-bottom: 10px; padding: 8px; background: rgba(30, 144, 255, 0.1); border-left: 3px solid var(--accent-blue);">
+            <span class="timecode" style="color: var(--accent-cyan); font-weight: bold; margin-right: 10px;">[${startTime} - ${endTime}]</span>
+            <span class="text">${entry.text}</span>
+        </div>`;
+    }).join('');
+}
+
+function formatTime(seconds) {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = Math.floor(seconds % 60);
+    
+    if (hours > 0) {
+        return `${hours}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    }
+    return `${minutes}:${String(secs).padStart(2, '0')}`;
+}
+
+async function getFileHash(file) {
+    const arrayBuffer = await file.arrayBuffer();
+    const hashBuffer = await crypto.subtle.digest('SHA-256', arrayBuffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
     });
 }
 
