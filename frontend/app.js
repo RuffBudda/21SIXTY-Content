@@ -179,48 +179,8 @@ function setupEventListeners() {
     });
     
     // Prompts editor
-    document.getElementById('savePromptsBtn').addEventListener('click', () => showSaveWarnings());
+    document.getElementById('savePromptsBtn').addEventListener('click', savePrompts);
     document.getElementById('resetPromptsBtn').addEventListener('click', resetPrompts);
-    
-    // Prompt tile expand/collapse and edit buttons
-    document.querySelectorAll('[data-action="expand"]').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const targetId = btn.getAttribute('data-target');
-            togglePromptExpand(targetId);
-        });
-    });
-    
-    document.querySelectorAll('[data-action="edit"]').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const targetId = btn.getAttribute('data-target');
-            showEditPasswordModal(targetId);
-        });
-    });
-    
-    // Password modal for edit
-    document.getElementById('cancelEditBtn').addEventListener('click', () => {
-        document.getElementById('editPasswordModal').style.display = 'none';
-        document.getElementById('editPasswordInput').value = '';
-        document.getElementById('editPasswordError').style.display = 'none';
-        currentEditingPrompt = null;
-    });
-    
-    document.getElementById('confirmEditBtn').addEventListener('click', verifyEditPassword);
-    document.getElementById('editPasswordInput').addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') verifyEditPassword();
-    });
-    
-    // Save warnings modal
-    document.getElementById('cancelSaveBtn').addEventListener('click', () => {
-        document.getElementById('saveWarningsModal').style.display = 'none';
-    });
-    
-    document.getElementById('confirmSaveBtn').addEventListener('click', () => {
-        document.getElementById('saveWarningsModal').style.display = 'none';
-        savePrompts();
-    });
     
     // Gallery refresh button
     const refreshGalleryBtn = document.getElementById('refreshGalleryBtn');
@@ -544,39 +504,55 @@ async function processVideo() {
         cacheKey = `processed_${fileHash}`;
         
         // Check cache
-        const cachedData = localStorage.getItem(cacheKey);
-        if (cachedData) {
-            try {
-                const parsed = JSON.parse(cachedData);
-                transcriptData = parsed.transcriptData;
-                videoInfo = parsed.videoInfo;
-                
-                showStatus(statusDiv, 'Using cached data!', 'success');
-                document.getElementById('step2Card').style.display = 'block';
-                processBtn.disabled = false;
-                return;
-            } catch (e) {
-                console.error('Error parsing cached data:', e);
+        try {
+            const cachedData = localStorage.getItem(cacheKey);
+            if (cachedData) {
+                try {
+                    const parsed = JSON.parse(cachedData);
+                    transcriptData = parsed.transcriptData;
+                    videoInfo = parsed.videoInfo;
+                    
+                    showStatus(statusDiv, 'Using cached data!', 'success');
+                    const step2Card = document.getElementById('step2Card');
+                    if (step2Card) {
+                        step2Card.style.display = 'block';
+                    }
+                    processBtn.disabled = false;
+                    return;
+                } catch (e) {
+                    console.error('Error parsing cached data:', e);
+                }
+            }
+        } catch (e) {
+            console.warn('Error accessing localStorage for cache check:', e);
+            // Continue without cache if localStorage fails
+        }
+        
+        // Try to cache audio file as base64 (optional, skip if quota exceeded)
+        try {
+            const audioBase64 = await fileToBase64(audioFile);
+            localStorage.setItem(`audio_${fileHash}`, audioBase64);
+        } catch (e) {
+            if (e.name === 'QuotaExceededError' || e.message.includes('quota')) {
+                console.warn('localStorage quota exceeded, skipping audio file cache. Clearing old cache...');
+                // Try to clear old cache entries
+                try {
+                    clearOldCache();
+                } catch (clearError) {
+                    console.error('Error clearing old cache:', clearError);
+                }
+            } else {
+                console.warn('Error caching audio file:', e);
             }
         }
         
-        // Cache audio file as base64
-        const audioBase64 = await fileToBase64(audioFile);
-        localStorage.setItem(`audio_${fileHash}`, audioBase64);
-        
     } catch (e) {
         console.error('Error generating file hash:', e);
+        // Continue processing even if hash generation fails
     }
     
-    showLoading('Uploading audio file...');
     if (statusDiv) {
         showStatus(statusDiv, 'Processing audio file...', 'info');
-    }
-    
-    // Show processing animation
-    const processingAnimation = document.getElementById('processingAnimation');
-    if (processingAnimation) {
-        processingAnimation.style.display = 'block';
     }
     
     try {
@@ -600,11 +576,30 @@ async function processVideo() {
         }
         
         if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.detail || 'Failed to process audio file');
+            let errorMessage = 'Failed to process audio file';
+            try {
+                const error = await response.json();
+                errorMessage = error.detail || error.message || errorMessage;
+            } catch (e) {
+                // If response is not JSON, try to get text
+                try {
+                    const errorText = await response.text();
+                    if (errorText) {
+                        errorMessage = errorText;
+                    }
+                } catch (textError) {
+                    errorMessage = `Server error: ${response.status} ${response.statusText}`;
+                }
+            }
+            throw new Error(errorMessage);
         }
         
-        const data = await response.json();
+        let data;
+        try {
+            data = await response.json();
+        } catch (e) {
+            throw new Error('Invalid response from server. Please try again.');
+        }
         
         if (data.success) {
             transcriptData = data;
@@ -646,14 +641,11 @@ async function processVideo() {
     } catch (error) {
         console.error('Error processing audio file:', error);
         if (statusDiv) {
-            showStatus(statusDiv, `Error: ${error.message}`, 'error');
+            const errorMsg = error.message || 'Unknown error occurred';
+            showStatus(statusDiv, `Error: ${errorMsg}`, 'error');
         }
     } finally {
         processBtn.disabled = false;
-        hideLoading();
-        if (processingAnimation) {
-            processingAnimation.style.display = 'none';
-        }
     }
 }
 
@@ -1226,194 +1218,18 @@ async function loadPrompts() {
         const data = await response.json();
         if (data.success && data.prompts) {
             // Populate textareas with prompts
-            const prompts = {
-                youtube_summary: data.prompts.youtube_summary || '',
-                blog_post: data.prompts.blog_post || '',
-                clickbait_titles: data.prompts.clickbait_titles || '',
-                two_line_summary: data.prompts.two_line_summary || '',
-                quotes: data.prompts.quotes || '',
-                chapter_timestamps: data.prompts.chapter_timestamps || '',
-                linkedin_post: data.prompts.linkedin_post || '',
-                keywords: data.prompts.keywords || ''
-            };
-            
-            // Update textareas
-            Object.keys(prompts).forEach(key => {
-                const textarea = document.getElementById(`prompt_${key}`);
-                if (textarea) {
-                    textarea.value = prompts[key];
-                }
-            });
-            
-            // Update previews
-            updatePromptPreviews(prompts);
+            document.getElementById('prompt_youtube_summary').value = data.prompts.youtube_summary || '';
+            document.getElementById('prompt_blog_post').value = data.prompts.blog_post || '';
+            document.getElementById('prompt_clickbait_titles').value = data.prompts.clickbait_titles || '';
+            document.getElementById('prompt_two_line_summary').value = data.prompts.two_line_summary || '';
+            document.getElementById('prompt_quotes').value = data.prompts.quotes || '';
+            document.getElementById('prompt_chapter_timestamps').value = data.prompts.chapter_timestamps || '';
+            document.getElementById('prompt_linkedin_post').value = data.prompts.linkedin_post || '';
+            document.getElementById('prompt_keywords').value = data.prompts.keywords || '';
         }
     } catch (error) {
         console.error('Error loading prompts:', error);
         showStatus(document.getElementById('promptsStatus'), 'Error loading prompts', 'error');
-    }
-}
-
-function updatePromptPreviews(prompts) {
-    Object.keys(prompts).forEach(key => {
-        const previewEl = document.querySelector(`[data-preview="${key}"]`);
-        if (previewEl) {
-            const text = prompts[key] || 'No prompt set';
-            previewEl.textContent = text.length > 200 ? text.substring(0, 200) + '...' : text;
-        }
-    });
-}
-
-function togglePromptExpand(promptId) {
-    const tile = document.querySelector(`[data-prompt-id="${promptId}"]`);
-    const content = tile.querySelector('.prompt-tile-content');
-    const preview = tile.querySelector('.prompt-tile-preview');
-    const expandBtn = tile.querySelector('[data-action="expand"]');
-    
-    if (content.style.display === 'none') {
-        content.style.display = 'block';
-        preview.style.display = 'none';
-        tile.classList.add('expanded');
-        expandBtn.classList.add('expanded');
-        expandBtn.querySelector('svg').style.transform = 'rotate(180deg)';
-    } else {
-        content.style.display = 'none';
-        preview.style.display = 'block';
-        tile.classList.remove('expanded');
-        expandBtn.classList.remove('expanded');
-        expandBtn.querySelector('svg').style.transform = 'rotate(0deg)';
-    }
-}
-
-function showEditPasswordModal(promptId) {
-    currentEditingPrompt = promptId;
-    document.getElementById('editPasswordModal').style.display = 'flex';
-    document.getElementById('editPasswordInput').value = '';
-    document.getElementById('editPasswordInput').focus();
-    document.getElementById('editPasswordError').style.display = 'none';
-}
-
-async function verifyEditPassword() {
-    const password = document.getElementById('editPasswordInput').value;
-    const errorDiv = document.getElementById('editPasswordError');
-    
-    if (!password) {
-        errorDiv.textContent = 'Please enter password';
-        errorDiv.style.display = 'block';
-        return;
-    }
-    
-    try {
-        const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ password })
-        });
-        
-        const data = await response.json();
-        
-        if (data.success) {
-            // Password verified, enable editing
-            document.getElementById('editPasswordModal').style.display = 'none';
-            document.getElementById('editPasswordInput').value = '';
-            
-            // Enable editing for the specific prompt
-            if (currentEditingPrompt) {
-                const textarea = document.getElementById(`prompt_${currentEditingPrompt}`);
-                const tile = document.querySelector(`[data-prompt-id="${currentEditingPrompt}"]`);
-                
-                if (textarea && tile) {
-                    textarea.removeAttribute('readonly');
-                    tile.classList.add('editing');
-                    textarea.focus();
-                    
-                    // Expand if not already expanded
-                    const content = tile.querySelector('.prompt-tile-content');
-                    if (content.style.display === 'none') {
-                        togglePromptExpand(currentEditingPrompt);
-                    }
-                }
-            }
-            currentEditingPrompt = null;
-        } else {
-            errorDiv.textContent = 'Invalid password';
-            errorDiv.style.display = 'block';
-        }
-    } catch (error) {
-        console.error('Error verifying password:', error);
-        errorDiv.textContent = 'Error verifying password';
-        errorDiv.style.display = 'block';
-    }
-}
-
-function showSaveWarnings() {
-    document.getElementById('saveWarningsModal').style.display = 'flex';
-}
-
-async function savePrompts() {
-    const statusDiv = document.getElementById('promptsStatus');
-    const saveBtn = document.getElementById('savePromptsBtn');
-    
-    saveBtn.disabled = true;
-    showStatus(statusDiv, 'Saving prompts...', 'info');
-    
-    try {
-        const prompts = {
-            youtube_summary: document.getElementById('prompt_youtube_summary').value,
-            blog_post: document.getElementById('prompt_blog_post').value,
-            clickbait_titles: document.getElementById('prompt_clickbait_titles').value,
-            two_line_summary: document.getElementById('prompt_two_line_summary').value,
-            quotes: document.getElementById('prompt_quotes').value,
-            chapter_timestamps: document.getElementById('prompt_chapter_timestamps').value,
-            linkedin_post: document.getElementById('prompt_linkedin_post').value,
-            keywords: document.getElementById('prompt_keywords').value
-        };
-        
-        const response = await fetch(`${API_BASE_URL}/api/prompts`, {
-            method: 'POST',
-            headers: getAuthHeaders(),
-            body: JSON.stringify({ prompts })
-        });
-        
-        if (response.status === 401) {
-            authToken = null;
-            localStorage.removeItem('authToken');
-            localStorage.removeItem('rememberMe');
-            sessionStorage.removeItem('authToken');
-            rememberMe = false;
-            showLoginModal();
-            return;
-        }
-        
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.detail || 'Failed to save prompts');
-        }
-        
-        const data = await response.json();
-        if (data.success) {
-            // Update previews
-            updatePromptPreviews(prompts);
-            
-            // Re-disable all textareas
-            document.querySelectorAll('.prompt-textarea').forEach(textarea => {
-                textarea.setAttribute('readonly', 'readonly');
-            });
-            
-            // Remove editing class from all tiles
-            document.querySelectorAll('.prompt-tile').forEach(tile => {
-                tile.classList.remove('editing');
-            });
-            
-            showStatus(statusDiv, 'Prompts saved successfully! All future content generation will use these prompts.', 'success');
-        }
-    } catch (error) {
-        console.error('Error saving prompts:', error);
-        showStatus(statusDiv, error.message || 'Error saving prompts', 'error');
-    } finally {
-        saveBtn.disabled = false;
     }
 }
 
@@ -1470,7 +1286,7 @@ async function savePrompts() {
 }
 
 async function resetPrompts() {
-    if (!confirm('⚠️ WARNING: Are you sure you want to reset all prompts to default?\n\nThis will:\n- Reset all prompts to their default values\n- Affect all future content generation\n- Cannot be easily undone\n\nContinue?')) {
+    if (!confirm('Are you sure you want to reset all prompts to default? This cannot be undone.')) {
         return;
     }
     
