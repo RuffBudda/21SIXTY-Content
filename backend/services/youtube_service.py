@@ -154,66 +154,67 @@ class YouTubeService:
         
         return ydl_opts
     
-    async def download_audio(self, youtube_url: str) -> Optional[str]:
-        """Download YouTube video as MP3 using yt-dlp and return file path"""
-        try:
-            video_id = self._extract_video_id(youtube_url)
-            mp3_path = os.path.join(self.upload_dir, f"{video_id}.mp3")
-            
-            logger.info(f"Attempting download with yt-dlp for video: {youtube_url}")
-            
-            # Build yt-dlp options with enhanced bot detection bypass and optional cookie support
-            # Note: FFmpegExtractAudio postprocessor will convert to .mp3, so we set outtmpl without extension
-            base_output_path = os.path.join(self.upload_dir, video_id)
-            ydl_opts = self._build_ydl_opts(
-                output_path=base_output_path + '.%(ext)s',
-                use_cookies=True  # Try to use cookies if available, but works without them for most videos
-            )
-            
-            # Use yt-dlp to download and convert to MP3
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                try:
-                    ydl.download([youtube_url])
-                except yt_dlp.utils.DownloadError as e:
-                    error_msg = str(e)
-                    logger.error(f"yt-dlp download error: {error_msg}")
-                    # Check if it's a bot detection error
-                    if 'Sign in to confirm you\'re not a bot' in error_msg or 'bot' in error_msg.lower():
-                        logger.warning("⚠️  Bot detection encountered. This video requires authentication.")
-                        logger.warning("   Solution: Upload cookies.txt file via web interface or set YOUTUBE_COOKIES_BROWSER env var")
-                        logger.warning("   See: https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp")
-                    elif 'HTTP Error 400' in error_msg:
-                        logger.warning("⚠️  HTTP 400 error - YouTube API may have changed. Try updating yt-dlp: pip install --upgrade yt-dlp")
-                    raise Exception(f"Failed to download audio: {error_msg}")
-            
-            # FFmpegExtractAudio postprocessor should have created .mp3 file
-            # Check if MP3 file exists at expected path
-            if os.path.exists(mp3_path):
-                file_size = os.path.getsize(mp3_path)
-                logger.info(f"Successfully downloaded audio to {mp3_path} ({file_size} bytes)")
-                return mp3_path
-            
-            # yt-dlp might have created the file with a slightly different name, check for variations
-            possible_files = [f for f in os.listdir(self.upload_dir) if f.startswith(video_id)]
-            if possible_files:
-                # Find .mp3 file first
-                mp3_files = [f for f in possible_files if f.endswith('.mp3')]
-                if mp3_files:
-                    found_file = os.path.join(self.upload_dir, mp3_files[0])
-                    if found_file != mp3_path:
-                        logger.info(f"Found downloaded file: {found_file}, renaming to {mp3_path}")
-                        os.rename(found_file, mp3_path)
-                    return mp3_path
-                # If no .mp3, check for other audio formats (shouldn't happen with postprocessor)
-                found_file = os.path.join(self.upload_dir, possible_files[0])
-                logger.warning(f"Expected .mp3 file not found, but found: {found_file}")
-                raise Exception(f"MP3 conversion failed. File exists but is not MP3: {found_file}")
-            
-            raise Exception(f"MP3 file not found at expected path: {mp3_path}")
-                
-        except Exception as e:
-            logger.error(f"Error downloading audio with yt-dlp: {str(e)}", exc_info=True)
-            raise Exception(f"Failed to download audio: {str(e)}")
+    # COMMENTED OUT: YouTube download and conversion feature - now using audio file upload instead
+    # async def download_audio(self, youtube_url: str) -> Optional[str]:
+    #     """Download YouTube video as MP3 using yt-dlp and return file path"""
+    #     try:
+    #         video_id = self._extract_video_id(youtube_url)
+    #         mp3_path = os.path.join(self.upload_dir, f"{video_id}.mp3")
+    #         
+    #         logger.info(f"Attempting download with yt-dlp for video: {youtube_url}")
+    #         
+    #         # Build yt-dlp options with enhanced bot detection bypass and optional cookie support
+    #         # Note: FFmpegExtractAudio postprocessor will convert to .mp3, so we set outtmpl without extension
+    #         base_output_path = os.path.join(self.upload_dir, video_id)
+    #         ydl_opts = self._build_ydl_opts(
+    #             output_path=base_output_path + '.%(ext)s',
+    #             use_cookies=True  # Try to use cookies if available, but works without them for most videos
+    #         )
+    #         
+    #         # Use yt-dlp to download and convert to MP3
+    #         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+    #             try:
+    #                 ydl.download([youtube_url])
+    #             except yt_dlp.utils.DownloadError as e:
+    #                 error_msg = str(e)
+    #                 logger.error(f"yt-dlp download error: {error_msg}")
+    #                 # Check if it's a bot detection error
+    #                 if 'Sign in to confirm you\'re not a bot' in error_msg or 'bot' in error_msg.lower():
+    #                     logger.warning("⚠️  Bot detection encountered. This video requires authentication.")
+    #                     logger.warning("   Solution: Upload cookies.txt file via web interface or set YOUTUBE_COOKIES_BROWSER env var")
+    #                     logger.warning("   See: https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp")
+    #                 elif 'HTTP Error 400' in error_msg:
+    #                     logger.warning("⚠️  HTTP 400 error - YouTube API may have changed. Try updating yt-dlp: pip install --upgrade yt-dlp")
+    #                 raise Exception(f"Failed to download audio: {error_msg}")
+    #         
+    #         # FFmpegExtractAudio postprocessor should have created .mp3 file
+    #         # Check if MP3 file exists at expected path
+    #         if os.path.exists(mp3_path):
+    #             file_size = os.path.getsize(mp3_path)
+    #             logger.info(f"Successfully downloaded audio to {mp3_path} ({file_size} bytes)")
+    #             return mp3_path
+    #         
+    #         # yt-dlp might have created the file with a slightly different name, check for variations
+    #         possible_files = [f for f in os.listdir(self.upload_dir) if f.startswith(video_id)]
+    #         if possible_files:
+    #             # Find .mp3 file first
+    #             mp3_files = [f for f in possible_files if f.endswith('.mp3')]
+    #             if mp3_files:
+    #                 found_file = os.path.join(self.upload_dir, mp3_files[0])
+    #                 if found_file != mp3_path:
+    #                     logger.info(f"Found downloaded file: {found_file}, renaming to {mp3_path}")
+    #                     os.rename(found_file, mp3_path)
+    #                 return mp3_path
+    #             # If no .mp3, check for other audio formats (shouldn't happen with postprocessor)
+    #             found_file = os.path.join(self.upload_dir, possible_files[0])
+    #             logger.warning(f"Expected .mp3 file not found, but found: {found_file}")
+    #             raise Exception(f"MP3 conversion failed. File exists but is not MP3: {found_file}")
+    #         
+    #         raise Exception(f"MP3 file not found at expected path: {mp3_path}")
+    #             
+    #     except Exception as e:
+    #         logger.error(f"Error downloading audio with yt-dlp: {str(e)}", exc_info=True)
+    #         raise Exception(f"Failed to download audio: {str(e)}")
     
     async def get_transcript(self, youtube_url: str) -> Dict:
         """Get transcript with timecodes from YouTube"""

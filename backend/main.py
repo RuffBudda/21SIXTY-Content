@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, BackgroundTasks, Depends, Header, UploadFile, File
+from fastapi import FastAPI, HTTPException, BackgroundTasks, Depends, Header, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
@@ -113,22 +113,42 @@ async def health_check():
     return {"status": "healthy"}
 
 @app.post("/api/process-video", response_model=ProcessVideoResponse)
-async def process_video(request: ProcessVideoRequest, background_tasks: BackgroundTasks, 
-                       credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)):
-    """Process YouTube video: download MP3 and extract transcript with timecodes"""
+async def process_video(
+    youtube_url: str = Form(...),
+    audio_file: UploadFile = File(...),
+    background_tasks: BackgroundTasks = None,
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)
+):
+    """Process uploaded audio file and extract transcript from YouTube URL"""
     if not verify_auth(credentials):
         raise HTTPException(status_code=401, detail="Authentication required")
     try:
-        logger.info(f"Processing video: {request.youtube_url}")
+        logger.info(f"Processing video: {youtube_url}")
         
-        # Extract video ID for storing and downloading
-        video_id = youtube_service._extract_video_id(request.youtube_url)
+        # Extract video ID for storing
+        video_id = youtube_service._extract_video_id(youtube_url)
         
-        # Download video and extract MP3
-        audio_path = await youtube_service.download_audio(request.youtube_url)
+        # COMMENTED OUT: YouTube download and conversion feature
+        # # Download video and extract MP3
+        # audio_path = await youtube_service.download_audio(youtube_url)
         
-        # Get transcript with timecodes
-        transcript_data = await youtube_service.get_transcript(request.youtube_url)
+        # Save uploaded audio file
+        audio_path = os.path.join(youtube_service.upload_dir, f"{video_id}.mp3")
+        os.makedirs(youtube_service.upload_dir, exist_ok=True)
+        
+        # Validate file type
+        if not audio_file.filename or not audio_file.filename.lower().endswith(('.mp3', '.wav', '.m4a', '.ogg', '.flac')):
+            raise HTTPException(status_code=400, detail="Invalid audio file format. Supported formats: MP3, WAV, M4A, OGG, FLAC")
+        
+        # Save uploaded file
+        with open(audio_path, 'wb') as f:
+            content = await audio_file.read()
+            f.write(content)
+        
+        logger.info(f"Saved uploaded audio file to: {audio_path} (size: {len(content)} bytes)")
+        
+        # Get transcript with timecodes from YouTube URL
+        transcript_data = await youtube_service.get_transcript(youtube_url)
         
         # Store MP3 file path for download (don't cleanup immediately)
         if audio_path and os.path.exists(audio_path):
