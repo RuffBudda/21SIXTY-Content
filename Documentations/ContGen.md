@@ -1,6 +1,6 @@
 # 21SIXTY Content Generator - Feature Documentation
 
-**Version:** v124  
+**Version:** v131  
 **Last Updated:** 2024-12-21
 
 This document provides a comprehensive overview of all features, architecture, and implementation details for AI agents working on this codebase.
@@ -506,7 +506,7 @@ Display All Deliverables
 ## Important Notes for AI Agents
 
 ### Version Management
-- **Current Version**: v124
+- **Current Version**: v131
 - **Version Location**: `frontend/index.html` (title and header)
 - **Update**: Change in both places when incrementing version
 

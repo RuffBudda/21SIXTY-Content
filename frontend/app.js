@@ -152,6 +152,9 @@ async function logout() {
 }
 
 function getAuthHeaders(includeContentType = true) {
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/b207b689-8405-4a20-bd10-ddb3167454cd',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app.js:154',message:'getAuthHeaders called',data:{includeContentType,authToken:authToken?'present':'missing'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+    // #endregion
     const headers = {
         'Authorization': `Bearer ${authToken}`
     };
@@ -159,6 +162,9 @@ function getAuthHeaders(includeContentType = true) {
     if (includeContentType) {
         headers['Content-Type'] = 'application/json';
     }
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/b207b689-8405-4a20-bd10-ddb3167454cd',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app.js:162',message:'getAuthHeaders returning',data:{headers,hasContentType:!!headers['Content-Type']},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+    // #endregion
     return headers;
 }
 
@@ -299,7 +305,24 @@ function setupEventListeners() {
     document.getElementById('processVideoBtn').addEventListener('click', processVideo);
     document.getElementById('generateContentBtn').addEventListener('click', generateContent);
     
-    // Copy buttons
+    // Event delegation for result action buttons (copy and download)
+    document.addEventListener('click', (e) => {
+        const button = e.target.closest('[data-action]');
+        if (!button) return;
+        
+        const action = button.getAttribute('data-action');
+        const targetId = button.getAttribute('data-target');
+        
+        if (!targetId) return;
+        
+        if (action === 'copy') {
+            copyToClipboard(targetId);
+        } else if (action === 'download') {
+            downloadAsTxt(targetId);
+        }
+    });
+    
+    // Legacy copy buttons (for backward compatibility)
     document.querySelectorAll('.btn-copy').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const targetId = e.target.getAttribute('data-target');
@@ -643,23 +666,39 @@ async function processVideo() {
     }
     
     try {
+        // #region agent log
+        fetch('http://127.0.0.1:7243/ingest/b207b689-8405-4a20-bd10-ddb3167454cd',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app.js:645',message:'Before FormData creation',data:{audioFileExists:!!audioFile,audioFileName:audioFile?.name,audioFileSize:audioFile?.size,audioFileType:audioFile?.type},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+        // #endregion
         const formData = new FormData();
         formData.append('audio_file', audioFile);
+        // #region agent log
+        fetch('http://127.0.0.1:7243/ingest/b207b689-8405-4a20-bd10-ddb3167454cd',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app.js:648',message:'After FormData.append',data:{formDataHasAudioFile:formData.has('audio_file'),audioFileStillExists:!!audioFile},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+        // #endregion
         
+        const headers = getAuthHeaders(false); // Don't set Content-Type for FormData - browser sets it automatically
+        // #region agent log
+        fetch('http://127.0.0.1:7243/ingest/b207b689-8405-4a20-bd10-ddb3167454cd',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app.js:653',message:'Before fetch request',data:{headers,hasContentType:!!headers['Content-Type'],url:`${API_BASE_URL}/api/process-video`},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B,C'})}).catch(()=>{});
+        // #endregion
         let response;
         try {
             response = await fetch(`${API_BASE_URL}/api/process-video`, {
                 method: 'POST',
-                headers: getAuthHeaders(false), // Don't set Content-Type for FormData - browser sets it automatically
+                headers: headers,
                 body: formData
             });
         } catch (fetchError) {
+            // #region agent log
+            fetch('http://127.0.0.1:7243/ingest/b207b689-8405-4a20-bd10-ddb3167454cd',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app.js:656',message:'Fetch error caught',data:{error:fetchError?.message,errorType:fetchError?.constructor?.name},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+            // #endregion
             // Handle network errors (no response received)
             const networkErrorMsg = fetchError instanceof Error 
                 ? fetchError.message 
                 : String(fetchError);
             throw new Error(`Network error: ${networkErrorMsg || 'Failed to connect to server'}`);
         }
+        // #region agent log
+        fetch('http://127.0.0.1:7243/ingest/b207b689-8405-4a20-bd10-ddb3167454cd',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app.js:664',message:'Response received',data:{status:response.status,statusText:response.statusText,contentType:response.headers.get('content-type')},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+        // #endregion
         
         if (response.status === 401) {
             authToken = null;
@@ -898,14 +937,16 @@ async function generateContent() {
 
 // Display Results
 function displayResults(data) {
-    // Transcript with Timecodes
-    if (transcriptData && transcriptData.transcript_with_timecodes) {
-        const transcriptElement = document.getElementById('transcript');
+    // Transcript with Timecodes - Always show if available
+    const transcriptElement = document.getElementById('transcript');
+    if (transcriptData && transcriptData.transcript_with_timecodes && Array.isArray(transcriptData.transcript_with_timecodes) && transcriptData.transcript_with_timecodes.length > 0) {
         transcriptElement.textContent = formatTranscriptWithTimecodes(transcriptData.transcript_with_timecodes);
     } else if (transcriptData && transcriptData.transcript) {
         // Fallback to plain transcript if timecodes not available
-        const transcriptElement = document.getElementById('transcript');
         transcriptElement.textContent = transcriptData.transcript;
+    } else {
+        // Clear if no transcript data
+        transcriptElement.textContent = '';
     }
     
     // LinkedIn Post (with markdown rendering for links)
