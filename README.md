@@ -1,4 +1,4 @@
-# 21SIXTY CONTENT GEN v73
+# 21SIXTY CONTENT GEN v74
 
 A web-based tool for processing podcast audio files and generating comprehensive content including summaries, blog posts, titles, quotes, chapter timestamps, and LinkedIn posts using OpenAI APIs.
 
@@ -188,7 +188,9 @@ Configure these in the `.env` file in the `backend/` directory:
 
 ## License
 
-[Add your license here]
+See [LICENSE.md](LICENSE.md) for details.
+
+**Summary**: You can use, modify, and distribute this code freely, but you cannot use the 21SIXTY name, logo, or branding in your version.
 
 ## Support
 
