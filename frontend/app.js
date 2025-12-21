@@ -585,6 +585,24 @@ async function generateContent() {
         // Display results
         displayResults(data);
         
+        // Cache generated content to localStorage
+        if (videoInfo && videoInfo.video_id) {
+            try {
+                const contentKey = `content_${videoInfo.video_id}`;
+                const contentData = {
+                    data: data,
+                    video_id: videoInfo.video_id,
+                    timestamp: Date.now()
+                };
+                localStorage.setItem(contentKey, JSON.stringify(contentData));
+                console.log(`Cached generated content with key: ${contentKey}`);
+            } catch (e) {
+                console.error('Error caching generated content:', e);
+            }
+        } else {
+            console.warn('Warning: Could not cache generated content - no video_id available');
+        }
+        
         showStatus(statusDiv, 'Content generated successfully!', 'success');
         document.getElementById('resultsContainer').style.display = 'block';
         document.getElementById('resultsContainer').scrollIntoView({ behavior: 'smooth' });
