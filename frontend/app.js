@@ -466,6 +466,29 @@ async function processVideo() {
                 video_id: data.video_id
             };
             
+            // Cache the processed data (cache key based on file hash only)
+            // Ensure cacheKey is set - use file hash or fallback to video_id
+            if (!cacheKey && data.video_id) {
+                // Fallback: use video_id if hash generation failed
+                cacheKey = `processed_${data.video_id}`;
+            }
+            
+            if (cacheKey) {
+                try {
+                    const cacheData = {
+                        transcriptData: data,
+                        videoInfo: videoInfo,
+                        timestamp: Date.now()
+                    };
+                    localStorage.setItem(cacheKey, JSON.stringify(cacheData));
+                    console.log(`Cached processed data with key: ${cacheKey}`);
+                } catch (e) {
+                    console.error('Error caching data:', e);
+                }
+            } else {
+                console.warn('Warning: Could not cache processed data - no cache key available');
+            }
+            
             // Show download button if video_id is available
             if (data.video_id) {
                 const downloadContainer = document.getElementById('audioDownloadContainer');
