@@ -34,7 +34,6 @@ A web-based tool for processing podcast audio files and generating comprehensive
 ### Prerequisites
 
 - Python 3.12+ (Python 3.12.3 recommended)
-- FFmpeg (for audio processing)
 - OpenAI API key
 - Node.js/npm (optional, for development)
 
