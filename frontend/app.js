@@ -618,6 +618,22 @@ async function generateContent() {
 
 // Display Results
 function displayResults(data) {
+    // Transcript with Timecodes
+    if (transcriptData && transcriptData.transcript_with_timecodes) {
+        const transcriptElement = document.getElementById('transcript');
+        transcriptElement.textContent = formatTranscriptWithTimecodes(transcriptData.transcript_with_timecodes);
+    } else if (transcriptData && transcriptData.transcript) {
+        // Fallback to plain transcript if timecodes not available
+        const transcriptElement = document.getElementById('transcript');
+        transcriptElement.textContent = transcriptData.transcript;
+    }
+    
+    // LinkedIn Post (with markdown rendering for links)
+    if (data.linkedin_post) {
+        const linkedinPostElement = document.getElementById('linkedinPost');
+        linkedinPostElement.innerHTML = formatMarkdownLinks(data.linkedin_post);
+    }
+    
     // YouTube Summary
     document.getElementById('youtubeSummary').textContent = data.youtube_summary;
     
@@ -639,6 +655,33 @@ function displayResults(data) {
     // Chapter Timestamps
     const timestampsElement = document.getElementById('chapterTimestamps');
     timestampsElement.textContent = data.chapter_timestamps.join('\n');
+}
+
+function formatTranscriptWithTimecodes(timecodes) {
+    if (!Array.isArray(timecodes) || timecodes.length === 0) {
+        return '';
+    }
+    
+    return timecodes.map((item, index) => {
+        const timestamp = item.start !== undefined ? formatTimestamp(item.start) : '';
+        const text = item.text || '';
+        return `${timestamp} ${text}`.trim();
+    }).join('\n');
+}
+
+function formatTimestamp(seconds) {
+    if (typeof seconds !== 'number' || isNaN(seconds)) {
+        return '';
+    }
+    
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = Math.floor(seconds % 60);
+    
+    if (hours > 0) {
+        return `[${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}]`;
+    }
+    return `[${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}]`;
 }
 
 function formatList(items) {
