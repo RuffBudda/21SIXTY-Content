@@ -1081,6 +1081,7 @@ async function loadPrompts() {
             document.getElementById('prompt_two_line_summary').value = data.prompts.two_line_summary || '';
             document.getElementById('prompt_quotes').value = data.prompts.quotes || '';
             document.getElementById('prompt_chapter_timestamps').value = data.prompts.chapter_timestamps || '';
+            document.getElementById('prompt_linkedin_post').value = data.prompts.linkedin_post || '';
         }
     } catch (error) {
         console.error('Error loading prompts:', error);
