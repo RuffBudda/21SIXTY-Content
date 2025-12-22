@@ -29,15 +29,17 @@ This document provides a comprehensive overview of all features, architecture, a
   - File saved to `backend/uploads/` directory
   - File hash (SHA-256) generated for caching
 
-### 2. Audio File Processing
+### 2. Audio File Processing with Whisper API
 - **Location**: `backend/main.py` - `process_video()`
-- **Description**: Processes uploaded audio files and saves them for content generation
+- **Description**: Processes uploaded audio files, generates transcripts using Whisper API, and saves them for content generation
 - **Implementation**:
   - Accepts audio file upload via multipart/form-data
   - Validates file format (MP3, WAV, M4A, OGG, FLAC)
   - Generates unique video_id from file hash and timestamp
   - Saves file to `backend/uploads/` directory
-  - Returns empty transcript structure (transcripts must be provided manually or via speech-to-text)
+  - Calls OpenAI Whisper API to generate transcript with timecodes
+  - Returns transcript structure with segments containing start, end, and text
+  - Falls back to empty transcript if Whisper API fails (doesn't break the request)
 
 ### 3. LocalStorage Caching System
 - **Location**: `frontend/app.js` - `processVideo()`, `getFileHash()`, `fileToBase64()`
