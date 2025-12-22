@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CONTENT GEN v142</title>
+    <title>CONTENT GEN v143</title>
     <link rel="icon" type="image/x-icon" href="/static/images/favicons/favicon.ico">
     <link rel="stylesheet" href="styles.css">
 </head>
@@ -51,7 +51,7 @@
                 <h1 class="title">CONTENT GEN</h1>
             </div>
             <div class="header-pills">
-                <span class="version">v142</span>
+                <span class="version">v143</span>
                 <span class="openai-pill">
                     <span class="openai-label">OpenAI:</span>
                     <span class="openai-value" id="creditsValue">Fetching...</span>
@@ -229,24 +229,32 @@
                         </div>
                     </div>
                     
-                    <!-- Standard Static Content Section -->
-                    <div class="card" style="margin-bottom: 30px;">
-                        <div style="margin-bottom: 15px;">
-                            <h3 style="margin: 0 0 10px 0; color: var(--text-primary);">Standard Static Content</h3>
-                            <p class="info-text" style="margin: 0 0 15px 0;">Manually entered content that will be included in the Full Episode Description. This content is saved in the system and available as a variable for API and other prompts.</p>
-                        </div>
-                        <textarea id="standardStaticContent" class="prompt-textarea" placeholder="Enter standard static content (e.g., subscribe links, social media links, etc.)..." style="min-height: 150px; width: 100%; padding: 15px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--card-bg); color: var(--text-primary); font-family: inherit; font-size: 0.95rem; resize: vertical;"></textarea>
-                        <div style="margin-top: 10px; display: flex; gap: 10px;">
-                            <button class="btn btn-primary" id="saveStandardStaticContentBtn">Save Standard Static Content</button>
-                        </div>
-                        <div style="margin-top: 15px; padding: 10px; background: var(--bg-secondary); border-radius: 8px; border: 1px solid var(--border-color);">
-                            <p style="margin: 0; font-size: 0.9rem; color: var(--text-secondary);">
-                                <strong>Variable:</strong> <code style="color: var(--accent-cyan);">{standard_static_content}</code> - Use this variable in prompts to include the standard static content.
-                            </p>
-                        </div>
-                    </div>
-                    
                     <div class="prompts-tiles-grid">
+                        <!-- Standard Static Content Tile -->
+                        <div class="prompt-tile" data-prompt-id="standard_static_content">
+                            <div class="prompt-tile-header">
+                                <div class="prompt-tile-title-group">
+                                    <h3>Standard Static Content</h3>
+                                </div>
+                                <div class="prompt-tile-actions">
+                                    <button class="btn-icon btn-expand" data-action="expand" data-target="standard_static_content" title="Expand/Collapse">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                                    </button>
+                                    <button class="btn-icon btn-edit" data-action="edit" data-target="standard_static_content" title="Edit">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="prompt-tile-preview" data-preview="standard_static_content"></div>
+                            <div class="prompt-tile-content" style="display: none;">
+                                <textarea id="standardStaticContent" class="prompt-textarea" readonly placeholder="Enter standard static content (e.g., subscribe links, social media links, etc.)..."></textarea>
+                                <div style="margin-top: 15px; padding: 10px; background: var(--bg-secondary); border-radius: 8px; border: 1px solid var(--border-color);">
+                                    <p style="margin: 0; font-size: 0.9rem; color: var(--text-secondary);">
+                                        <strong>Variable:</strong> <code style="color: var(--accent-cyan);">{standard_static_content}</code> - Use this variable in prompts to include the standard static content.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
                         <!-- YouTube Summary Tile -->
                         <div class="prompt-tile" data-prompt-id="youtube_summary">
                             <div class="prompt-tile-header">
@@ -513,14 +521,50 @@
                     
                     <div style="margin-bottom: 30px;">
                         <h3 style="color: var(--primary); margin-bottom: 10px;">Webhook URL</h3>
-                        <div style="background: var(--card-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 15px;">
-                            <code id="webhookUrl" style="font-size: 1rem; word-break: break-all; color: var(--primary);"></code>
-                            <button class="btn btn-icon" id="copyWebhookUrlBtn" style="margin-left: 10px; vertical-align: middle;" title="Copy URL">
+                        <div style="background: var(--card-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 15px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                            <code id="webhookUrl" style="font-size: 1rem; word-break: break-all; color: var(--primary); flex: 1; min-width: 200px;"></code>
+                            <button class="btn btn-icon" id="copyWebhookUrlBtn" style="flex-shrink: 0;" title="Copy URL">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                     <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                                     <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
                                 </svg>
                             </button>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 30px;">
+                        <h3 style="color: var(--primary); margin-bottom: 10px;">Bearer Token</h3>
+                        <p style="margin-bottom: 10px;">Use this token for authentication in N8N or other automation tools:</p>
+                        <div style="background: var(--card-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 15px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                            <code id="bearerToken" style="font-size: 1rem; word-break: break-all; color: var(--primary); flex: 1; min-width: 200px; font-family: 'Courier New', monospace;"></code>
+                            <button class="btn btn-icon" id="toggleBearerTokenBtn" style="flex-shrink: 0;" title="Toggle Visibility">
+                                <svg id="toggleBearerTokenIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                </svg>
+                            </button>
+                            <button class="btn btn-icon" id="copyBearerTokenBtn" style="flex-shrink: 0;" title="Copy Token">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 30px;">
+                        <h3 style="color: var(--primary); margin-bottom: 15px;">N8N Setup Instructions</h3>
+                        <div style="background: var(--bg-secondary); padding: 20px; border-radius: 8px; border: 1px solid var(--border-color);">
+                            <ol style="margin: 0; padding-left: 20px; line-height: 1.8;">
+                                <li style="margin-bottom: 10px;">Create a new HTTP Request node in your N8N workflow</li>
+                                <li style="margin-bottom: 10px;">Set the <strong>Method</strong> to <code>POST</code></li>
+                                <li style="margin-bottom: 10px;">Set the <strong>URL</strong> to the Webhook URL shown above</li>
+                                <li style="margin-bottom: 10px;">In <strong>Authentication</strong>, select <code>Generic Credential Type</code> → <code>Header Auth</code></li>
+                                <li style="margin-bottom: 10px;">Set <strong>Name</strong> to <code>Authorization</code></li>
+                                <li style="margin-bottom: 10px;">Set <strong>Value</strong> to <code>Bearer YOUR_TOKEN</code> (use the Bearer Token shown above)</li>
+                                <li style="margin-bottom: 10px;">In <strong>Body</strong>, select <code>JSON</code> and add your request body with required fields (transcript, guest_name, guest_title, guest_company, guest_linkedin)</li>
+                                <li style="margin-bottom: 10px;">Connect the node to trigger your workflow</li>
+                            </ol>
                         </div>
                     </div>
 

@@ -18,6 +18,11 @@ document.addEventListener('DOMContentLoaded', () => {
         rememberMeCheckbox.checked = savedRememberMe === 'true' || savedRememberMe === null;
     }
     
+    // Initialize bearer token display if already logged in
+    if (authToken) {
+        updateBearerToken();
+    }
+    
     // Load credits status every 30 seconds if authenticated
     // COMMENTED OUT: Cookie status - pytube doesn't support cookies
     if (authToken) {
@@ -114,6 +119,7 @@ async function login() {
             }
             showMainApp();
             loadCredits();
+            updateBearerToken();
             // COMMENTED OUT: Cookie status - pytube doesn't support cookies
             // loadCookiesStatus(); // Check cookie status immediately after login
             errorDiv.style.display = 'none';
@@ -192,12 +198,6 @@ function setupEventListeners() {
     // Prompts editor
     document.getElementById('savePromptsBtn').addEventListener('click', savePrompts);
     document.getElementById('resetPromptsBtn').addEventListener('click', resetPrompts);
-    
-    // Standard Static Content
-    const saveStandardStaticContentBtn = document.getElementById('saveStandardStaticContentBtn');
-    if (saveStandardStaticContentBtn) {
-        saveStandardStaticContentBtn.addEventListener('click', saveStandardStaticContent);
-    }
     
     // Load standard static content on page load
     loadStandardStaticContent();
@@ -298,6 +298,22 @@ function setupEventListeners() {
     if (copyWebhookUrlBtn) {
         copyWebhookUrlBtn.addEventListener('click', () => {
             copyWebhookUrl();
+        });
+    }
+    
+    // Bearer token toggle visibility
+    const toggleBearerTokenBtn = document.getElementById('toggleBearerTokenBtn');
+    if (toggleBearerTokenBtn) {
+        toggleBearerTokenBtn.addEventListener('click', () => {
+            toggleBearerTokenVisibility();
+        });
+    }
+    
+    // Bearer token copy
+    const copyBearerTokenBtn = document.getElementById('copyBearerTokenBtn');
+    if (copyBearerTokenBtn) {
+        copyBearerTokenBtn.addEventListener('click', () => {
+            copyBearerToken();
         });
     }
     
@@ -1502,12 +1518,13 @@ function switchTab(tabName) {
         loadGallery();
     }
     
-    // Update webhook URL if switching to API tab
+    // Update webhook URL and bearer token if switching to API tab
     if (tabName === 'api') {
         const webhookUrlElement = document.getElementById('webhookUrl');
         if (webhookUrlElement) {
             webhookUrlElement.textContent = `${API_BASE_URL}/api/generate-content`;
         }
+        updateBearerToken();
         // Hide API details when switching to tab
         hideApiDetails();
     }
@@ -1523,18 +1540,72 @@ function toggleAccordion(accordionId) {
         if (icon) {
             icon.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(180deg)';
         }
-        // Update webhook URL when opening API accordion
+        // Update webhook URL and bearer token when opening API accordion
         if (accordionId === 'apiAccordion' && !isOpen) {
             const webhookUrlElement = document.getElementById('webhookUrl');
             if (webhookUrlElement) {
                 webhookUrlElement.textContent = `${API_BASE_URL}/api/generate-content`;
             }
+            updateBearerToken();
         }
     }
 }
 
+// Bearer token functions
+function updateBearerToken() {
+    const bearerTokenElement = document.getElementById('bearerToken');
+    if (bearerTokenElement && authToken) {
+        bearerTokenElement.textContent = authToken;
+        bearerTokenElement.setAttribute('data-token', authToken);
+    } else if (bearerTokenElement) {
+        bearerTokenElement.textContent = 'Please log in to see your bearer token';
+        bearerTokenElement.setAttribute('data-token', '');
+    }
+}
+
+let bearerTokenVisible = false;
+function toggleBearerTokenVisibility() {
+    const bearerTokenElement = document.getElementById('bearerToken');
+    const toggleIcon = document.getElementById('toggleBearerTokenIcon');
+    if (!bearerTokenElement) return;
+    
+    const actualToken = bearerTokenElement.getAttribute('data-token') || '';
+    bearerTokenVisible = !bearerTokenVisible;
+    
+    if (bearerTokenVisible && actualToken) {
+        bearerTokenElement.textContent = actualToken;
+        if (toggleIcon) {
+            toggleIcon.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line>';
+        }
+    } else {
+        bearerTokenElement.textContent = '••••••••••••••••••••••••••••••••';
+        if (toggleIcon) {
+            toggleIcon.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle>';
+        }
+    }
+}
+
+function copyBearerToken() {
+    const bearerTokenElement = document.getElementById('bearerToken');
+    if (!bearerTokenElement) return;
+    
+    const actualToken = bearerTokenElement.getAttribute('data-token') || '';
+    if (!actualToken) {
+        alert('Please log in to copy your bearer token');
+        return;
+    }
+    
+    navigator.clipboard.writeText(actualToken).then(() => {
+        alert('Bearer token copied to clipboard!');
+    }).catch(err => {
+        console.error('Failed to copy:', err);
+        alert('Failed to copy token');
+    });
+}
+
 function copyWebhookUrl() {
-    const webhookUrl = `${API_BASE_URL}/api/generate-content`;
+    const webhookUrlElement = document.getElementById('webhookUrl');
+    const webhookUrl = webhookUrlElement?.textContent || `${API_BASE_URL}/api/generate-content`;
     navigator.clipboard.writeText(webhookUrl).then(() => {
         alert('Webhook URL copied to clipboard!');
     }).catch(err => {
@@ -2136,7 +2207,8 @@ async function resetPrompts() {
 function saveStandardStaticContent() {
     const content = document.getElementById('standardStaticContent').value;
     localStorage.setItem('standardStaticContent', content);
-    alert('Standard Static Content saved successfully!');
+    updatePromptPreviews();
+    updateFullEpisodeDescription();
 }
 
 function loadStandardStaticContent() {
