@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CONTENT GEN v151</title>
+    <title>CONTENT GEN v170</title>
     <link rel="icon" type="image/x-icon" href="/static/images/favicons/favicon.ico">
     <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
     <!-- Login Modal -->
@@ -43,6 +44,57 @@
         </div>
     </div>
 
+    <!-- Usage Modal -->
+    <div id="usageModal" class="modal">
+        <div class="modal-content usage-modal-content">
+            <div class="usage-modal-header">
+                <h2>Usage Dashboard</h2>
+                <button class="btn-icon" id="closeUsageModal" title="Close">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            
+            <div class="usage-dashboard">
+                <!-- Metrics Cards -->
+                <div class="usage-metrics-grid">
+                    <div class="usage-metric-card">
+                        <div class="metric-label">Total OpenAI Cost</div>
+                        <div class="metric-value" id="totalOpenAICost">$0.00</div>
+                    </div>
+                    <div class="usage-metric-card">
+                        <div class="metric-label">Total AssemblyAI Cost</div>
+                        <div class="metric-value" id="totalAssemblyAICost">$0.00</div>
+                    </div>
+                </div>
+                
+                <!-- Chart Section -->
+                <div class="usage-chart-container">
+                    <h3>Monthly Usage Cost</h3>
+                    <canvas id="usageChart"></canvas>
+                </div>
+                
+                <!-- Action Section -->
+                <div class="usage-actions">
+                    <a href="https://platform.openai.com/settings/organization/billing/" target="_blank" class="btn btn-primary usage-link-btn">
+                        OpenAI Billing
+                    </a>
+                    <a href="https://www.assemblyai.com/dashboard/cost" target="_blank" class="btn btn-primary usage-link-btn">
+                        AssemblyAI Billing
+                    </a>
+                </div>
+                
+                <!-- Info Section -->
+                <div class="usage-info-box">
+                    <p><strong>Account Information:</strong></p>
+                    <p>Both accounts are configured with <strong>abub100@gmail.com</strong> and authenticated through Google SSO.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="container" id="mainContainer" style="display: none;">
         <!-- Header -->
         <header class="header">
@@ -51,7 +103,7 @@
                 <h1 class="title">CONTENT GEN</h1>
             </div>
             <div class="header-pills">
-                <span class="version">v151</span>
+                <span class="version">v170</span>
                 <span class="openai-pill">
                     <span class="openai-label">OpenAI:</span>
                     <span class="openai-value" id="creditsValue">Fetching...</span>
@@ -77,6 +129,7 @@
                 <!-- COMMENTED OUT: Cookie upload - pytube doesn't support cookies -->
                 <!-- <input type="file" id="cookieFileInput" accept=".txt" style="display: none;" /> -->
                 <!-- <button class="btn btn-secondary" id="uploadCookiesBtn">Upload Cookies</button> -->
+                <button class="btn btn-secondary" id="usageBtn">Usage</button>
                 <button class="btn btn-secondary" id="logoutBtn">Logout</button>
             </div>
         </header>
@@ -322,11 +375,11 @@
                             </div>
                         </div>
                         
-                        <!-- Two Line Summary Tile -->
+                        <!-- One Line Summary Tile -->
                         <div class="prompt-tile" data-prompt-id="two_line_summary">
                             <div class="prompt-tile-header">
                                 <div class="prompt-tile-title-group">
-                                    <h3>Two Line Summary</h3>
+                                    <h3>One Line Summary</h3>
                                 </div>
                                 <div class="prompt-tile-actions">
                                     <button class="btn-icon btn-expand" data-action="expand" data-target="two_line_summary" title="Expand/Collapse">
@@ -339,7 +392,7 @@
                             </div>
                             <div class="prompt-tile-preview" data-preview="two_line_summary"></div>
                             <div class="prompt-tile-content" style="display: none;">
-                                <textarea id="prompt_two_line_summary" class="prompt-textarea" readonly placeholder="Enter two line summary prompt..."></textarea>
+                                <textarea id="prompt_two_line_summary" class="prompt-textarea" readonly placeholder="Enter one line summary prompt..."></textarea>
                             </div>
                         </div>
                         
@@ -909,7 +962,7 @@ console.log(data.youtube_summary);</code></pre>
                     <div class="result-content" id="blogPost"></div>
                 </div>
 
-                <!-- Two Line Summary -->
+                <!-- One Line Summary -->
                 <div class="card result-card">
                     <div class="result-header">
                         <h2>2 Line Summary</h2>

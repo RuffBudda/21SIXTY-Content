@@ -89,7 +89,9 @@ class OpenAIService:
                     'content': response.choices[0].message.content.strip(),
                     'tokens_used': response.usage.total_tokens if response.usage else 0,
                     'prompt_tokens': response.usage.prompt_tokens if response.usage else 0,
-                    'completion_tokens': response.usage.completion_tokens if response.usage else 0
+                    'completion_tokens': response.usage.completion_tokens if response.usage else 0,
+                    'total_tokens': response.usage.total_tokens if response.usage else 0,
+                    'model': model_to_try
                 }
             except Exception as e:
                 error_msg = str(e)

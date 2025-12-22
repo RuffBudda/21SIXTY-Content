@@ -160,6 +160,168 @@ async function logout() {
     showLoginModal();
 }
 
+// Usage Modal Functions
+let usageChart = null;
+
+function showUsageModal() {
+    const modal = document.getElementById('usageModal');
+    if (modal) {
+        modal.style.display = 'flex';
+        loadUsageStats();
+    }
+}
+
+function hideUsageModal() {
+    const modal = document.getElementById('usageModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+async function loadUsageStats() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/usage-stats`, {
+            headers: getAuthHeaders()
+        });
+        
+        if (response.status === 401) {
+            authToken = null;
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('rememberMe');
+            sessionStorage.removeItem('authToken');
+            rememberMe = false;
+            showLoginModal();
+            return;
+        }
+        
+        if (!response.ok) {
+            throw new Error('Failed to load usage stats');
+        }
+        
+        const data = await response.json();
+        
+        // Update total costs
+        document.getElementById('totalOpenAICost').textContent = `$${data.total_openai_cost.toFixed(2)}`;
+        document.getElementById('totalAssemblyAICost').textContent = `$${data.total_assemblyai_cost.toFixed(2)}`;
+        
+        // Render chart
+        renderUsageChart(data);
+    } catch (error) {
+        console.error('Error loading usage stats:', error);
+        document.getElementById('totalOpenAICost').textContent = 'Error';
+        document.getElementById('totalAssemblyAICost').textContent = 'Error';
+    }
+}
+
+function renderUsageChart(data) {
+    const ctx = document.getElementById('usageChart');
+    if (!ctx) return;
+    
+    // Destroy existing chart if it exists
+    if (usageChart) {
+        usageChart.destroy();
+    }
+    
+    // Prepare data for chart
+    const openaiByMonth = data.openai_by_month || {};
+    const assemblyaiByMonth = data.assemblyai_by_month || {};
+    
+    // Get all unique months
+    const allMonths = new Set([
+        ...Object.keys(openaiByMonth),
+        ...Object.keys(assemblyaiByMonth)
+    ]);
+    const sortedMonths = Array.from(allMonths).sort();
+    
+    // Prepare datasets
+    const openaiCosts = sortedMonths.map(month => openaiByMonth[month]?.cost || 0);
+    const assemblyaiCosts = sortedMonths.map(month => assemblyaiByMonth[month]?.cost || 0);
+    
+    // Format month labels (e.g., "2024-01" -> "Jan 2024")
+    const monthLabels = sortedMonths.map(month => {
+        const [year, monthNum] = month.split('-');
+        const date = new Date(year, parseInt(monthNum) - 1);
+        return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+    });
+    
+    usageChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: monthLabels,
+            datasets: [
+                {
+                    label: 'OpenAI',
+                    data: openaiCosts,
+                    borderColor: 'rgb(75, 192, 192)',
+                    backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                },
+                {
+                    label: 'AssemblyAI',
+                    data: assemblyaiCosts,
+                    borderColor: 'rgb(255, 99, 132)',
+                    backgroundColor: 'rgba(255, 99, 132, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            aspectRatio: 2,
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top',
+                    labels: {
+                        color: '#e0e0e0',
+                        usePointStyle: true,
+                        padding: 15
+                    }
+                },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false,
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    titleColor: '#e0e0e0',
+                    bodyColor: '#e0e0e0',
+                    borderColor: '#444',
+                    borderWidth: 1,
+                    callbacks: {
+                        label: function(context) {
+                            return context.dataset.label + ': $' + context.parsed.y.toFixed(2);
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.1)'
+                    },
+                    ticks: {
+                        color: '#b0b0b0'
+                    }
+                },
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.1)'
+                    },
+                    ticks: {
+                        color: '#b0b0b0',
+                        callback: function(value) {
+                            return '$' + value.toFixed(2);
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
 function getAuthHeaders(includeContentType = true) {
     // #region agent log
     fetch('http://127.0.0.1:7243/ingest/b207b689-8405-4a20-bd10-ddb3167454cd',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app.js:154',message:'getAuthHeaders called',data:{includeContentType,authToken:authToken?'present':'missing'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
@@ -187,6 +349,26 @@ function setupEventListeners() {
     const logoutBtn = document.getElementById('logoutBtn');
     if (logoutBtn) {
         logoutBtn.addEventListener('click', logout);
+    }
+    
+    const usageBtn = document.getElementById('usageBtn');
+    if (usageBtn) {
+        usageBtn.addEventListener('click', showUsageModal);
+    }
+    
+    const closeUsageModal = document.getElementById('closeUsageModal');
+    if (closeUsageModal) {
+        closeUsageModal.addEventListener('click', hideUsageModal);
+    }
+    
+    // Close modal when clicking outside
+    const usageModal = document.getElementById('usageModal');
+    if (usageModal) {
+        usageModal.addEventListener('click', (e) => {
+            if (e.target === usageModal) {
+                hideUsageModal();
+            }
+        });
     }
     
     // Tab switching
@@ -687,7 +869,7 @@ async function processVideo() {
     if (selectAudioBtn) selectAudioBtn.disabled = true;
     
     // Show loading overlay (spinner + blackout background)
-    showLoading('Processing audio and generating transcript with Whisper API...');
+    showLoading('Processing Audio');
     
     // Generate file hash for caching
     let fileHash = null;
@@ -1260,9 +1442,6 @@ function displayTranscript(targetElementId = 'transcript') {
 
 // Display Results
 function displayResults(data) {
-    // Display transcript if available
-    displayTranscript();
-    
     // LinkedIn Post (with markdown rendering for links)
     if (data.linkedin_post) {
         const linkedinPostElement = document.getElementById('linkedinPost');
@@ -1276,7 +1455,7 @@ function displayResults(data) {
     const blogPostElement = document.getElementById('blogPost');
     blogPostElement.innerHTML = formatMarkdownLinks(data.blog_post);
     
-    // Two Line Summary
+    // One Line Summary
     document.getElementById('twoLineSummary').textContent = data.two_line_summary;
     
     // Clickbait Titles

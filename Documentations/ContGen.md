@@ -1,6 +1,6 @@
 # 21SIXTY Content Generator - Feature Documentation
 
-**Version:** v151  
+**Version:** v170  
 **Last Updated:** 2024-12-22
 
 This document provides a comprehensive overview of all features, architecture, and implementation details for AI agents working on this codebase.
@@ -87,7 +87,7 @@ This document provides a comprehensive overview of all features, architecture, a
 - **Location**: `frontend/index.html` - `.header-pills`, `frontend/styles.css` - `.version`, `.openai-pill`
 - **Description**: Version and OpenAI credits displayed as matching pills on the same line
 - **Implementation**:
-  - Version pill: Shows current version (v151) with code-like font (Courier New)
+  - Version pill: Shows current version (v170) with code-like font (Courier New)
   - OpenAI pill: Shows "OpenAI:" label and credit value with matching styling
   - Both pills have same dimensions: padding 2px 8px, border-radius 12px
   - Same styling: background-color (var(--bg-card)), border (1px solid var(--border-color)), font-size (0.75rem)
@@ -300,6 +300,42 @@ This document provides a comprehensive overview of all features, architecture, a
   - Simple setup - just requires `ASSEMBLYAI_API_KEY` environment variable
   - See `Documentations/transcript_timecode_fixes.md` Fix Attempt #9 for details
 
+### 27. Usage Tracking Dashboard (v170)
+- **Location**: `backend/services/usage_tracker.py`, `backend/main.py`, `frontend/index.html`, `frontend/app.js`, `frontend/styles.css`
+- **Description**: Usage tracking modal with monthly cost visualization for OpenAI and AssemblyAI
+- **Implementation**:
+  - Created `UsageTracker` service to track API usage and calculate costs
+  - Tracks OpenAI token usage (prompt, completion, total tokens) from API responses
+  - Tracks AssemblyAI audio duration for transcription requests
+  - Stores usage data in `backend/data/usage.json` with date-based entries
+  - Calculates costs based on model pricing (OpenAI) and per-second pricing (AssemblyAI)
+  - Added `/api/usage-stats` endpoint to return usage data grouped by month
+  - Usage button in header next to logout button
+  - Modern dashboard modal with:
+    - Monthly line chart using Chart.js (two lines: OpenAI and AssemblyAI)
+    - Total cost metric cards with hover effects
+    - Billing links to OpenAI and AssemblyAI dashboards
+    - Account configuration note
+  - Card-based grid layout with proper spacing and visual hierarchy
+  - Responsive design for mobile devices
+  - Dark theme integration matching existing UI
+
+### 28. One Line Summary Update (v170)
+- **Location**: `backend/prompts.json`, `frontend/index.html`, `frontend/app.js`
+- **Description**: Changed from 2-line summary to 1-line summary
+- **Implementation**:
+  - Updated `two_line_summary` prompt to generate single line
+  - Updated UI labels from "Two Line Summary" to "One Line Summary"
+  - Updated field descriptions in models and documentation
+
+### 29. Clickbait Quotes Update (v170)
+- **Location**: `backend/prompts.json`, `backend/services/content_generator.py`
+- **Description**: Changed quotes from exact transcript quotes to clickbait quotes summarizing key areas
+- **Implementation**:
+  - Updated `quotes` prompt to generate clickbait-style quotes that summarize key areas
+  - Quotes now focus on compelling, attention-grabbing statements that capture insights
+  - Updated method comments and descriptions
+
 ---
 
 ## Architecture Overview
@@ -465,7 +501,7 @@ Health check endpoint.
 ## Important Notes for AI Agents
 
 ### Version Management
-- **Current Version**: v151
+- **Current Version**: v170
 - **Version Location**: `frontend/index.html` (title and header)
 - **Update**: Change in both places when incrementing version
 

@@ -1,4 +1,4 @@
-# CONTENT GEN v151
+# CONTENT GEN v170
 
 A web-based tool for processing podcast audio files and generating comprehensive content including summaries, blog posts, titles, quotes, chapter timestamps, and LinkedIn posts using OpenAI APIs.
 
@@ -12,8 +12,8 @@ A web-based tool for processing podcast audio files and generating comprehensive
   - 3-paragraph episode summary
   - 2000-word blog post with LinkedIn hyperlinks
   - 20 clickbait titles (under 100 characters)
-  - 2-line episode summary
-  - 20 notable quotes from the episode
+  - 1-line episode summary
+  - 20 clickbait quotes summarizing key areas of the episode
   - Chapter timestamps (ready-to-use episode markers)
   - LinkedIn post with guest description, 3 key takeaways, and CTA (with placeholder links for YouTube and Newsletter)
   - Keywords (comma-separated, max 500 characters, includes thedollardiaries, tdd, dubai, guest name, company, role)
@@ -22,6 +22,7 @@ A web-based tool for processing podcast audio files and generating comprehensive
 - **Processing Animations**: Real-time visual feedback during processing with step-by-step status updates
 - **Dark Mode UI**: Beautiful dark theme matching the 21SIXTY brand
 - **OpenAI Credit Tracking**: Monitor API usage in real-time with pill-style display matching version badge
+- **Usage Dashboard**: Track and visualize monthly usage costs for both OpenAI and AssemblyAI with interactive charts and billing links
 - **Prompt Editor**: Modern grid-based prompt editor with card layout (no nested scrolling). Authentication required to access and edit prompts. Includes variables reference with copy functionality
 - **Unified Header Pills**: Version and OpenAI credits displayed as matching pills on the same line
 - **Automatic File Cleanup**: Periodic cleanup runs every 2 weeks to automatically remove old MP3 files and prevent disk space issues

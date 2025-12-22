@@ -20,6 +20,7 @@ from services.youtube_service import YouTubeService
 from services.openai_service import OpenAIService
 from services.content_generator import ContentGenerator
 from services.prompts_service import PromptsService
+from services.usage_tracker import UsageTracker
 from utils.file_handler import FileHandler
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
@@ -55,6 +56,7 @@ youtube_service = YouTubeService()
 openai_service = OpenAIService()
 prompts_service = PromptsService()
 content_generator = ContentGenerator(openai_service, prompts_service)
+usage_tracker = UsageTracker()
 
 # Initialize AssemblyAI
 ASSEMBLYAI_API_KEY = os.getenv("ASSEMBLYAI_API_KEY")
@@ -372,6 +374,10 @@ async def process_video(
                 
                 logger.info(f"Successfully generated transcript with {len(transcript_with_timecodes)} segments, duration: {duration}s, text length: {len(transcript_text)} chars")
                 
+                # Track AssemblyAI usage
+                if duration > 0:
+                    usage_tracker.track_assemblyai_usage(duration)
+                
             finally:
                 # Clean up temp file
                 if os.path.exists(tmp_file_path):
@@ -432,7 +438,7 @@ async def generate_content(request: GenerateContentRequest,
         logger.info(f"Generating content for guest: {request.guest_name}")
         
         # Generate all content
-        content = await content_generator.generate_all_content(
+        content, token_usage = await content_generator.generate_all_content(
             transcript=request.transcript,
             transcript_with_timecodes=request.transcript_with_timecodes,
             guest_name=request.guest_name,
@@ -442,6 +448,15 @@ async def generate_content(request: GenerateContentRequest,
             video_title=request.video_title or "",
             video_duration=request.video_duration or 0
         )
+        
+        # Track OpenAI usage
+        if token_usage:
+            usage_tracker.track_openai_usage(
+                prompt_tokens=token_usage.get("prompt_tokens", 0),
+                completion_tokens=token_usage.get("completion_tokens", 0),
+                total_tokens=token_usage.get("total_tokens", 0),
+                model=token_usage.get("model", "gpt-4o-mini")
+            )
         
         return GenerateContentResponse(**content)
     except Exception as e:
@@ -511,6 +526,18 @@ async def get_openai_credits():
     except Exception as e:
         logger.error(f"Error fetching credits: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error fetching credits: {str(e)}")
+
+@app.get("/api/usage-stats")
+async def get_usage_stats(credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)):
+    """Get usage statistics for OpenAI and AssemblyAI (requires authentication)"""
+    if not verify_auth(credentials):
+        raise HTTPException(status_code=401, detail="Authentication required")
+    try:
+        stats = usage_tracker.get_usage_stats()
+        return stats
+    except Exception as e:
+        logger.error(f"Error fetching usage stats: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error fetching usage stats: {str(e)}")
 
 @app.get("/api/assemblyai-status")
 async def get_assemblyai_status():
