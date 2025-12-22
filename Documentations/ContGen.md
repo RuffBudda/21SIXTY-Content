@@ -1,6 +1,6 @@
 # 21SIXTY Content Generator - Feature Documentation
 
-**Version:** v170.2  
+**Version:** v171  
 **Last Updated:** 2024-12-22
 
 This document provides a comprehensive overview of all features, architecture, and implementation details for AI agents working on this codebase.
@@ -87,7 +87,7 @@ This document provides a comprehensive overview of all features, architecture, a
 - **Location**: `frontend/index.html` - `.header-pills`, `frontend/styles.css` - `.version`, `.openai-pill`
 - **Description**: Version and OpenAI credits displayed as matching pills on the same line
 - **Implementation**:
-  - Version pill: Shows current version (v170.2) with code-like font (Courier New)
+  - Version pill: Shows current version (v171) with code-like font (Courier New)
   - OpenAI pill: Shows "OpenAI:" label and credit value with matching styling
   - Both pills have same dimensions: padding 2px 8px, border-radius 12px
   - Same styling: background-color (var(--bg-card)), border (1px solid var(--border-color)), font-size (0.75rem)
@@ -350,6 +350,17 @@ This document provides a comprehensive overview of all features, architecture, a
   - Close button positioned in top-right corner like standard modals
   - Improved chart alignment and proper sizing
   - Better visual hierarchy with consistent spacing
+
+### 31. Usage Dashboard Optimization and Logos (v171)
+- **Location**: `frontend/index.html`, `frontend/styles.css`
+- **Description**: Added SVG logos for OpenAI and AssemblyAI, optimized modal dimensions to prevent scrolling
+- **Implementation**:
+  - Added SVG logos for OpenAI and AssemblyAI in billing cards
+  - Increased modal size to 85vw x 85vh for better content visibility
+  - Optimized all card heights and widths to fit within viewport
+  - Reduced padding and gaps throughout to eliminate scrolling
+  - Fixed chart heights to 160px for consistent sizing
+  - All content now fits perfectly without any scrollbars
 
 ---
 
