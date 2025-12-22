@@ -50,4 +50,5 @@ Documentations/ContGen.md
 
 # Update documentation files
 updatev*.md
+!Documentations/updatev*.md
 
