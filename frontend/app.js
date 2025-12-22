@@ -612,7 +612,20 @@ async function processVideo() {
         return;
     }
     
+    // Disable all buttons and show spinner
     processBtn.disabled = true;
+    const selectAudioBtn = document.getElementById('selectAudioBtn');
+    if (selectAudioBtn) selectAudioBtn.disabled = true;
+    
+    // Show processing spinner
+    const processingAnimation = document.getElementById('processingAnimation');
+    const processingText = document.getElementById('processingText');
+    if (processingAnimation) {
+        processingAnimation.style.display = 'flex';
+    }
+    if (processingText) {
+        processingText.textContent = 'Processing audio and generating transcript...';
+    }
     
     // Generate file hash for caching
     let fileHash = null;
@@ -812,6 +825,13 @@ async function processVideo() {
                 displayTranscript();
             }
             
+            // Hide spinner and re-enable buttons
+            const processingAnimation = document.getElementById('processingAnimation');
+            if (processingAnimation) processingAnimation.style.display = 'none';
+            processBtn.disabled = false;
+            const selectAudioBtn = document.getElementById('selectAudioBtn');
+            if (selectAudioBtn) selectAudioBtn.disabled = false;
+            
             if (statusDiv) {
                 showStatus(statusDiv, 'Audio processed successfully! Please fill in guest information.', 'success');
             }
@@ -828,6 +848,14 @@ async function processVideo() {
         }
     } catch (error) {
         console.error('Error processing audio file:', error);
+        
+        // Hide spinner and re-enable buttons
+        const processingAnimation = document.getElementById('processingAnimation');
+        if (processingAnimation) processingAnimation.style.display = 'none';
+        processBtn.disabled = false;
+        const selectAudioBtn = document.getElementById('selectAudioBtn');
+        if (selectAudioBtn) selectAudioBtn.disabled = false;
+        
         if (statusDiv) {
             // Properly extract error message from various error formats
             let errorMsg = 'Unknown error occurred';
@@ -846,8 +874,6 @@ async function processVideo() {
             }
             showStatus(statusDiv, `Error: ${errorMsg}`, 'error');
         }
-    } finally {
-        processBtn.disabled = false;
     }
 }
 

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CONTENT GEN v135</title>
+    <title>CONTENT GEN v138</title>
     <link rel="icon" type="image/x-icon" href="/static/images/favicons/favicon.ico">
     <link rel="stylesheet" href="styles.css">
 </head>
@@ -51,7 +51,7 @@
                 <h1 class="title">CONTENT GEN</h1>
             </div>
             <div class="header-pills">
-                <span class="version">v135</span>
+                <span class="version">v138</span>
                 <span class="openai-pill">
                     <span class="openai-label">OpenAI:</span>
                     <span class="openai-value" id="creditsValue">Fetching...</span>
@@ -458,9 +458,30 @@
 
             <!-- Text Gen API Tab -->
             <div id="apiTab" class="tab-content" style="display: none;">
-                <div class="card">
-                    <h2>Text Gen API</h2>
-                    <p class="info-text" style="margin-bottom: 20px;">Use the webhook API to generate content programmatically. All endpoints require Bearer token authentication.</p>
+                <div class="api-tiles-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 30px;">
+                    <div class="card api-tile" style="cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onclick="showApiDetails()" onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 8px 16px rgba(0,0,0,0.2)'" onmouseout="this.style.transform=''; this.style.boxShadow=''">
+                        <div style="display: flex; align-items: center; gap: 15px;">
+                            <div style="width: 60px; height: 60px; background: linear-gradient(135deg, var(--primary), #0066cc); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="17 8 12 3 7 8"></polyline>
+                                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 style="margin: 0 0 5px 0; color: var(--text-primary);">Text Gen API</h3>
+                                <p style="margin: 0; color: var(--text-secondary); font-size: 0.9rem;">Webhook API for programmatic content generation</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="apiDetails" class="card" style="display: none;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h2 style="margin: 0;">Text Gen API Documentation</h2>
+                        <button class="btn btn-secondary" onclick="hideApiDetails()" style="padding: 8px 16px;">← Back</button>
+                    </div>
+                    <p class="info-text" style="margin-bottom: 30px;">Use the webhook API to generate content programmatically in N8N or any automation tool. All endpoints require Bearer token authentication.</p>
                     
                     <div style="margin-bottom: 30px;">
                         <h3 style="color: var(--primary); margin-bottom: 10px;">Webhook URL</h3>

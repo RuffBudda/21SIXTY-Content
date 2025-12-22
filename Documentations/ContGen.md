@@ -1,6 +1,6 @@
 # 21SIXTY Content Generator - Feature Documentation
 
-**Version:** v135  
+**Version:** v138  
 **Last Updated:** 2024-12-21
 
 This document provides a comprehensive overview of all features, architecture, and implementation details for AI agents working on this codebase.
@@ -74,8 +74,8 @@ This document provides a comprehensive overview of all features, architecture, a
   6. **20 Quotes** - Notable quotes from episode
   7. **YouTube Chapter Timestamps** - Ready-to-use chapter markers
   8. **LinkedIn Post** - Post with guest description, 3 key takeaways, and CTA (includes placeholder links for YouTube and Newsletter)
-  9. **Keywords** - Comma-separated keywords based on transcript (max 500 characters, includes thedollardiaries, tdd, dubai, guest name, company, role)
-  10. **Hashtags** - Same keywords as above but with # prefix for each keyword
+  9. **Keywords** - Comma-separated keywords based on transcript (max 500 characters, includes thedollardiaries, tdd, dubai, guest name, company, role). No trailing "..." ellipsis.
+  10. **Hashtags** - Same keywords as above but with # prefix for each keyword. Spaces removed from each hashtag. Max 500 characters total.
 
 ### 6. Unified Header Pills
 - **Location**: `frontend/index.html` - `.header-pills`, `frontend/styles.css` - `.version`, `.openai-pill`
@@ -506,7 +506,7 @@ Display All Deliverables
 ## Important Notes for AI Agents
 
 ### Version Management
-- **Current Version**: v135
+- **Current Version**: v138
 - **Version Location**: `frontend/index.html` (title and header)
 - **Update**: Change in both places when incrementing version
 

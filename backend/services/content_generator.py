@@ -194,18 +194,36 @@ class ContentGenerator:
             transcript=transcript
         )
         keywords = await self.openai.generate_text(prompt, max_tokens=200, temperature=0.5)
-        # Ensure it doesn't exceed 500 characters
+        # Ensure it doesn't exceed 500 characters (remove trailing ... if present)
+        keywords = keywords.strip().rstrip('...')
         if len(keywords) > 500:
-            keywords = keywords[:497] + '...'
+            # Truncate at last comma before 500 chars to avoid breaking keywords
+            truncated = keywords[:500]
+            last_comma = truncated.rfind(',')
+            if last_comma > 400:  # Only truncate at comma if it's reasonable
+                keywords = truncated[:last_comma]
+            else:
+                keywords = truncated
         return keywords.strip()
     
     def generate_hashtags_from_keywords(self, keywords: str) -> str:
-        """Convert keywords to hashtags by adding # prefix to each keyword"""
+        """Convert keywords to hashtags by adding # prefix to each keyword, remove spaces per hashtag"""
         if not keywords:
             return ''
-        # Split by comma, trim whitespace, add # prefix, rejoin
-        keyword_list = [kw.strip() for kw in keywords.split(',') if kw.strip()]
+        # Split by comma, trim whitespace, remove all spaces within each keyword, add # prefix
+        keyword_list = [kw.strip().replace(' ', '') for kw in keywords.split(',') if kw.strip()]
+        # Remove trailing ... if present from each keyword
+        keyword_list = [kw.rstrip('...') for kw in keyword_list]
         hashtags = ', '.join([f'#{kw}' for kw in keyword_list])
+        # Ensure total doesn't exceed 500 characters
+        if len(hashtags) > 500:
+            # Truncate at last comma before 500 chars
+            truncated = hashtags[:500]
+            last_comma = truncated.rfind(',')
+            if last_comma > 400:
+                hashtags = truncated[:last_comma]
+            else:
+                hashtags = truncated
         return hashtags
     
     async def generate_chapter_timestamps(

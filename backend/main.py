@@ -12,6 +12,8 @@ from typing import Optional, Dict
 import hashlib
 from datetime import datetime, timedelta
 import shutil
+import tempfile
+from openai import OpenAI
 
 from models import ProcessVideoRequest, GenerateContentRequest, ProcessVideoResponse, GenerateContentResponse
 from services.youtube_service import YouTubeService
@@ -221,13 +223,80 @@ async def process_video(
         
         logger.info(f"Saved uploaded audio file to: {audio_path}")
         
-        # Return empty transcript - user will need to provide transcript manually or use speech-to-text
+        # Generate transcript using Whisper API
         transcript_data = {
             "transcript": "",
             "transcript_with_timecodes": [],
             "title": audio_file.filename or "Audio File",
             "duration": 0
         }
+        
+        try:
+            openai_api_key = os.getenv("OPENAI_API_KEY")
+            if not openai_api_key:
+                logger.warning("OPENAI_API_KEY not set, skipping transcript generation")
+            else:
+                logger.info("Generating transcript using Whisper API...")
+                openai_client = OpenAI(api_key=openai_api_key)
+                
+                # Reset file pointer and read content
+                audio_file.file.seek(0)
+                audio_content = file_content
+                
+                # Create temporary file for Whisper API
+                file_ext = os.path.splitext(audio_file.filename)[1] or '.mp3'
+                with tempfile.NamedTemporaryFile(delete=False, suffix=file_ext) as tmp_file:
+                    tmp_file.write(audio_content)
+                    tmp_file_path = tmp_file.name
+                
+                try:
+                    # Call Whisper API with verbose_json to get timestamps
+                    with open(tmp_file_path, 'rb') as audio:
+                        transcript_response = openai_client.audio.transcriptions.create(
+                            model="whisper-1",
+                            file=audio,
+                            response_format="verbose_json"
+                        )
+                    
+                    # Extract transcript text
+                    transcript_text = transcript_response.text
+                    
+                    # Extract segments with timestamps
+                    transcript_with_timecodes = []
+                    if hasattr(transcript_response, 'segments') and transcript_response.segments:
+                        for segment in transcript_response.segments:
+                            transcript_with_timecodes.append({
+                                "start": segment.get("start", 0),
+                                "end": segment.get("end", 0),
+                                "text": segment.get("text", "").strip()
+                            })
+                    else:
+                        # Fallback: create single entry if no segments
+                        duration = getattr(transcript_response, 'duration', 0)
+                        transcript_with_timecodes = [{
+                            "start": 0,
+                            "end": duration,
+                            "text": transcript_text
+                        }]
+                    
+                    transcript_data = {
+                        "transcript": transcript_text,
+                        "transcript_with_timecodes": transcript_with_timecodes,
+                        "title": audio_file.filename or "Audio File",
+                        "duration": getattr(transcript_response, 'duration', 0)
+                    }
+                    
+                    logger.info(f"Successfully generated transcript with {len(transcript_with_timecodes)} segments")
+                    
+                finally:
+                    # Clean up temp file
+                    if os.path.exists(tmp_file_path):
+                        os.unlink(tmp_file_path)
+                        
+        except Exception as e:
+            logger.error(f"Error generating transcript with Whisper API: {str(e)}", exc_info=True)
+            # Continue with empty transcript - don't fail the request
+            logger.warning("Continuing with empty transcript due to Whisper API error")
         
         # Store MP3 file path for download (don't cleanup immediately)
         if audio_path and os.path.exists(audio_path):
