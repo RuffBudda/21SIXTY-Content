@@ -1,6 +1,6 @@
 # 21SIXTY Content Generator - Feature Documentation
 
-**Version:** v176  
+**Version:** v180  
 **Last Updated:** 2024-12-22
 
 This document provides a comprehensive overview of all features, architecture, and implementation details for AI agents working on this codebase.
@@ -87,7 +87,7 @@ This document provides a comprehensive overview of all features, architecture, a
 - **Location**: `frontend/index.html` - `.header-pills`, `frontend/styles.css` - `.version`, `.openai-pill`
 - **Description**: Version and OpenAI credits displayed as matching pills on the same line
 - **Implementation**:
-  - Version pill: Shows current version (v176) with code-like font (Courier New)
+  - Version pill: Shows current version (v180) with code-like font (Courier New)
   - OpenAI pill: Shows "OpenAI:" label and credit value with matching styling
   - Both pills have same dimensions: padding 2px 8px, border-radius 12px
   - Same styling: background-color (var(--bg-card)), border (1px solid var(--border-color)), font-size (0.75rem)
@@ -527,7 +527,7 @@ Health check endpoint.
 ## Important Notes for AI Agents
 
 ### Version Management
-- **Current Version**: v176
+- **Current Version**: v180
 - **Version Location**: `frontend/index.html` (title and header)
 - **Update**: Change in both places when incrementing version
 
