@@ -285,6 +285,7 @@ async def process_video(
                 transcript_with_timecodes = []
                 if hasattr(transcript, 'utterances') and transcript.utterances:
                     # Use utterances if available (more accurate timestamps)
+                    logger.info(f"Found {len(transcript.utterances)} utterances in transcript")
                     for utterance in transcript.utterances:
                         if utterance.text and utterance.text.strip():
                             transcript_with_timecodes.append({
@@ -292,6 +293,7 @@ async def process_video(
                                 "end": utterance.end / 1000.0,
                                 "text": utterance.text.strip()
                             })
+                    logger.info(f"Extracted {len(transcript_with_timecodes)} segments with timecodes from utterances")
                 elif hasattr(transcript, 'words') and transcript.words:
                     # Fallback to words if utterances not available
                     current_segment = {"start": None, "end": None, "text": ""}
