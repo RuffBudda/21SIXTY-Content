@@ -259,9 +259,12 @@ async def process_video(
                 # Initialize AssemblyAI transcriber
                 transcriber = aai.Transcriber()
                 
+                # Configure transcription to include utterances (for timecodes)
+                config = aai.TranscriptionConfig(utterances=True)
+                
                 # Transcribe audio file
                 logger.info(f"Transcribing audio file with AssemblyAI: {tmp_file_path} (size: {os.path.getsize(tmp_file_path)} bytes)")
-                transcript = transcriber.transcribe(tmp_file_path)
+                transcript = transcriber.transcribe(tmp_file_path, config)
                 
                 # Wait for transcription to complete
                 logger.info("Waiting for AssemblyAI transcription to complete...")
