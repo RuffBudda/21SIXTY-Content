@@ -266,7 +266,6 @@ async def process_video(
                 # Wait for transcription to complete
                 logger.info("Waiting for AssemblyAI transcription to complete...")
                 while transcript.status == aai.TranscriptStatus.processing:
-                    import time
                     time.sleep(1)
                     transcript = transcriber.get_transcript(transcript.id)
                 
