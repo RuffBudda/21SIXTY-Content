@@ -11,6 +11,8 @@ class ProcessVideoResponse(BaseModel):
     video_title: Optional[str] = Field(None, description="Video title")
     video_duration: Optional[float] = Field(None, description="Video duration in seconds")
     video_id: Optional[str] = Field(None, description="YouTube video ID for downloading MP3")
+    error: Optional[str] = Field(None, description="Error message if transcription failed")
+    error_details: Optional[str] = Field(None, description="Detailed error information")
 
 class GuestInfo(BaseModel):
     name: str = Field(..., description="Guest name")

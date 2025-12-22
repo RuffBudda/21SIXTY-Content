@@ -1,6 +1,6 @@
 # 21SIXTY Content Generator - Feature Documentation
 
-**Version:** v150  
+**Version:** v151  
 **Last Updated:** 2024-12-22
 
 This document provides a comprehensive overview of all features, architecture, and implementation details for AI agents working on this codebase.
@@ -29,19 +29,20 @@ This document provides a comprehensive overview of all features, architecture, a
   - File saved to `backend/uploads/` directory
   - File hash (SHA-256) generated for caching
 
-### 2. Audio File Processing with Faster Whisper
+### 2. Audio File Processing with AssemblyAI
 - **Location**: `backend/main.py` - `process_video()`
-- **Description**: Processes uploaded audio files, generates transcripts using Faster Whisper (local), and saves them for content generation
+- **Description**: Processes uploaded audio files, generates transcripts using AssemblyAI (cloud-based), and saves them for content generation
 - **Implementation**:
   - Accepts audio file upload via multipart/form-data
   - Validates file format (MP3, WAV, M4A, OGG, FLAC)
   - Generates unique video_id from file hash and timestamp
   - Saves file to `backend/uploads/` directory
-  - Uses Faster Whisper (local) to generate transcript with timecodes
+  - Uses AssemblyAI (cloud-based) to generate transcript with timecodes
   - Returns transcript structure with segments containing start, end, and text
-  - Falls back to empty transcript if Faster Whisper fails (doesn't break the request)
-  - Lazy model loading - model loads on first use for faster startup
-  - Configurable via environment variables (model size, device, compute type)
+  - Falls back to empty transcript if AssemblyAI fails (doesn't break the request)
+  - No model downloads required - simple API-based transcription
+  - Uses utterances for accurate timestamps
+  - Includes error fields in response for better debugging
 
 ### 3. LocalStorage Caching System
 - **Location**: `frontend/app.js` - `processVideo()`, `getFileHash()`, `fileToBase64()`
@@ -86,7 +87,7 @@ This document provides a comprehensive overview of all features, architecture, a
 - **Location**: `frontend/index.html` - `.header-pills`, `frontend/styles.css` - `.version`, `.openai-pill`
 - **Description**: Version and OpenAI credits displayed as matching pills on the same line
 - **Implementation**:
-  - Version pill: Shows current version (v150) with code-like font (Courier New)
+  - Version pill: Shows current version (v151) with code-like font (Courier New)
   - OpenAI pill: Shows "OpenAI:" label and credit value with matching styling
   - Both pills have same dimensions: padding 2px 8px, border-radius 12px
   - Same styling: background-color (var(--bg-card)), border (1px solid var(--border-color)), font-size (0.75rem)
@@ -285,6 +286,20 @@ This document provides a comprehensive overview of all features, architecture, a
   - See `updatev150.md` for Ubuntu server installation steps
   - See `Documentations/transcript_timecode_fixes.md` Fix Attempt #7 for details
 
+### 26. AssemblyAI Migration (v151)
+- **Location**: `backend/main.py` - `process_video()` function, `frontend/index.html`, `frontend/app.js`
+- **Description**: Replaced Faster Whisper with AssemblyAI for simpler cloud-based transcription
+- **Implementation**:
+  - Replaced Faster Whisper with AssemblyAI (cloud-based API)
+  - No model downloads required - just API key configuration
+  - Added AssemblyAI status pill next to OpenAI pill in frontend header
+  - Added `/api/assemblyai-status` endpoint to check API key status
+  - Status pill updates every 30 seconds showing "Active" or "Inactive"
+  - Uses AssemblyAI utterances for accurate timestamps
+  - Error fields added to ProcessVideoResponse model for better debugging
+  - Simple setup - just requires `ASSEMBLYAI_API_KEY` environment variable
+  - See `Documentations/transcript_timecode_fixes.md` Fix Attempt #9 for details
+
 ---
 
 ## Architecture Overview
@@ -450,7 +465,7 @@ Health check endpoint.
 ## Important Notes for AI Agents
 
 ### Version Management
-- **Current Version**: v150
+- **Current Version**: v151
 - **Version Location**: `frontend/index.html` (title and header)
 - **Update**: Change in both places when incrementing version
 

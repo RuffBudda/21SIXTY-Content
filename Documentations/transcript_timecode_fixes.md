@@ -573,4 +573,131 @@ except Exception as e:
 - File size is logged to verify file was written correctly
 - Model loading errors are caught and re-raised to prevent silent failures
 
+---
+
+## Fix Attempt #9 (v151 - 2024-12-22)
+
+### Problem
+Faster Whisper requires downloading large models (~500MB-3GB) which is complex and error-prone. Need a simpler cloud-based solution.
+
+### Solution Implemented
+- Replaced Faster Whisper with AssemblyAI (cloud-based, no model downloads)
+- AssemblyAI provides simple API-based transcription
+- No model downloads required - just API key configuration
+- Added AssemblyAI status pill next to OpenAI pill in frontend
+- Added `/api/assemblyai-status` endpoint to check API key status
+- Better error handling with error fields in response model
+
+### Code Changes
+
+**Backend (main.py):**
+```python
+# Replaced Faster Whisper with AssemblyAI
+import assemblyai as aai
+
+# Initialize AssemblyAI
+ASSEMBLYAI_API_KEY = os.getenv("ASSEMBLYAI_API_KEY")
+if ASSEMBLYAI_API_KEY:
+    aai.settings.api_key = ASSEMBLYAI_API_KEY
+    logger.info("AssemblyAI API key configured")
+else:
+    logger.warning("ASSEMBLYAI_API_KEY not set - transcription will fail")
+
+# Transcription code
+transcriber = aai.Transcriber()
+transcript = transcriber.transcribe(tmp_file_path)
+
+# Wait for completion
+while transcript.status == aai.TranscriptStatus.processing:
+    time.sleep(1)
+    transcript = transcriber.get_transcript(transcript.id)
+
+# Extract transcript and segments
+transcript_text = transcript.text
+transcript_with_timecodes = []
+
+# Use utterances for better timestamps
+for utterance in transcript.utterances:
+    transcript_with_timecodes.append({
+        "start": utterance.start / 1000.0,  # Convert ms to seconds
+        "end": utterance.end / 1000.0,
+        "text": utterance.text.strip()
+    })
+```
+
+**Backend (models.py):**
+```python
+class ProcessVideoResponse(BaseModel):
+    # ... existing fields ...
+    error: Optional[str] = Field(None, description="Error message if transcription failed")
+    error_details: Optional[str] = Field(None, description="Detailed error information")
+```
+
+**Backend (main.py) - New endpoint:**
+```python
+@app.get("/api/assemblyai-status")
+async def get_assemblyai_status():
+    """Check AssemblyAI API key status"""
+    if not ASSEMBLYAI_API_KEY:
+        return {"success": False, "status": "inactive", "message": "AssemblyAI API key not configured"}
+    # Test API key validity
+    return {"success": True, "status": "active", "message": "AssemblyAI API key is configured and valid"}
+```
+
+**Frontend (index.html):**
+```html
+<div class="header-pills">
+    <span class="version">v151</span>
+    <span class="openai-pill">
+        <span class="openai-label">OpenAI:</span>
+        <span class="openai-value" id="creditsValue">Fetching...</span>
+    </span>
+    <span class="openai-pill">
+        <span class="openai-label">AssemblyAI:</span>
+        <span class="openai-value" id="assemblyaiValue">Checking...</span>
+    </span>
+</div>
+```
+
+**Frontend (app.js):**
+```javascript
+async function loadAssemblyAIStatus() {
+    const response = await fetch(`${API_BASE_URL}/api/assemblyai-status`);
+    const data = await response.json();
+    const assemblyaiDisplay = document.getElementById('assemblyaiValue');
+    
+    if (data.success && data.status === 'active') {
+        assemblyaiDisplay.textContent = 'Active';
+        assemblyaiDisplay.style.color = '#4CAF50';
+    } else {
+        assemblyaiDisplay.textContent = 'Inactive';
+        assemblyaiDisplay.style.color = '#f44336';
+    }
+}
+```
+
+**Requirements (requirements.txt):**
+```
+assemblyai>=1.0.0
+```
+
+### Installation Requirements
+- Python package: `assemblyai` (no system dependencies needed)
+- Environment variable: `ASSEMBLYAI_API_KEY` (get from https://www.assemblyai.com/)
+- No model downloads required
+- No FFmpeg or other system dependencies needed
+
+### Expected Result
+- Simple cloud-based transcription with no model downloads
+- AssemblyAI status pill shows "Active" when API key is configured
+- Better error messages in frontend when transcription fails
+- No local model storage or memory requirements
+
+### Notes
+- AssemblyAI automatically handles audio format conversion
+- No model downloads - just API calls
+- Pay-per-minute pricing (similar to OpenAI Whisper API)
+- Get API key from https://www.assemblyai.com/
+- Status pill updates every 30 seconds like OpenAI pill
+
 

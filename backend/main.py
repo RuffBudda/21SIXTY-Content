@@ -13,7 +13,7 @@ import hashlib
 from datetime import datetime, timedelta
 import shutil
 import tempfile
-from faster_whisper import WhisperModel
+import assemblyai as aai
 
 from models import ProcessVideoRequest, GenerateContentRequest, ProcessVideoResponse, GenerateContentResponse
 from services.youtube_service import YouTubeService
@@ -56,24 +56,13 @@ openai_service = OpenAIService()
 prompts_service = PromptsService()
 content_generator = ContentGenerator(openai_service, prompts_service)
 
-# Initialize Faster Whisper model (lazy loading - will be loaded on first use)
-whisper_model = None
-WHISPER_MODEL_SIZE = os.getenv("WHISPER_MODEL_SIZE", "base")  # Options: tiny, base, small, medium, large-v1, large-v2, large-v3
-WHISPER_DEVICE = os.getenv("WHISPER_DEVICE", "cpu")  # Options: cpu, cuda
-WHISPER_COMPUTE_TYPE = os.getenv("WHISPER_COMPUTE_TYPE", "int8")  # Options: int8, int8_float16, int16, float16, float32
-
-def get_whisper_model():
-    """Lazy load Whisper model on first use"""
-    global whisper_model
-    if whisper_model is None:
-        try:
-            logger.info(f"Loading Faster Whisper model: {WHISPER_MODEL_SIZE} on {WHISPER_DEVICE} with compute_type {WHISPER_COMPUTE_TYPE}")
-            whisper_model = WhisperModel(WHISPER_MODEL_SIZE, device=WHISPER_DEVICE, compute_type=WHISPER_COMPUTE_TYPE)
-            logger.info("Faster Whisper model loaded successfully")
-        except Exception as e:
-            logger.error(f"Failed to load Faster Whisper model: {type(e).__name__}: {str(e)}", exc_info=True)
-            raise
-    return whisper_model
+# Initialize AssemblyAI
+ASSEMBLYAI_API_KEY = os.getenv("ASSEMBLYAI_API_KEY")
+if ASSEMBLYAI_API_KEY:
+    aai.settings.api_key = ASSEMBLYAI_API_KEY
+    logger.info("AssemblyAI API key configured")
+else:
+    logger.warning("ASSEMBLYAI_API_KEY not set - transcription will fail")
 
 # Initialize file handler for cleanup (2 weeks = 336 hours)
 file_handler = FileHandler(upload_dir=youtube_service.upload_dir, max_age_hours=336)
@@ -242,7 +231,7 @@ async def process_video(
         
         logger.info(f"Saved uploaded audio file to: {audio_path}")
         
-        # Generate transcript using Faster Whisper
+        # Generate transcript using AssemblyAI
         transcript_data = {
             "transcript": "",
             "transcript_with_timecodes": [],
@@ -251,75 +240,92 @@ async def process_video(
         }
         
         try:
-            logger.info(f"Generating transcript using Faster Whisper for file: {audio_file.filename}")
+            if not ASSEMBLYAI_API_KEY:
+                raise ValueError("ASSEMBLYAI_API_KEY not set. Please configure AssemblyAI API key in environment variables.")
+            
+            logger.info(f"Generating transcript using AssemblyAI for file: {audio_file.filename}")
             
             # Reset file pointer and read content
             audio_file.file.seek(0)
             audio_content = file_content
             
-            # Create temporary file for Faster Whisper
+            # Create temporary file for AssemblyAI
             file_ext = os.path.splitext(audio_file.filename)[1] or '.mp3'
             with tempfile.NamedTemporaryFile(delete=False, suffix=file_ext) as tmp_file:
                 tmp_file.write(audio_content)
                 tmp_file_path = tmp_file.name
             
             try:
-                # Get Whisper model (lazy loaded)
-                logger.info("Getting Faster Whisper model...")
-                model = get_whisper_model()
-                logger.info("Faster Whisper model obtained successfully")
+                # Initialize AssemblyAI transcriber
+                transcriber = aai.Transcriber()
                 
                 # Transcribe audio file
-                logger.info(f"Transcribing audio file: {tmp_file_path} (size: {os.path.getsize(tmp_file_path)} bytes)")
-                segments, info = model.transcribe(tmp_file_path, word_timestamps=False)
+                logger.info(f"Transcribing audio file with AssemblyAI: {tmp_file_path} (size: {os.path.getsize(tmp_file_path)} bytes)")
+                transcript = transcriber.transcribe(tmp_file_path)
                 
-                logger.info(f"Faster Whisper transcription completed. Language: {info.language if hasattr(info, 'language') else 'unknown'}, duration: {info.duration if hasattr(info, 'duration') else 0}s")
+                # Wait for transcription to complete
+                logger.info("Waiting for AssemblyAI transcription to complete...")
+                while transcript.status == aai.TranscriptStatus.processing:
+                    import time
+                    time.sleep(1)
+                    transcript = transcriber.get_transcript(transcript.id)
                 
-                # Extract transcript text and segments
-                transcript_text = ""
+                if transcript.status == aai.TranscriptStatus.error:
+                    error_msg = transcript.error if hasattr(transcript, 'error') else "Unknown error"
+                    raise Exception(f"AssemblyAI transcription failed: {error_msg}")
+                
+                logger.info(f"AssemblyAI transcription completed. Status: {transcript.status}")
+                
+                # Extract transcript text
+                transcript_text = transcript.text if transcript.text else ""
+                
+                # Extract segments with timestamps
                 transcript_with_timecodes = []
-                segment_count = 0
-                
-                # Process segments (segments is an iterator, so we need to iterate through it)
-                logger.info("Processing transcription segments...")
-                for segment in segments:
-                    try:
-                        seg_start = segment.start
-                        seg_end = segment.end
-                        seg_text = segment.text.strip()
-                        
-                        segment_count += 1
-                        
-                        if seg_text:  # Only add non-empty segments
-                            transcript_text += seg_text + " "
+                if hasattr(transcript, 'utterances') and transcript.utterances:
+                    # Use utterances if available (more accurate timestamps)
+                    for utterance in transcript.utterances:
+                        if utterance.text and utterance.text.strip():
                             transcript_with_timecodes.append({
-                                "start": seg_start,
-                                "end": seg_end,
-                                "text": seg_text
+                                "start": utterance.start / 1000.0,  # Convert ms to seconds
+                                "end": utterance.end / 1000.0,
+                                "text": utterance.text.strip()
                             })
-                    except Exception as seg_error:
-                        logger.warning(f"Error processing segment {segment_count}: {seg_error}", exc_info=True)
-                        continue
+                elif hasattr(transcript, 'words') and transcript.words:
+                    # Fallback to words if utterances not available
+                    current_segment = {"start": None, "end": None, "text": ""}
+                    for word in transcript.words:
+                        word_start = word.start / 1000.0  # Convert ms to seconds
+                        word_end = word.end / 1000.0
+                        word_text = word.text
+                        
+                        if current_segment["start"] is None:
+                            current_segment["start"] = word_start
+                        
+                        current_segment["end"] = word_end
+                        current_segment["text"] += word_text + " "
+                    
+                    if current_segment["text"]:
+                        current_segment["text"] = current_segment["text"].strip()
+                        transcript_with_timecodes.append(current_segment)
                 
-                logger.info(f"Processed {segment_count} segments, {len(transcript_with_timecodes)} non-empty segments")
+                # If no segments but we have text, create a single segment
+                if not transcript_with_timecodes and transcript_text:
+                    duration = transcript.audio_duration / 1000.0 if hasattr(transcript, 'audio_duration') else 0
+                    transcript_with_timecodes = [{
+                        "start": 0,
+                        "end": duration,
+                        "text": transcript_text
+                    }]
                 
-                # Clean up transcript text (remove trailing space)
-                transcript_text = transcript_text.strip()
-                
-                # If we have segments but no text, build text from segments
-                if not transcript_text and transcript_with_timecodes:
-                    transcript_text = " ".join([seg["text"] for seg in transcript_with_timecodes])
+                # Get duration
+                duration = transcript.audio_duration / 1000.0 if hasattr(transcript, 'audio_duration') and transcript.audio_duration else 0
+                if not duration and transcript_with_timecodes:
+                    duration = transcript_with_timecodes[-1]["end"]
                 
                 # Ensure we have valid transcript data
                 if not transcript_text and not transcript_with_timecodes:
-                    logger.error("Faster Whisper returned empty transcript - no segments with text found")
-                    logger.error(f"Segment count: {segment_count}, Info: {info}")
-                    raise ValueError("Faster Whisper returned empty transcript - no segments with text found")
-                
-                # Use info.duration if available, otherwise calculate from last segment
-                duration = info.duration if hasattr(info, 'duration') and info.duration else 0
-                if not duration and transcript_with_timecodes:
-                    duration = transcript_with_timecodes[-1]["end"]
+                    logger.error("AssemblyAI returned empty transcript")
+                    raise ValueError("AssemblyAI returned empty transcript")
                 
                 transcript_data = {
                     "transcript": transcript_text,
@@ -341,12 +347,12 @@ async def process_video(
             import traceback
             full_traceback = traceback.format_exc()
             
-            logger.error(f"Error generating transcript with Faster Whisper: {error_type}: {error_message}", exc_info=True)
+            logger.error(f"Error generating transcript with AssemblyAI: {error_type}: {error_message}", exc_info=True)
             logger.error(f"Full error details - Type: {error_type}, Message: {error_message}")
             logger.error(f"Traceback: {full_traceback}")
             
             # Continue with empty transcript - don't fail the request
-            logger.warning("Continuing with empty transcript due to Faster Whisper error")
+            logger.warning("Continuing with empty transcript due to AssemblyAI error")
             
             # Set error message in transcript_data for frontend debugging
             transcript_data = {
@@ -354,8 +360,8 @@ async def process_video(
                 "transcript_with_timecodes": [],
                 "title": audio_file.filename or "Audio File",
                 "duration": 0,
-                "error": f"Faster Whisper error: {error_type}: {error_message}",
-                "error_details": full_traceback[:500] if len(full_traceback) > 500 else full_traceback  # Limit error details length
+                "error": f"AssemblyAI error: {error_type}: {error_message}",
+                "error_details": full_traceback[:500] if len(full_traceback) > 500 else full_traceback
             }
         
         # Store MP3 file path for download (don't cleanup immediately)

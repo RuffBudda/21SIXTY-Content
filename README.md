@@ -1,4 +1,4 @@
-# CONTENT GEN v150
+# CONTENT GEN v151
 
 A web-based tool for processing podcast audio files and generating comprehensive content including summaries, blog posts, titles, quotes, chapter timestamps, and LinkedIn posts using OpenAI APIs.
 
@@ -31,7 +31,7 @@ A web-based tool for processing podcast audio files and generating comprehensive
 - **Backend**: Python 3.12+ with FastAPI (tested with Python 3.12.3)
 - **Frontend**: HTML, CSS, JavaScript (vanilla)
 - **AI Generation**: OpenAI API (GPT-4)
-- **Speech-to-Text**: Faster Whisper (local, no API costs)
+- **Speech-to-Text**: AssemblyAI (cloud-based, no model downloads)
 - **Deployment**: Nginx reverse proxy
 
 ## Quick Start
@@ -40,14 +40,8 @@ A web-based tool for processing podcast audio files and generating comprehensive
 
 - Python 3.12+ (Python 3.12.3 recommended)
 - OpenAI API key (for content generation)
-- FFmpeg (for audio processing)
+- AssemblyAI API key (for transcription) - [Get one here](https://www.assemblyai.com/)
 - Node.js/npm (optional, for development)
-
-**System Dependencies (Ubuntu/Debian):**
-```bash
-sudo apt-get update
-sudo apt-get install -y ffmpeg libffi-dev libssl-dev build-essential python3-dev
-```
 
 ### Installation
 
@@ -79,15 +73,13 @@ nano .env  # or use any text editor
 # Replace 'your_openai_api_key_here' with your actual OpenAI API key:
 OPENAI_API_KEY=sk-your-actual-api-key-here
 
-# Optional: Configure Faster Whisper (for transcription)
-WHISPER_MODEL_SIZE=base  # Options: tiny, base, small, medium, large-v1, large-v2, large-v3
-WHISPER_DEVICE=cpu       # Options: cpu, cuda (if GPU available)
-WHISPER_COMPUTE_TYPE=int8  # Options: int8, int8_float16, int16, float16, float32
+# Add your AssemblyAI API key (for transcription):
+ASSEMBLYAI_API_KEY=your-assemblyai-api-key-here
 ```
 
-You can get your OpenAI API key from: https://platform.openai.com/api-keys
-
-**Note:** Faster Whisper will automatically download the model (~500MB for base) on first use. No API key needed for transcription.
+You can get your API keys from:
+- OpenAI API key: https://platform.openai.com/api-keys
+- AssemblyAI API key: https://www.assemblyai.com/ (free tier available)
 
 4. Run the application:
 ```bash
@@ -102,7 +94,7 @@ uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 2. **Process Audio**: Click "Process Audio" - the system will:
    - Check localStorage for cached data (if same file was processed before, uses cache)
    - Upload and save the audio file
-   - Generate transcript automatically using Faster Whisper (local, no API costs)
+   - Generate transcript automatically using AssemblyAI (cloud-based, no model downloads)
    - Display processing animations with real-time status
 3. **Enter Guest Information**: Fill in the guest's name, title, company, and LinkedIn profile
 4. **Generate Content**: Click "Generate Content" to create all 10 content types using AI
@@ -123,7 +115,7 @@ Process an uploaded audio file.
 **Request:** (multipart/form-data)
 - `audio_file`: Audio file (MP3, WAV, M4A, OGG, FLAC) - **Required**
 
-**Note:** The endpoint accepts form data with file upload. Transcripts are automatically generated using Faster Whisper (local speech-to-text).
+**Note:** The endpoint accepts form data with file upload. Transcripts are automatically generated using AssemblyAI (cloud-based speech-to-text).
 
 **Response:**
 ```json
@@ -202,9 +194,7 @@ Configure these in the `.env` file in the `backend/` directory:
 
 - `OPENAI_API_KEY`: Your OpenAI API key (required for content generation) - [Get one here](https://platform.openai.com/api-keys)
 - `OPENAI_MODEL`: Model to use (default: gpt-4o-mini)
-- `WHISPER_MODEL_SIZE`: Faster Whisper model size (default: base) - Options: tiny, base, small, medium, large-v1, large-v2, large-v3
-- `WHISPER_DEVICE`: Device for Faster Whisper (default: cpu) - Options: cpu, cuda (if GPU available)
-- `WHISPER_COMPUTE_TYPE`: Compute type for Faster Whisper (default: int8) - Options: int8, int8_float16, int16, float16, float32
+- `ASSEMBLYAI_API_KEY`: Your AssemblyAI API key (required for transcription) - [Get one here](https://www.assemblyai.com/)
 - `UPLOAD_DIR`: Directory for temporary files (default: ./uploads)
 - `ALLOWED_ORIGINS`: Comma-separated list of allowed origins for CORS
 

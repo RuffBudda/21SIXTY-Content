@@ -27,6 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // COMMENTED OUT: Cookie status - pytube doesn't support cookies
     if (authToken) {
         setInterval(loadCredits, 30000);
+        setInterval(loadAssemblyAIStatus, 30000);
         // setInterval(loadCookiesStatus, 30000);
     }
 });
@@ -49,6 +50,7 @@ async function checkAuthStatus() {
         if (data.authenticated) {
             showMainApp();
             loadCredits();
+            loadAssemblyAIStatus();
             // COMMENTED OUT: Cookie status - pytube doesn't support cookies
             // loadCookiesStatus(); // Check cookie status when authenticated
         } else {
@@ -119,6 +121,7 @@ async function login() {
             }
             showMainApp();
             loadCredits();
+            loadAssemblyAIStatus();
             updateBearerToken();
             // COMMENTED OUT: Cookie status - pytube doesn't support cookies
             // loadCookiesStatus(); // Check cookie status immediately after login
