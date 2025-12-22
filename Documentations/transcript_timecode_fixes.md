@@ -284,4 +284,111 @@ function displayTranscript(targetElementId = 'transcript') {
 - User workflow: Process Audio → Review Transcript → Enter Guest Info → Generate Content
 - This ensures transcript is verified before generating other deliverables
 
+---
+
+## Fix Attempt #6 (v148 - 2024-12-22)
+
+### Problem
+Transcript still not displaying correctly. Need to ensure Whisper API response is properly handled and add comprehensive logging to debug the issue.
+
+### Solution Implemented
+- Enhanced Whisper API response handling in backend:
+  - Added comprehensive logging at each step of transcript processing
+  - Better handling of dict vs object responses from Whisper API
+  - Improved error handling for segment processing
+  - Ensure transcript_data is always properly initialized
+- Enhanced frontend transcript display:
+  - Added detailed console logging to track data flow
+  - Better error handling in formatTranscriptWithTimecodes
+  - More robust checks for empty/invalid data
+- Changed Step 2 title from "Step 2: Review Transcript & Enter Guest Information" to "Review Transcript & Enter Guest Information"
+
+### Code Changes
+
+**Backend (main.py):**
+```python
+# Enhanced Whisper API call with better logging and error handling
+logger.info(f"Calling Whisper API for file: {audio_file.filename}")
+transcript_response = openai_client.audio.transcriptions.create(
+    model="whisper-1",
+    file=audio,
+    response_format="verbose_json"
+)
+
+# Handle both dict and object responses
+if isinstance(transcript_response, dict):
+    transcript_text = transcript_response.get("text", "")
+    response_segments = transcript_response.get("segments", [])
+    response_duration = transcript_response.get("duration", 0)
+else:
+    transcript_text = getattr(transcript_response, 'text', '')
+    response_segments = getattr(transcript_response, 'segments', None)
+    response_duration = getattr(transcript_response, 'duration', 0)
+
+# Process segments with better error handling
+for idx, segment in enumerate(response_segments):
+    try:
+        if isinstance(segment, dict):
+            seg_start = segment.get("start", 0)
+            seg_end = segment.get("end", 0)
+            seg_text = segment.get("text", "").strip()
+        else:
+            seg_start = getattr(segment, 'start', 0)
+            seg_end = getattr(segment, 'end', 0)
+            seg_text = getattr(segment, 'text', "").strip()
+        
+        if seg_text:  # Only add non-empty segments
+            transcript_with_timecodes.append({
+                "start": seg_start,
+                "end": seg_end,
+                "text": seg_text
+            })
+    except Exception as seg_item_error:
+        logger.warning(f"Error processing segment {idx}: {seg_item_error}")
+        continue
+```
+
+**Frontend (app.js):**
+```javascript
+function displayTranscript(targetElementId = 'transcript') {
+    // Added comprehensive logging
+    console.log('displayTranscript called for:', targetElementId);
+    console.log('transcriptData:', transcriptData);
+    console.log('transcriptData.transcript:', transcriptData.transcript);
+    console.log('transcriptData.transcript_with_timecodes:', transcriptData.transcript_with_timecodes);
+    
+    // Enhanced formatTranscriptWithTimecodes with error handling
+    function formatTranscriptWithTimecodes(timecodes) {
+        const formatted = timecodes.map((item, idx) => {
+            try {
+                const start = item.start !== undefined ? item.start : (item.start_time !== undefined ? item.start_time : 0);
+                const timestamp = formatTimestamp(start);
+                const text = item.text || item.transcript || '';
+                return `${timestamp} ${text}`.trim();
+            } catch (error) {
+                console.error(`Error formatting segment at index ${idx}:`, error, item);
+                return '';
+            }
+        }).filter(line => line.length > 0).join('\n');
+        
+        return formatted;
+    }
+}
+```
+
+### HTML Changes
+- Changed Step 2 title from "Step 2: Review Transcript & Enter Guest Information" to "Review Transcript & Enter Guest Information"
+
+### Expected Result
+- Comprehensive logging helps identify where transcript processing fails
+- Better error handling prevents silent failures
+- Transcript should display correctly with proper data from Whisper API
+- Console logs provide debugging information for troubleshooting
+
+### Notes
+- Added extensive logging to track data flow from Whisper API to frontend display
+- Improved error handling at each step of transcript processing
+- Better handling of different response formats from Whisper API
+- Console logs will help identify if issue is in backend processing or frontend display
+
 

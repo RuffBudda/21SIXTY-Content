@@ -1089,23 +1089,35 @@ function displayTranscript(targetElementId = 'transcript') {
         return;
     }
     
+    // Debug logging for transcript display
+    console.log('displayTranscript called for:', targetElementId);
+    console.log('transcriptData:', transcriptData);
+    console.log('transcriptData.transcript:', transcriptData.transcript);
+    console.log('transcriptData.transcript_with_timecodes:', transcriptData.transcript_with_timecodes);
+    console.log('transcript_with_timecodes type:', typeof transcriptData.transcript_with_timecodes);
+    console.log('transcript_with_timecodes is array:', Array.isArray(transcriptData.transcript_with_timecodes));
+    
     let displayText = '';
     
-    // Fix Attempt #5 (v147): Comprehensive transcript display considering all previous fixes
-    // Prioritize transcript_with_timecodes if available (Fix Attempt #4)
-    if (transcriptData.transcript_with_timecodes) {
+    // Fix Attempt #6 (v148): Enhanced transcript display with better error handling and logging
+    // Prioritize transcript_with_timecodes if available (Fix Attempt #4, #5)
+    if (transcriptData.transcript_with_timecodes !== undefined && transcriptData.transcript_with_timecodes !== null) {
         const timecodes = transcriptData.transcript_with_timecodes;
         
-        // Handle array format (Fix Attempt #1, #3, #4)
+        // Handle array format (Fix Attempt #1, #3, #4, #5)
         if (Array.isArray(timecodes) && timecodes.length > 0) {
+            console.log('Processing array format with', timecodes.length, 'segments');
             displayText = formatTranscriptWithTimecodes(timecodes);
+            console.log('Formatted text length:', displayText.length);
         } 
-        // Handle string format (Fix Attempt #4)
+        // Handle string format (Fix Attempt #4, #5)
         else if (typeof timecodes === 'string' && timecodes.trim()) {
+            console.log('Processing string format');
             displayText = timecodes;
         }
-        // Handle object format (Fix Attempt #3)
-        else if (typeof timecodes === 'object' && timecodes !== null) {
+        // Handle object format (Fix Attempt #3, #5)
+        else if (typeof timecodes === 'object' && timecodes !== null && !Array.isArray(timecodes)) {
+            console.log('Processing object format');
             // Try to extract text from object
             if (timecodes.text) {
                 displayText = timecodes.text;
@@ -1115,20 +1127,25 @@ function displayTranscript(targetElementId = 'transcript') {
                 // Last resort: stringify the object
                 displayText = JSON.stringify(timecodes, null, 2);
             }
+        } else {
+            console.warn('transcript_with_timecodes is empty or invalid:', timecodes);
         }
     }
     
-    // Fallback to plain transcript if timecodes not available or invalid (Fix Attempt #2, #4)
+    // Fallback to plain transcript if timecodes not available or invalid (Fix Attempt #2, #4, #5)
     if (!displayText && transcriptData.transcript) {
+        console.log('Using fallback to plain transcript');
         displayText = transcriptData.transcript;
     }
     
-    // Final fallback message (Fix Attempt #3)
+    // Final fallback message (Fix Attempt #3, #5)
     if (!displayText) {
+        console.error('No transcript text available. transcriptData:', transcriptData);
         displayText = 'No transcript data available. Please ensure the audio file was processed correctly.';
     }
     
     transcriptElement.textContent = displayText;
+    console.log('Transcript displayed. Length:', displayText.length);
 }
 
 // Display Results
@@ -1182,16 +1199,31 @@ function displayResults(data) {
 
 function formatTranscriptWithTimecodes(timecodes) {
     if (!Array.isArray(timecodes) || timecodes.length === 0) {
+        console.warn('formatTranscriptWithTimecodes: Invalid input', timecodes);
         return '';
     }
     
-    return timecodes.map((item) => {
-        // Handle both {start, text} and {start, end, text} formats
-        const start = item.start !== undefined ? item.start : (item.start_time !== undefined ? item.start_time : 0);
-        const timestamp = formatTimestamp(start);
-        const text = item.text || item.transcript || '';
-        return `${timestamp} ${text}`.trim();
+    const formatted = timecodes.map((item, idx) => {
+        try {
+            // Handle both {start, text} and {start, end, text} formats
+            const start = item.start !== undefined ? item.start : (item.start_time !== undefined ? item.start_time : 0);
+            const timestamp = formatTimestamp(start);
+            const text = item.text || item.transcript || '';
+            const line = `${timestamp} ${text}`.trim();
+            
+            if (!line) {
+                console.warn(`Empty line at index ${idx}:`, item);
+            }
+            
+            return line;
+        } catch (error) {
+            console.error(`Error formatting segment at index ${idx}:`, error, item);
+            return '';
+        }
     }).filter(line => line.length > 0).join('\n');
+    
+    console.log(`formatTranscriptWithTimecodes: Formatted ${timecodes.length} segments into ${formatted.split('\n').length} lines`);
+    return formatted;
 }
 
 function formatTimestamp(seconds) {
