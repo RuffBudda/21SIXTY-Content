@@ -4,6 +4,7 @@ python-multipart==0.0.6
 pydantic==2.5.0
 python-dotenv==1.0.0
 openai>=1.40.0
+faster-whisper>=1.0.0
 yt-dlp>=2023.11.16
 # pytube>=15.0.0  # Commented out - replaced with yt-dlp due to HTTP 400 errors
 youtube-transcript-api==0.6.1

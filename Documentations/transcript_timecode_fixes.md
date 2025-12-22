@@ -391,4 +391,86 @@ function displayTranscript(targetElementId = 'transcript') {
 - Better handling of different response formats from Whisper API
 - Console logs will help identify if issue is in backend processing or frontend display
 
+---
+
+## Fix Attempt #7 (v150 - 2024-12-22)
+
+### Problem
+OpenAI Whisper API was returning empty transcripts. Need to replace cloud-based Whisper API with local Faster Whisper for better reliability and no API costs.
+
+### Solution Implemented
+- Replaced OpenAI Whisper API with Faster Whisper (local implementation)
+- Faster Whisper runs entirely on the server, no API calls needed
+- Same accuracy as Whisper API but faster and free
+- Lazy model loading for faster startup times
+- Configurable via environment variables (model size, device, compute type)
+
+### Code Changes
+
+**Backend (main.py):**
+```python
+# Replaced OpenAI import with Faster Whisper
+from faster_whisper import WhisperModel
+
+# Initialize Faster Whisper model (lazy loading)
+whisper_model = None
+WHISPER_MODEL_SIZE = os.getenv("WHISPER_MODEL_SIZE", "base")
+WHISPER_DEVICE = os.getenv("WHISPER_DEVICE", "cpu")
+WHISPER_COMPUTE_TYPE = os.getenv("WHISPER_COMPUTE_TYPE", "int8")
+
+def get_whisper_model():
+    """Lazy load Whisper model on first use"""
+    global whisper_model
+    if whisper_model is None:
+        logger.info(f"Loading Faster Whisper model: {WHISPER_MODEL_SIZE} on {WHISPER_DEVICE}")
+        whisper_model = WhisperModel(WHISPER_MODEL_SIZE, device=WHISPER_DEVICE, compute_type=WHISPER_COMPUTE_TYPE)
+        logger.info("Faster Whisper model loaded successfully")
+    return whisper_model
+
+# Transcription code
+model = get_whisper_model()
+segments, info = model.transcribe(tmp_file_path, word_timestamps=False)
+
+transcript_text = ""
+transcript_with_timecodes = []
+
+for segment in segments:
+    seg_start = segment.start
+    seg_end = segment.end
+    seg_text = segment.text.strip()
+    
+    if seg_text:
+        transcript_text += seg_text + " "
+        transcript_with_timecodes.append({
+            "start": seg_start,
+            "end": seg_end,
+            "text": seg_text
+        })
+```
+
+**Requirements (requirements.txt):**
+```
+faster-whisper>=1.0.0
+```
+
+### Installation Requirements
+- System dependencies: ffmpeg, libffi-dev, libssl-dev, build-essential, python3-dev
+- Python package: faster-whisper
+- Model download: Automatic on first use (~500MB for base model)
+- See `updatev150.md` for detailed Ubuntu server installation steps
+
+### Expected Result
+- Transcript generation works reliably without API dependencies
+- No API costs for transcription
+- Faster processing with same accuracy
+- Better error handling and logging
+- Configurable model size and device (CPU/GPU)
+
+### Notes
+- Faster Whisper automatically downloads models on first use
+- Models are cached locally in `~/.cache/huggingface/hub/`
+- No OPENAI_API_KEY required for transcription (still needed for content generation)
+- Backward compatible - API response format unchanged
+- First transcription is slower due to model loading, subsequent ones are faster
+
 

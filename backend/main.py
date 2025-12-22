@@ -13,7 +13,7 @@ import hashlib
 from datetime import datetime, timedelta
 import shutil
 import tempfile
-from openai import OpenAI
+from faster_whisper import WhisperModel
 
 from models import ProcessVideoRequest, GenerateContentRequest, ProcessVideoResponse, GenerateContentResponse
 from services.youtube_service import YouTubeService
@@ -55,6 +55,21 @@ youtube_service = YouTubeService()
 openai_service = OpenAIService()
 prompts_service = PromptsService()
 content_generator = ContentGenerator(openai_service, prompts_service)
+
+# Initialize Faster Whisper model (lazy loading - will be loaded on first use)
+whisper_model = None
+WHISPER_MODEL_SIZE = os.getenv("WHISPER_MODEL_SIZE", "base")  # Options: tiny, base, small, medium, large-v1, large-v2, large-v3
+WHISPER_DEVICE = os.getenv("WHISPER_DEVICE", "cpu")  # Options: cpu, cuda
+WHISPER_COMPUTE_TYPE = os.getenv("WHISPER_COMPUTE_TYPE", "int8")  # Options: int8, int8_float16, int16, float16, float32
+
+def get_whisper_model():
+    """Lazy load Whisper model on first use"""
+    global whisper_model
+    if whisper_model is None:
+        logger.info(f"Loading Faster Whisper model: {WHISPER_MODEL_SIZE} on {WHISPER_DEVICE}")
+        whisper_model = WhisperModel(WHISPER_MODEL_SIZE, device=WHISPER_DEVICE, compute_type=WHISPER_COMPUTE_TYPE)
+        logger.info("Faster Whisper model loaded successfully")
+    return whisper_model
 
 # Initialize file handler for cleanup (2 weeks = 336 hours)
 file_handler = FileHandler(upload_dir=youtube_service.upload_dir, max_age_hours=336)
@@ -223,7 +238,7 @@ async def process_video(
         
         logger.info(f"Saved uploaded audio file to: {audio_path}")
         
-        # Generate transcript using Whisper API
+        # Generate transcript using Faster Whisper
         transcript_data = {
             "transcript": "",
             "transcript_with_timecodes": [],
@@ -232,130 +247,81 @@ async def process_video(
         }
         
         try:
-            openai_api_key = os.getenv("OPENAI_API_KEY")
-            if not openai_api_key:
-                logger.warning("OPENAI_API_KEY not set, skipping transcript generation")
-            else:
-                logger.info("Generating transcript using Whisper API...")
-                openai_client = OpenAI(api_key=openai_api_key)
+            logger.info(f"Generating transcript using Faster Whisper for file: {audio_file.filename}")
+            
+            # Reset file pointer and read content
+            audio_file.file.seek(0)
+            audio_content = file_content
+            
+            # Create temporary file for Faster Whisper
+            file_ext = os.path.splitext(audio_file.filename)[1] or '.mp3'
+            with tempfile.NamedTemporaryFile(delete=False, suffix=file_ext) as tmp_file:
+                tmp_file.write(audio_content)
+                tmp_file_path = tmp_file.name
+            
+            try:
+                # Get Whisper model (lazy loaded)
+                model = get_whisper_model()
                 
-                # Reset file pointer and read content
-                audio_file.file.seek(0)
-                audio_content = file_content
+                # Transcribe audio file
+                logger.info(f"Transcribing audio file: {tmp_file_path}")
+                segments, info = model.transcribe(tmp_file_path, word_timestamps=False)
                 
-                # Create temporary file for Whisper API
-                file_ext = os.path.splitext(audio_file.filename)[1] or '.mp3'
-                with tempfile.NamedTemporaryFile(delete=False, suffix=file_ext) as tmp_file:
-                    tmp_file.write(audio_content)
-                    tmp_file_path = tmp_file.name
+                logger.info(f"Faster Whisper transcription completed. Language: {info.language}, duration: {info.duration}s")
                 
-                try:
-                    # Call Whisper API with verbose_json to get timestamps
-                    logger.info(f"Calling Whisper API for file: {audio_file.filename}")
-                    with open(tmp_file_path, 'rb') as audio:
-                        transcript_response = openai_client.audio.transcriptions.create(
-                            model="whisper-1",
-                            file=audio,
-                            response_format="verbose_json"
-                        )
+                # Extract transcript text and segments
+                transcript_text = ""
+                transcript_with_timecodes = []
+                
+                # Process segments
+                for segment in segments:
+                    seg_start = segment.start
+                    seg_end = segment.end
+                    seg_text = segment.text.strip()
                     
-                    logger.info(f"Whisper API response received. Type: {type(transcript_response)}")
+                    if seg_text:  # Only add non-empty segments
+                        transcript_text += seg_text + " "
+                        transcript_with_timecodes.append({
+                            "start": seg_start,
+                            "end": seg_end,
+                            "text": seg_text
+                        })
+                
+                # Clean up transcript text (remove trailing space)
+                transcript_text = transcript_text.strip()
+                
+                # If we have segments but no text, build text from segments
+                if not transcript_text and transcript_with_timecodes:
+                    transcript_text = " ".join([seg["text"] for seg in transcript_with_timecodes])
+                
+                # Ensure we have valid transcript data
+                if not transcript_text and not transcript_with_timecodes:
+                    logger.error("Faster Whisper returned empty transcript")
+                    raise ValueError("Faster Whisper returned empty transcript")
+                
+                # Use info.duration if available, otherwise calculate from last segment
+                duration = info.duration if hasattr(info, 'duration') and info.duration else 0
+                if not duration and transcript_with_timecodes:
+                    duration = transcript_with_timecodes[-1]["end"]
+                
+                transcript_data = {
+                    "transcript": transcript_text,
+                    "transcript_with_timecodes": transcript_with_timecodes,
+                    "title": audio_file.filename or "Audio File",
+                    "duration": duration
+                }
+                
+                logger.info(f"Successfully generated transcript with {len(transcript_with_timecodes)} segments, duration: {duration}s")
+                
+            finally:
+                # Clean up temp file
+                if os.path.exists(tmp_file_path):
+                    os.unlink(tmp_file_path)
                     
-                    # Extract transcript text - handle both dict and object responses
-                    if isinstance(transcript_response, dict):
-                        transcript_text = transcript_response.get("text", "")
-                        response_segments = transcript_response.get("segments", [])
-                        response_duration = transcript_response.get("duration", 0)
-                    else:
-                        transcript_text = getattr(transcript_response, 'text', '') or transcript_response.text if hasattr(transcript_response, 'text') else ""
-                        response_segments = getattr(transcript_response, 'segments', None)
-                        response_duration = getattr(transcript_response, 'duration', 0)
-                    
-                    logger.info(f"Extracted transcript text length: {len(transcript_text)} characters")
-                    logger.info(f"Response segments type: {type(response_segments)}, count: {len(response_segments) if response_segments else 0}")
-                    
-                    # Extract segments with timestamps
-                    transcript_with_timecodes = []
-                    
-                    # Check if segments exist and is iterable
-                    if response_segments:
-                        try:
-                            # segments should be a list
-                            for idx, segment in enumerate(response_segments):
-                                try:
-                                    # Handle both dict-like and object-like segments
-                                    if isinstance(segment, dict):
-                                        seg_start = segment.get("start", 0)
-                                        seg_end = segment.get("end", 0)
-                                        seg_text = segment.get("text", "").strip()
-                                    else:
-                                        # Handle object-like segments
-                                        seg_start = getattr(segment, 'start', 0)
-                                        seg_end = getattr(segment, 'end', 0)
-                                        seg_text = getattr(segment, 'text', "").strip()
-                                    
-                                    if seg_text:  # Only add non-empty segments
-                                        transcript_with_timecodes.append({
-                                            "start": seg_start,
-                                            "end": seg_end,
-                                            "text": seg_text
-                                        })
-                                except Exception as seg_item_error:
-                                    logger.warning(f"Error processing segment {idx}: {seg_item_error}")
-                                    continue
-                            
-                            logger.info(f"Processed {len(transcript_with_timecodes)} segments from Whisper API")
-                        except Exception as seg_error:
-                            logger.warning(f"Error processing segments: {seg_error}, using fallback")
-                            # Fallback: create single entry if segments processing fails
-                            if transcript_text:
-                                transcript_with_timecodes = [{
-                                    "start": 0,
-                                    "end": response_duration,
-                                    "text": transcript_text
-                                }]
-                    else:
-                        # Fallback: create single entry if no segments
-                        logger.info("No segments found in response, creating single entry")
-                        if transcript_text:
-                            transcript_with_timecodes = [{
-                                "start": 0,
-                                "end": response_duration,
-                                "text": transcript_text
-                            }]
-                    
-                    # If still empty but we have transcript text, use it
-                    if not transcript_with_timecodes and transcript_text:
-                        logger.info("Creating fallback entry from transcript text")
-                        transcript_with_timecodes = [{
-                            "start": 0,
-                            "end": response_duration,
-                            "text": transcript_text
-                        }]
-                    
-                    # Ensure we have valid transcript data
-                    if not transcript_text and not transcript_with_timecodes:
-                        logger.error("Whisper API returned empty transcript")
-                        raise ValueError("Whisper API returned empty transcript")
-                    
-                    transcript_data = {
-                        "transcript": transcript_text,
-                        "transcript_with_timecodes": transcript_with_timecodes,
-                        "title": audio_file.filename or "Audio File",
-                        "duration": response_duration
-                    }
-                    
-                    logger.info(f"Successfully generated transcript with {len(transcript_with_timecodes)} segments, duration: {response_duration}s")
-                    
-                finally:
-                    # Clean up temp file
-                    if os.path.exists(tmp_file_path):
-                        os.unlink(tmp_file_path)
-                        
         except Exception as e:
-            logger.error(f"Error generating transcript with Whisper API: {str(e)}", exc_info=True)
+            logger.error(f"Error generating transcript with Faster Whisper: {str(e)}", exc_info=True)
             # Continue with empty transcript - don't fail the request
-            logger.warning("Continuing with empty transcript due to Whisper API error")
+            logger.warning("Continuing with empty transcript due to Faster Whisper error")
         
         # Store MP3 file path for download (don't cleanup immediately)
         if audio_path and os.path.exists(audio_path):

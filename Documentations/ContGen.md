@@ -1,6 +1,6 @@
 # 21SIXTY Content Generator - Feature Documentation
 
-**Version:** v148  
+**Version:** v150  
 **Last Updated:** 2024-12-22
 
 This document provides a comprehensive overview of all features, architecture, and implementation details for AI agents working on this codebase.
@@ -29,17 +29,19 @@ This document provides a comprehensive overview of all features, architecture, a
   - File saved to `backend/uploads/` directory
   - File hash (SHA-256) generated for caching
 
-### 2. Audio File Processing with Whisper API
+### 2. Audio File Processing with Faster Whisper
 - **Location**: `backend/main.py` - `process_video()`
-- **Description**: Processes uploaded audio files, generates transcripts using Whisper API, and saves them for content generation
+- **Description**: Processes uploaded audio files, generates transcripts using Faster Whisper (local), and saves them for content generation
 - **Implementation**:
   - Accepts audio file upload via multipart/form-data
   - Validates file format (MP3, WAV, M4A, OGG, FLAC)
   - Generates unique video_id from file hash and timestamp
   - Saves file to `backend/uploads/` directory
-  - Calls OpenAI Whisper API to generate transcript with timecodes
+  - Uses Faster Whisper (local) to generate transcript with timecodes
   - Returns transcript structure with segments containing start, end, and text
-  - Falls back to empty transcript if Whisper API fails (doesn't break the request)
+  - Falls back to empty transcript if Faster Whisper fails (doesn't break the request)
+  - Lazy model loading - model loads on first use for faster startup
+  - Configurable via environment variables (model size, device, compute type)
 
 ### 3. LocalStorage Caching System
 - **Location**: `frontend/app.js` - `processVideo()`, `getFileHash()`, `fileToBase64()`
@@ -84,7 +86,7 @@ This document provides a comprehensive overview of all features, architecture, a
 - **Location**: `frontend/index.html` - `.header-pills`, `frontend/styles.css` - `.version`, `.openai-pill`
 - **Description**: Version and OpenAI credits displayed as matching pills on the same line
 - **Implementation**:
-  - Version pill: Shows current version (v148) with code-like font (Courier New)
+  - Version pill: Shows current version (v150) with code-like font (Courier New)
   - OpenAI pill: Shows "OpenAI:" label and credit value with matching styling
   - Both pills have same dimensions: padding 2px 8px, border-radius 12px
   - Same styling: background-color (var(--bg-card)), border (1px solid var(--border-color)), font-size (0.75rem)
@@ -257,6 +259,32 @@ This document provides a comprehensive overview of all features, architecture, a
   - Both prompts explicitly state to use only what is in the transcript
   - Prevents AI from creating generic or made-up content
 
+### 24. Enhanced Whisper API Transcript Processing (v148)
+- **Location**: `backend/main.py` - `process_video()` function, `frontend/app.js` - `displayTranscript()` and `formatTranscriptWithTimecodes()`
+- **Description**: Enhanced Whisper API response handling with comprehensive logging and better error handling
+- **Implementation**:
+  - Added detailed logging at each step of transcript processing in backend
+  - Better handling of dict vs object responses from Whisper API
+  - Improved error handling for segment processing with try-catch per segment
+  - Enhanced frontend display function with comprehensive console logging
+  - Better error handling in formatTranscriptWithTimecodes function with per-segment try-catch
+  - Changed Step 2 title to "Review Transcript & Enter Guest Information" (removed "Step 2:")
+  - See `Documentations/transcript_timecode_fixes.md` Fix Attempt #6 for details
+
+### 25. Faster Whisper Migration (v150)
+- **Location**: `backend/main.py` - `process_video()` function, `backend/requirements.txt`
+- **Description**: Replaced OpenAI Whisper API with Faster Whisper for local, free transcription
+- **Implementation**:
+  - Replaced OpenAI Whisper API calls with Faster Whisper (local Python library)
+  - Lazy model loading - model loads on first use to speed up startup
+  - Configurable via environment variables: `WHISPER_MODEL_SIZE`, `WHISPER_DEVICE`, `WHISPER_COMPUTE_TYPE`
+  - No API costs - runs entirely on server
+  - Same accuracy as Whisper API but faster
+  - Automatic model download on first use (~500MB for base model)
+  - Backward compatible - API response format unchanged
+  - See `updatev150.md` for Ubuntu server installation steps
+  - See `Documentations/transcript_timecode_fixes.md` Fix Attempt #7 for details
+
 ---
 
 ## Architecture Overview
@@ -422,7 +450,7 @@ Health check endpoint.
 ## Important Notes for AI Agents
 
 ### Version Management
-- **Current Version**: v148
+- **Current Version**: v150
 - **Version Location**: `frontend/index.html` (title and header)
 - **Update**: Change in both places when incrementing version
 
