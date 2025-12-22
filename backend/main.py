@@ -296,6 +296,37 @@ async def process_video(
                             })
                     logger.info(f"Extracted {len(transcript_with_timecodes)} segments with timecodes from utterances")
                 elif hasattr(transcript, 'words') and transcript.words:
+                    # Fallback: group words into segments (every 10 words or sentence break)
+                    logger.info(f"Using word-level timestamps, found {len(transcript.words)} words")
+                    segment_words = []
+                    segment_start = None
+                    for word in transcript.words:
+                        if segment_start is None:
+                            segment_start = word.start / 1000.0
+                        segment_words.append(word.text)
+                        # Create segment every 10 words or at punctuation
+                        if len(segment_words) >= 10 or word.text.endswith(('.', '!', '?')):
+                            if segment_words:
+                                segment_text = ' '.join(segment_words).strip()
+                                if segment_text:
+                                    transcript_with_timecodes.append({
+                                        "start": segment_start,
+                                        "end": word.end / 1000.0,
+                                        "text": segment_text
+                                    })
+                                segment_words = []
+                                segment_start = None
+                    # Add remaining words as final segment
+                    if segment_words:
+                        segment_text = ' '.join(segment_words).strip()
+                        if segment_text:
+                            transcript_with_timecodes.append({
+                                "start": segment_start,
+                                "end": transcript.words[-1].end / 1000.0,
+                                "text": segment_text
+                            })
+                    logger.info(f"Extracted {len(transcript_with_timecodes)} segments from word timestamps")
+                elif hasattr(transcript, 'words') and transcript.words:
                     # Fallback to words if utterances not available
                     current_segment = {"start": None, "end": None, "text": ""}
                     for word in transcript.words:
