@@ -473,4 +473,104 @@ faster-whisper>=1.0.0
 - Backward compatible - API response format unchanged
 - First transcription is slower due to model loading, subsequent ones are faster
 
+---
+
+## Fix Attempt #8 (v150 - 2024-12-22)
+
+### Problem
+Faster Whisper is returning empty transcripts. Need to add comprehensive error handling and logging to identify the root cause.
+
+### Solution Implemented
+- Enhanced error handling in `get_whisper_model()` to catch model loading failures
+- Added detailed logging at each step of transcription process
+- Improved segment processing with per-segment error handling
+- Enhanced exception logging with full traceback
+- Added logging for segment counts and processing statistics
+- Better error messages to identify where transcription fails
+
+### Code Changes
+
+**Backend (main.py):**
+```python
+def get_whisper_model():
+    """Lazy load Whisper model on first use"""
+    global whisper_model
+    if whisper_model is None:
+        try:
+            logger.info(f"Loading Faster Whisper model: {WHISPER_MODEL_SIZE} on {WHISPER_DEVICE} with compute_type {WHISPER_COMPUTE_TYPE}")
+            whisper_model = WhisperModel(WHISPER_MODEL_SIZE, device=WHISPER_DEVICE, compute_type=WHISPER_COMPUTE_TYPE)
+            logger.info("Faster Whisper model loaded successfully")
+        except Exception as e:
+            logger.error(f"Failed to load Faster Whisper model: {type(e).__name__}: {str(e)}", exc_info=True)
+            raise
+
+# Enhanced transcription with comprehensive logging
+logger.info("Getting Faster Whisper model...")
+model = get_whisper_model()
+logger.info("Faster Whisper model obtained successfully")
+
+logger.info(f"Transcribing audio file: {tmp_file_path} (size: {os.path.getsize(tmp_file_path)} bytes)")
+segments, info = model.transcribe(tmp_file_path, word_timestamps=False)
+
+logger.info(f"Faster Whisper transcription completed. Language: {info.language if hasattr(info, 'language') else 'unknown'}, duration: {info.duration if hasattr(info, 'duration') else 0}s")
+
+# Process segments with error handling
+segment_count = 0
+for segment in segments:
+    try:
+        seg_start = segment.start
+        seg_end = segment.end
+        seg_text = segment.text.strip()
+        segment_count += 1
+        
+        if seg_text:
+            transcript_text += seg_text + " "
+            transcript_with_timecodes.append({
+                "start": seg_start,
+                "end": seg_end,
+                "text": seg_text
+            })
+    except Exception as seg_error:
+        logger.warning(f"Error processing segment {segment_count}: {seg_error}", exc_info=True)
+        continue
+
+logger.info(f"Processed {segment_count} segments, {len(transcript_with_timecodes)} non-empty segments")
+
+# Enhanced exception handling
+except Exception as e:
+    error_type = type(e).__name__
+    error_message = str(e)
+    logger.error(f"Error generating transcript with Faster Whisper: {error_type}: {error_message}", exc_info=True)
+    logger.error(f"Full error details - Type: {error_type}, Message: {error_message}")
+    import traceback
+    logger.error(f"Traceback: {traceback.format_exc()}")
+```
+
+### Expected Result
+- Comprehensive logging helps identify where transcription fails
+- Better error messages show exact failure point
+- Per-segment error handling prevents one bad segment from breaking entire transcription
+- Full traceback logging helps debug installation or configuration issues
+
+### Debugging Steps
+1. Check backend logs for "Loading Faster Whisper model" message
+2. Check for "Failed to load Faster Whisper model" errors
+3. Check for "Transcribing audio file" message with file size
+4. Check for "Faster Whisper transcription completed" message
+5. Check for "Processed X segments" message
+6. Check for any exception tracebacks in logs
+
+### Common Issues
+- **Model not installed**: Check if `faster-whisper` is installed: `pip list | grep faster-whisper`
+- **FFmpeg missing**: Check if ffmpeg is installed: `ffmpeg -version`
+- **Model download failed**: Check internet connectivity and disk space
+- **Memory issues**: Try smaller model size (tiny or base instead of large)
+- **File format issues**: Ensure audio file is valid and readable
+
+### Notes
+- All errors are now logged with full traceback for debugging
+- Segment processing continues even if individual segments fail
+- File size is logged to verify file was written correctly
+- Model loading errors are caught and re-raised to prevent silent failures
+
 

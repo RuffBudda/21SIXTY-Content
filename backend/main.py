@@ -261,31 +261,43 @@ async def process_video(
             
             try:
                 # Get Whisper model (lazy loaded)
+                logger.info("Getting Faster Whisper model...")
                 model = get_whisper_model()
+                logger.info("Faster Whisper model obtained successfully")
                 
                 # Transcribe audio file
-                logger.info(f"Transcribing audio file: {tmp_file_path}")
+                logger.info(f"Transcribing audio file: {tmp_file_path} (size: {os.path.getsize(tmp_file_path)} bytes)")
                 segments, info = model.transcribe(tmp_file_path, word_timestamps=False)
                 
-                logger.info(f"Faster Whisper transcription completed. Language: {info.language}, duration: {info.duration}s")
+                logger.info(f"Faster Whisper transcription completed. Language: {info.language if hasattr(info, 'language') else 'unknown'}, duration: {info.duration if hasattr(info, 'duration') else 0}s")
                 
                 # Extract transcript text and segments
                 transcript_text = ""
                 transcript_with_timecodes = []
+                segment_count = 0
                 
-                # Process segments
+                # Process segments (segments is an iterator, so we need to iterate through it)
+                logger.info("Processing transcription segments...")
                 for segment in segments:
-                    seg_start = segment.start
-                    seg_end = segment.end
-                    seg_text = segment.text.strip()
-                    
-                    if seg_text:  # Only add non-empty segments
-                        transcript_text += seg_text + " "
-                        transcript_with_timecodes.append({
-                            "start": seg_start,
-                            "end": seg_end,
-                            "text": seg_text
-                        })
+                    try:
+                        seg_start = segment.start
+                        seg_end = segment.end
+                        seg_text = segment.text.strip()
+                        
+                        segment_count += 1
+                        
+                        if seg_text:  # Only add non-empty segments
+                            transcript_text += seg_text + " "
+                            transcript_with_timecodes.append({
+                                "start": seg_start,
+                                "end": seg_end,
+                                "text": seg_text
+                            })
+                    except Exception as seg_error:
+                        logger.warning(f"Error processing segment {segment_count}: {seg_error}", exc_info=True)
+                        continue
+                
+                logger.info(f"Processed {segment_count} segments, {len(transcript_with_timecodes)} non-empty segments")
                 
                 # Clean up transcript text (remove trailing space)
                 transcript_text = transcript_text.strip()
@@ -296,8 +308,9 @@ async def process_video(
                 
                 # Ensure we have valid transcript data
                 if not transcript_text and not transcript_with_timecodes:
-                    logger.error("Faster Whisper returned empty transcript")
-                    raise ValueError("Faster Whisper returned empty transcript")
+                    logger.error("Faster Whisper returned empty transcript - no segments with text found")
+                    logger.error(f"Segment count: {segment_count}, Info: {info}")
+                    raise ValueError("Faster Whisper returned empty transcript - no segments with text found")
                 
                 # Use info.duration if available, otherwise calculate from last segment
                 duration = info.duration if hasattr(info, 'duration') and info.duration else 0
@@ -311,7 +324,7 @@ async def process_video(
                     "duration": duration
                 }
                 
-                logger.info(f"Successfully generated transcript with {len(transcript_with_timecodes)} segments, duration: {duration}s")
+                logger.info(f"Successfully generated transcript with {len(transcript_with_timecodes)} segments, duration: {duration}s, text length: {len(transcript_text)} chars")
                 
             finally:
                 # Clean up temp file
@@ -319,9 +332,15 @@ async def process_video(
                     os.unlink(tmp_file_path)
                     
         except Exception as e:
-            logger.error(f"Error generating transcript with Faster Whisper: {str(e)}", exc_info=True)
+            error_type = type(e).__name__
+            error_message = str(e)
+            logger.error(f"Error generating transcript with Faster Whisper: {error_type}: {error_message}", exc_info=True)
+            logger.error(f"Full error details - Type: {error_type}, Message: {error_message}")
             # Continue with empty transcript - don't fail the request
             logger.warning("Continuing with empty transcript due to Faster Whisper error")
+            # Log the exception traceback for debugging
+            import traceback
+            logger.error(f"Traceback: {traceback.format_exc()}")
         
         # Store MP3 file path for download (don't cleanup immediately)
         if audio_path and os.path.exists(audio_path):
