@@ -457,6 +457,39 @@ async function loadCredits() {
     }
 }
 
+async function loadAssemblyAIStatus() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/assemblyai-status`);
+        const data = await response.json();
+        
+        const assemblyaiDisplay = document.getElementById('assemblyaiValue');
+        if (!assemblyaiDisplay) return; // Early return if element doesn't exist
+        
+        if (data.success && data.status === 'active') {
+            assemblyaiDisplay.textContent = 'Active';
+            assemblyaiDisplay.style.color = '#4CAF50';
+            assemblyaiDisplay.title = data.message || 'AssemblyAI is configured and active';
+        } else {
+            if (data.error === 'missing_api_key') {
+                assemblyaiDisplay.textContent = 'Not Configured';
+                assemblyaiDisplay.style.color = '#ff9800';
+                assemblyaiDisplay.title = data.message || 'AssemblyAI API key not configured';
+            } else {
+                assemblyaiDisplay.textContent = 'Inactive';
+                assemblyaiDisplay.style.color = '#f44336';
+                assemblyaiDisplay.title = data.message || 'AssemblyAI is not active';
+            }
+        }
+    } catch (error) {
+        console.error('Error loading AssemblyAI status:', error);
+        const assemblyaiDisplay = document.getElementById('assemblyaiValue');
+        if (assemblyaiDisplay) {
+            assemblyaiDisplay.textContent = 'Inactive';
+            assemblyaiDisplay.style.color = '#f44336';
+        }
+    }
+}
+
 // COMMENTED OUT: Cookie Management - pytube doesn't support cookies
 // async function loadCookiesStatus() {
 //     try {
