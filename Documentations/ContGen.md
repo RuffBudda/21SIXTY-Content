@@ -1,6 +1,6 @@
 # 21SIXTY Content Generator - Feature Documentation
 
-**Version:** v140  
+**Version:** v141  
 **Last Updated:** 2024-12-21
 
 This document provides a comprehensive overview of all features, architecture, and implementation details for AI agents working on this codebase.
@@ -83,7 +83,7 @@ This document provides a comprehensive overview of all features, architecture, a
 - **Location**: `frontend/index.html` - `.header-pills`, `frontend/styles.css` - `.version`, `.openai-pill`
 - **Description**: Version and OpenAI credits displayed as matching pills on the same line
 - **Implementation**:
-  - Version pill: Shows current version (v140) with code-like font (Courier New)
+  - Version pill: Shows current version (v141) with code-like font (Courier New)
   - OpenAI pill: Shows "OpenAI:" label and credit value with matching styling
   - Both pills have same dimensions: padding 2px 8px, border-radius 12px
   - Same styling: background-color (var(--bg-card)), border (1px solid var(--border-color)), font-size (0.75rem)
@@ -173,7 +173,7 @@ This document provides a comprehensive overview of all features, architecture, a
   - Runs automatically on server startup and then every 2 weeks
   - Default cleanup period: 336 hours (configurable in FileHandler)
 
-### 11. API Tab with Clickable Tile (v140)
+### 11. API Tab with Clickable Tile (v141)
 - **Location**: `frontend/index.html` - API tab button and tile, `frontend/app.js` - event listeners
 - **Description**: API tab displays "API" text with SVG icon, clickable tile shows API documentation
 - **Implementation**:
@@ -182,7 +182,7 @@ This document provides a comprehensive overview of all features, architecture, a
   - Event listeners handle tile clicks properly (no inline onclick)
   - Back button hides API details and returns to tile view
 
-### 12. Processing Spinner with Blackout (v140)
+### 12. Processing Spinner with Blackout (v141)
 - **Location**: `frontend/app.js` - `processVideo()` function
 - **Description**: Shows loading overlay (spinner + blackout background) during audio processing
 - **Implementation**:
@@ -191,7 +191,7 @@ This document provides a comprehensive overview of all features, architecture, a
   - Spinner displays processing message
   - Automatically hides when processing completes or errors
 
-### 13. Enhanced Transcript Display (v140)
+### 13. Enhanced Transcript Display (v141)
 - **Location**: `frontend/app.js` - `displayTranscript()`, `formatTranscriptWithTimecodes()`
 - **Description**: Improved transcript display with better format handling
 - **Implementation**:
@@ -201,7 +201,7 @@ This document provides a comprehensive overview of all features, architecture, a
   - Graceful fallback to plain transcript if timecodes unavailable
   - See `Documentations/transcript_timecode_fixes.md` for detailed fix history
 
-### 14. Content Generation from Transcript (v140)
+### 14. Content Generation from Transcript (v141)
 - **Location**: `backend/services/prompts_service.py` - prompt templates
 - **Description**: Enhanced prompts to ensure content is generated from actual transcript content
 - **Implementation**:
@@ -210,7 +210,7 @@ This document provides a comprehensive overview of all features, architecture, a
   - Chapter timestamps prompt requires identifying actual topic transitions in transcript
   - All prompts explicitly state to use actual transcript content, not generic statements
 
-### 15. Project Deletion Cache Clearing (v140)
+### 15. Project Deletion Cache Clearing (v141)
 - **Location**: `frontend/app.js` - `deleteProject()` function
 - **Description**: Comprehensive cache clearing when projects are deleted
 - **Implementation**:
@@ -218,6 +218,23 @@ This document provides a comprehensive overview of all features, architecture, a
   - Clears all `processed_` keys that reference the deleted video_id
   - Ensures complete cleanup of all cached data related to the project
   - Prevents orphaned cache entries
+
+### 16. Tab Button Click Handler Fix (v141)
+- **Location**: `frontend/app.js` - `setupEventListeners()` function
+- **Description**: Fixed tab switching when clicking SVG icons within tab buttons
+- **Implementation**:
+  - Changed from `e.target` to `e.currentTarget` to handle clicks on child elements
+  - Ensures tab switching works when clicking anywhere on the button, including SVG icons
+  - Prevents `tabName` from being null when clicking child elements
+
+### 17. API Tab Button and Tile Improvements (v141)
+- **Location**: `frontend/index.html` - API tab button and tile, `frontend/app.js` - event listeners
+- **Description**: Removed SVG from API tab button, made API tile square, fixed click handler
+- **Implementation**:
+  - Removed SVG icon from API tab button (now shows only "API" text)
+  - Made API tile square using `aspect-ratio: 1` with flexbox centering
+  - Fixed click handler using event delegation for reliable click detection
+  - Ensures API tile is clickable and properly styled
 
 ---
 
@@ -554,7 +571,7 @@ Display All Deliverables
 ## Important Notes for AI Agents
 
 ### Version Management
-- **Current Version**: v140
+- **Current Version**: v141
 - **Version Location**: `frontend/index.html` (title and header)
 - **Update**: Change in both places when incrementing version
 

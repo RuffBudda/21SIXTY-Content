@@ -282,13 +282,13 @@ function setupEventListeners() {
         refreshGalleryBtn.addEventListener('click', loadGallery);
     }
     
-    // API tile click handler
-    const apiTile = document.getElementById('apiTile');
-    if (apiTile) {
-        apiTile.addEventListener('click', () => {
+    // API tile click handler - use event delegation to ensure it works even if element is created later
+    document.addEventListener('click', (e) => {
+        const apiTile = e.target.closest('#apiTile');
+        if (apiTile) {
             showApiDetails();
-        });
-    }
+        }
+    });
     
     // Hide API details button
     const hideApiDetailsBtn = document.getElementById('hideApiDetailsBtn');
