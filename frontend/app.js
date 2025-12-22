@@ -1959,6 +1959,12 @@ async function loadPrompts() {
             document.getElementById('prompt_linkedin_post').value = data.prompts.linkedin_post || '';
             document.getElementById('prompt_keywords').value = data.prompts.keywords || '';
             
+            // Load Standard Static Content from prompts
+            const standardStaticTextarea = document.getElementById('standardStaticContent');
+            if (standardStaticTextarea) {
+                standardStaticTextarea.value = data.prompts.standard_static_content || '';
+            }
+            
             // Update previews after loading
             updatePromptPreviews();
         }
@@ -1990,7 +1996,8 @@ async function performSavePrompts() {
             quotes: document.getElementById('prompt_quotes').value,
             chapter_timestamps: document.getElementById('prompt_chapter_timestamps').value,
             linkedin_post: document.getElementById('prompt_linkedin_post').value,
-            keywords: document.getElementById('prompt_keywords').value
+            keywords: document.getElementById('prompt_keywords').value,
+            standard_static_content: document.getElementById('standardStaticContent')?.value || ''
         };
         
         const response = await fetch(`${API_BASE_URL}/api/prompts`, {
@@ -2030,6 +2037,9 @@ async function performSavePrompts() {
             document.querySelectorAll('.prompt-tile').forEach(tile => {
                 tile.classList.remove('editing');
             });
+            
+            // Update Full Episode Description after saving prompts (includes Standard Static Content)
+            updateFullEpisodeDescription();
         }
     } catch (error) {
         console.error('Error saving prompts:', error);
@@ -2042,10 +2052,10 @@ async function performSavePrompts() {
 // Update prompt previews with truncated versions
 function updatePromptPreviews() {
     const promptIds = ['youtube_summary', 'blog_post', 'clickbait_titles', 'two_line_summary', 
-                       'quotes', 'chapter_timestamps', 'linkedin_post', 'keywords'];
+                       'quotes', 'chapter_timestamps', 'linkedin_post', 'keywords', 'standard_static_content'];
     
     promptIds.forEach(promptId => {
-        const textarea = document.getElementById(`prompt_${promptId}`);
+        const textarea = document.getElementById(promptId === 'standard_static_content' ? 'standardStaticContent' : `prompt_${promptId}`);
         const previewDiv = document.querySelector(`[data-preview="${promptId}"]`);
         
         if (textarea && previewDiv) {
@@ -2204,23 +2214,37 @@ async function resetPrompts() {
 }
 
 // Standard Static Content Functions
+// Note: Standard Static Content is now saved as part of prompts on the server
+// These functions are kept for compatibility but now work with prompts data
+
 function saveStandardStaticContent() {
-    const content = document.getElementById('standardStaticContent').value;
-    localStorage.setItem('standardStaticContent', content);
+    // Standard Static Content is saved as part of prompts via performSavePrompts()
+    // This function is called when editing Standard Static Content tile
+    // The actual save happens when user clicks "Save All Prompts"
     updatePromptPreviews();
     updateFullEpisodeDescription();
 }
 
 function loadStandardStaticContent() {
+    // Standard Static Content is loaded as part of prompts via loadPrompts()
+    // This function is kept for compatibility but content is loaded from server
+    // Migration: Try to load from localStorage first, then it will be overwritten by server data
     const savedContent = localStorage.getItem('standardStaticContent');
     const textarea = document.getElementById('standardStaticContent');
-    if (textarea && savedContent) {
-        textarea.value = savedContent;
+    if (textarea) {
+        // Set initial value from localStorage if exists (for migration)
+        if (savedContent) {
+            textarea.value = savedContent;
+        }
+        // Server data will overwrite this when loadPrompts() runs
+        updatePromptPreviews();
     }
 }
 
 function getStandardStaticContent() {
-    return localStorage.getItem('standardStaticContent') || '';
+    // Get Standard Static Content from textarea (which is loaded from server prompts)
+    const textarea = document.getElementById('standardStaticContent');
+    return textarea ? textarea.value : '';
 }
 
 // Full Episode Description concatenation
