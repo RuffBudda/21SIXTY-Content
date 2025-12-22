@@ -66,9 +66,13 @@ def get_whisper_model():
     """Lazy load Whisper model on first use"""
     global whisper_model
     if whisper_model is None:
-        logger.info(f"Loading Faster Whisper model: {WHISPER_MODEL_SIZE} on {WHISPER_DEVICE}")
-        whisper_model = WhisperModel(WHISPER_MODEL_SIZE, device=WHISPER_DEVICE, compute_type=WHISPER_COMPUTE_TYPE)
-        logger.info("Faster Whisper model loaded successfully")
+        try:
+            logger.info(f"Loading Faster Whisper model: {WHISPER_MODEL_SIZE} on {WHISPER_DEVICE} with compute_type {WHISPER_COMPUTE_TYPE}")
+            whisper_model = WhisperModel(WHISPER_MODEL_SIZE, device=WHISPER_DEVICE, compute_type=WHISPER_COMPUTE_TYPE)
+            logger.info("Faster Whisper model loaded successfully")
+        except Exception as e:
+            logger.error(f"Failed to load Faster Whisper model: {type(e).__name__}: {str(e)}", exc_info=True)
+            raise
     return whisper_model
 
 # Initialize file handler for cleanup (2 weeks = 336 hours)
