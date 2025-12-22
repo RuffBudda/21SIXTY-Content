@@ -84,7 +84,7 @@ This document provides a comprehensive overview of all features, architecture, a
 - **Location**: `frontend/index.html` - `.header-pills`, `frontend/styles.css` - `.version`, `.openai-pill`
 - **Description**: Version and OpenAI credits displayed as matching pills on the same line
 - **Implementation**:
-  - Version pill: Shows current version (v143) with code-like font (Courier New)
+  - Version pill: Shows current version (v145) with code-like font (Courier New)
   - OpenAI pill: Shows "OpenAI:" label and credit value with matching styling
   - Both pills have same dimensions: padding 2px 8px, border-radius 12px
   - Same styling: background-color (var(--bg-card)), border (1px solid var(--border-color)), font-size (0.75rem)
@@ -100,99 +100,53 @@ This document provides a comprehensive overview of all features, architecture, a
   - SVG icons for both actions
   - Filename mapping for each deliverable type
 
-### 7. Prompt Editor (Modern Grid Layout with Variables Reference)
-- **Location**: `frontend/index.html` - Prompts tab, `frontend/styles.css` - Grid styles, `backend/services/prompts_service.py`
-- **Description**: Modern grid-based prompt editor with card layout. Authentication required to access and edit prompts
-- **Implementation**:
-  - **Authentication Enforcement**: 
-    - Frontend checks authentication when switching to prompts tab (`switchTab()` function)
-    - If not authenticated, shows login modal and switches back to content tab
-    - Backend requires authentication for GET/POST `/api/prompts` endpoints
-  - **Modern UI/UX Design**:
-    - Responsive CSS Grid layout (2 columns on desktop, 1 on mobile)
-    - Each prompt in its own card with hover effects and category badges
-    - Fixed height containers prevent scroll-within-scroll issue
-    - Custom scrollbar styling for grid container
-    - Header with action buttons (Save All, Reset) at the top
-    - Category badges for each prompt type (Summary, Long Form, Titles, etc.)
-  - **Variables Reference Section**:
-    - Displays all available prompt variables with descriptions
-    - Variables shown: `{guest_name}`, `{guest_title}`, `{guest_company}`, `{guest_linkedin}`, `{transcript}`, `{transcript_with_timecodes}`, `{video_title}`, `{video_duration}`
-    - Each variable has a copy button and can be clicked to copy
-    - Visual feedback when variable is copied (checkmark icon)
-    - Responsive grid layout for variables
-  - **Technical Details**:
-    - Stores prompts in `backend/prompts.json`
-    - Editable textareas for each prompt type (8 prompts total)
-    - Save/Reset functionality
-    - Prompts use placeholders: `{guest_name}`, `{transcript}`, `{guest_title}`, `{guest_company}`, `{guest_linkedin}`, `{transcript_with_timecodes}`, `{video_title}`, `{video_duration}`
-    - Grid uses `display: grid` with `grid-template-columns: repeat(auto-fit, minmax(400px, 1fr))`
-    - Max height on grid container: `calc(100vh - 300px)` with overflow-y: auto
-    - Variables copy function uses Clipboard API with visual feedback
-
 ### 8. Projects Gallery
-- **Location**: `frontend/index.html` - Gallery tab, `frontend/app.js` - Gallery functions, `frontend/styles.css` - Gallery styles
+- **Location**: `frontend/app.js` - `loadGallery()`, `openProject()`, `deleteProject()`
 - **Description**: Browse and manage all processed projects stored in localStorage
 - **Implementation**:
-  - Scans localStorage for all projects (keys starting with `processed_`)
-  - Displays projects in a responsive grid layout
-  - Each project card shows:
-    - Video title
-    - Processing date and time
-    - Duration
-    - Status indicator (Transcript Only / Content Generated)
-  - **Open Project**: Loads transcript data, video info, and generated content (if available)
-  - **Delete Project**: Removes project from localStorage (including associated audio and content)
-  - Auto-refreshes when switching to gallery tab
-  - Empty state message when no projects exist
+  - Reads all `processed_*` keys from localStorage
+  - Displays project cards with title, date, duration, and content status
+  - Click "Open Project" to load project data and switch to Content tab
+  - Delete button removes project and all related cache entries
+  - Shows empty state when no projects exist
 
-### 9. Authentication System
-- **Location**: `backend/main.py` - Auth endpoints, `frontend/app.js` - Auth functions
-- **Description**: Master password authentication with session management
+### 9. Prompt Editor
+- **Location**: `frontend/index.html` - Prompts Editor tab, `frontend/app.js` - `loadPrompts()`, `savePrompts()`
+- **Description**: Modern grid-based prompt editor with card layout
 - **Implementation**:
-  - HTTPBearer token-based auth
-  - Password hashed with SHA-256
-  - Remember me functionality (localStorage vs sessionStorage)
-  - Auto-logout on 401 responses
+  - Grid layout with prompt tiles (no nested scrolling)
+  - Each tile shows preview and expandable content
+  - Edit requires password authentication
+  - Variables reference section with copy functionality
+  - Save all prompts button
+  - Reset to defaults button
 
-### 9. OpenAI Credit Tracking
-- **Location**: `backend/services/openai_service.py` - `get_credit_info()`
-- **Description**: Monitor OpenAI API usage and credits
+### 10. OpenAI Credit Tracking
+- **Location**: `frontend/app.js` - `loadCredits()`, `backend/main.py` - `/api/openai-credits`
+- **Description**: Monitor API usage in real-time
 - **Implementation**:
-  - Calls OpenAI API to check account status
-  - Displays status in header (Active/Inactive)
-  - Updates every 30 seconds when authenticated
+  - Fetches credits from OpenAI API
+  - Updates every 30 seconds if authenticated
+  - Displays in header pill matching version badge style
+  - Shows "Fetching..." while loading
 
-### 10. Periodic File Cleanup
-- **Location**: `backend/main.py` - `periodic_cleanup()`, `backend/utils/file_handler.py`
-- **Description**: Automatically removes old MP3 files every 2 weeks to prevent disk space issues
+### 11. Processing Spinner & Blackout (v140)
+- **Location**: `frontend/app.js` - `showLoading()`, `hideLoading()`, `processVideo()`
+- **Description**: Loading overlay with spinner during file processing
 - **Implementation**:
-  - Uses APScheduler to run cleanup task every 2 weeks (14 days)
-  - Removes files older than 336 hours (2 weeks) from `backend/uploads/` directory
-  - Cleans up `mp3_files` dictionary entries for deleted files
-  - Logs cleanup activity including number of files deleted and total size freed
-  - Runs automatically on server startup and then every 2 weeks
-  - Default cleanup period: 336 hours (configurable in FileHandler)
+  - Global loading overlay with spinner animation
+  - Blackout background similar to content generation spinner
+  - Shows during audio file processing
+  - Hides when processing completes
 
-### 11. API Tab with Clickable Tile (v141)
-- **Location**: `frontend/index.html` - API tab button and tile, `frontend/app.js` - event listeners
-- **Description**: API tab displays "API" text with SVG icon, clickable tile shows API documentation
+### 12. Guest Information Pre-population Fix (v140)
+- **Location**: `frontend/app.js` - `openProject()`
+- **Description**: Guest information fields cleared when opening projects
 - **Implementation**:
-  - API tab button shows "API" text with document icon SVG
-  - API tile is clickable and shows API documentation when clicked
-  - Event listeners handle tile clicks properly (no inline onclick)
-  - Back button hides API details and returns to tile view
+  - Clears guestName, guestTitle, guestCompany, guestLinkedIn input fields
+  - Ensures clean state for new entries
 
-### 12. Processing Spinner with Blackout (v141)
-- **Location**: `frontend/app.js` - `processVideo()` function
-- **Description**: Shows loading overlay (spinner + blackout background) during audio processing
-- **Implementation**:
-  - Uses `showLoading()` function for consistent loading UI
-  - Blackout background prevents user interaction during processing
-  - Spinner displays processing message
-  - Automatically hides when processing completes or errors
-
-### 13. Enhanced Transcript Display (v141)
+### 13. Transcript Display Improvements (v140)
 - **Location**: `frontend/app.js` - `displayTranscript()`, `formatTranscriptWithTimecodes()`
 - **Description**: Improved transcript display with better format handling
 - **Implementation**:
@@ -237,6 +191,51 @@ This document provides a comprehensive overview of all features, architecture, a
   - Fixed click handler using event delegation for reliable click detection
   - Ensures API tile is clickable and properly styled
 
+### 18. Standard Static Content Tile Format (v143)
+- **Location**: `frontend/index.html` - Prompts Editor tab, `frontend/app.js` - expand/edit handlers
+- **Description**: Converted Standard Static Content to prompt-tile format with expand/edit functionality
+- **Implementation**:
+  - Uses same prompt-tile structure as other prompts
+  - Expand button toggles visibility of content
+  - Edit button enables editing without password (saves to server via prompts API)
+  - Preview shows truncated content
+  - Auto-saves when prompts are saved (v145: now saves to server instead of localStorage)
+  - Updates Full Episode Description when content changes
+  - Server-side storage: Content persisted in `backend/prompts.json` (v145)
+
+### 19. N8N Setup Instructions and Bearer Token Display (v143)
+- **Location**: `frontend/index.html` - API tab, `frontend/app.js` - bearer token functions
+- **Description**: Added N8N setup instructions and bearer token display with visibility toggle
+- **Implementation**:
+  - Step-by-step N8N setup instructions in API documentation
+  - Bearer token display with visibility toggle (eye icon)
+  - Copy button for bearer token
+  - Token hidden by default (shows dots)
+  - Token updates automatically when user logs in or switches to API tab
+  - Webhook URL and copy button aligned on same line using flexbox
+
+### 20. Full Episode Description Deliverable (v142)
+- **Location**: `frontend/index.html` - Content tab, `frontend/app.js` - `updateFullEpisodeDescription()`
+- **Description**: New deliverable that concatenates 3 Paragraph Summary + Standard Static Content + Chapter Timestamps
+- **Implementation**:
+  - Displayed as a result card in the Content tab
+  - Automatically updates when any of its components change
+  - Includes regenerate, download, and copy buttons
+  - Concatenation logic: `youtubeSummary + standardStaticContent + chapterTimestamps`
+  - Updates after content generation and when Standard Static Content is saved
+
+### 21. Standard Static Content Server-Side Storage (v145)
+- **Location**: `backend/prompts.json`, `backend/services/prompts_service.py`, `frontend/app.js`
+- **Description**: Standard Static Content migrated from localStorage to server-side storage in prompts.json
+- **Implementation**:
+  - Added `standard_static_content` field to `backend/prompts.json` (default empty string)
+  - Updated `PromptsService.update_prompts()` to handle `standard_static_content` as optional field
+  - Frontend `loadPrompts()` loads `standard_static_content` from server
+  - Frontend `performSavePrompts()` saves `standard_static_content` to server
+  - `updateFullEpisodeDescription()` called after saving prompts to keep display in sync
+  - Removed localStorage dependency - content now persisted on server
+  - Migration support: localStorage value loaded initially, then overwritten by server data
+
 ---
 
 ## Architecture Overview
@@ -266,7 +265,7 @@ frontend/
 - **Backend**: FastAPI (Python 3.12+)
 - **Frontend**: Vanilla JavaScript (no frameworks)
 - **AI**: OpenAI GPT-4 API
-- **Storage**: Browser localStorage, File system (uploads)
+- **Storage**: Browser localStorage, File system (uploads), Server-side prompts.json
 
 ---
 
@@ -308,63 +307,25 @@ frontend/
 
 **Cache Keys:**
 - `processed_{fileHash}` - Processed transcript data (cache key based on file hash only, no YouTube URL component)
-- `audio_{fileHash}` - Audio file as base64
-- `content_{videoId}` - Generated content
-
-**Note:** Cache key uses only file hash to ensure same audio file always uses same cache entry, regardless of processing context.
-
-**Cache Structure:**
-```javascript
-{
-  transcriptData: {...},  // or data: {...} for content
-  videoInfo: {...},      // or timestamp for content
-  timestamp: 1234567890  // Unix timestamp
-}
-```
+- `audio_{fileHash}` - Base64-encoded audio file
+- `content_{videoId}` - Generated content for a specific video
 
 **Cache Invalidation:**
-- Manual: User can clear browser localStorage
-- Automatic: None (cache persists until cleared)
-- Note: Cache is based on file hash only (YouTube URL no longer affects cache key)
+- Project deletion clears all related cache entries
+- Manual cache clearing via browser dev tools
 
 ---
 
 ## Data Flow
 
-### Processing Pipeline
-
+### Processing Flow
 ```
-User Uploads Audio File
-    ↓
-Generate File Hash (SHA-256)
-    ↓
-Check localStorage Cache
-    ↓
-[Cache Hit] → Return Cached Data
-    ↓
-[Cache Miss] → Upload to Backend
-    ↓
-Backend Saves File
-    ↓
-Return Transcript Data (transcripts must be provided manually or via speech-to-text)
-    ↓
-Cache in localStorage
-    ↓
-Display Transcript
-    ↓
-User Enters Guest Info
-    ↓
-Generate Content (Check Cache)
-    ↓
-[Cache Hit] → Display Cached Content
-    ↓
-[Cache Miss] → Call OpenAI API
-    ↓
-Generate All 7 Content Types
-    ↓
-Cache Results
-    ↓
-Display All Deliverables
+User Upload → File Hash → Cache Check → Backend Processing → Transcript Generation → Cache Storage → Display
+```
+
+### Content Generation Flow
+```
+Guest Info + Transcript → Cache Check → API Call → OpenAI Generation → Cache Storage → Display
 ```
 
 ---
@@ -372,200 +333,68 @@ Display All Deliverables
 ## Storage & Caching
 
 ### localStorage Structure
+- `processed_{fileHash}` - Processed video data
+- `audio_{fileHash}` - Base64 audio files
+- `content_{videoId}` - Generated content
+- `authToken` - Authentication token (if remember me checked)
+- `rememberMe` - Remember me preference
 
-```javascript
-{
-  // Authentication
-  "authToken": "hashed_token",
-  "rememberMe": "true",
-  
-  // Processed data (by file hash only)
-  "processed_abc123...": {
-    transcriptData: {...},
-    videoInfo: {...},
-    timestamp: 1234567890
-  },
-  
-  // Audio file (by file hash)
-  "audio_abc123...": "data:audio/mp3;base64,...",
-  
-  // Generated content (by video ID)
-  "content_videoId123": {
-    data: {...},
-    timestamp: 1234567890
-  }
-}
-```
-
-### File System Storage
-
-- **Location**: `backend/uploads/`
-- **Naming**: `{videoId}.mp3`
-- **Cleanup**: Files stored temporarily, can be downloaded via `/api/download-audio/{videoId}`
-- **Automatic Cleanup**: Periodic cleanup runs every 2 weeks (336 hours) to remove old MP3 files
-  - Implemented using APScheduler
-  - Removes files older than 2 weeks
-  - Also cleans up `mp3_files` dictionary entries for deleted files
-  - Logs cleanup activity including number of files deleted and total size freed
+### Server-Side Storage
+- `backend/prompts.json` - All prompts including Standard Static Content (v145+)
+- `backend/uploads/` - Uploaded audio files (periodic cleanup every 2 weeks)
 
 ---
 
 ## API Endpoints
 
 ### POST /api/process-video
-**Purpose**: Process uploaded audio file and optionally extract transcript
-
-**Request Format**: `multipart/form-data`
-- `audio_file`: File (MP3, WAV, M4A, OGG, FLAC) - **Required**
-
-**Note**: Transcripts must be provided manually or through speech-to-text integration. The endpoint only accepts audio file uploads.
-
-**Response**:
-```json
-{
-  "success": true,
-  "transcript": "Full transcript text...",
-  "transcript_with_timecodes": [
-    {
-      "text": "Hello world",
-      "start": 0.0,
-      "duration": 2.5,
-      "end": 2.5
-    }
-  ],
-  "video_title": "Video Title",
-  "video_duration": 3600.0,
-  "video_id": "abc123"
-}
-```
-
-**Implementation**: `backend/main.py` - `process_video()`
+Process uploaded audio file and generate transcript.
 
 ### POST /api/generate-content
-**Purpose**: Generate all content types using AI
-
-**Request**:
-```json
-{
-  "transcript": "Full transcript...",
-  "transcript_with_timecodes": [...],
-  "guest_name": "John Doe",
-  "guest_title": "CEO",
-  "guest_company": "Company Name",
-  "guest_linkedin": "https://linkedin.com/in/johndoe",
-  "video_title": "Video Title",
-  "video_duration": 3600.0
-}
-```
-
-**Response**:
-```json
-{
-  "youtube_summary": "3 paragraph summary...",
-  "blog_post": "2000 word blog post...",
-  "clickbait_titles": ["Title 1", "Title 2", ...],
-  "two_line_summary": "Line 1\nLine 2",
-  "quotes": ["Quote 1", "Quote 2", ...],
-  "chapter_timestamps": ["00:00:00 - Chapter 1", ...],
-  "linkedin_post": "LinkedIn post content...",
-  "keywords": "thedollardiaries, tdd, dubai, guest name, company, role, ...",
-  "hashtags": "#thedollardiaries, #tdd, #dubai, #guestname, ..."
-}
-```
-
-**Implementation**: `backend/main.py` - `generate_content()`
-
-### GET /api/download-audio/{video_id}
-**Purpose**: Download processed audio file
-
-**Implementation**: `backend/main.py` - `download_audio()`
-
-### GET /api/openai-credits
-**Purpose**: Get OpenAI API credit status
-
-**Implementation**: `backend/main.py` - `get_openai_credits()`
-
-### POST /api/prompts
-**Purpose**: Update AI prompts
-
-**Implementation**: `backend/main.py` - `update_prompts()`
+Generate all content types based on transcript and guest info.
 
 ### GET /api/prompts
-**Purpose**: Get current AI prompts
+Get all prompts (requires authentication).
 
-**Implementation**: `backend/main.py` - `get_prompts()`
+### POST /api/prompts
+Update prompts (requires authentication).
+
+### GET /api/openai-credits
+Get OpenAI API credit information.
+
+### GET /api/health
+Health check endpoint.
 
 ---
 
 ## Frontend Components
 
-### Step 1: Audio Upload
-- **File Input**: Hidden, triggered by "Select Audio File" button
-- **File Name Display**: Shows selected file name
-- **Process Button**: Triggers `processVideo()` (labeled "Process Audio")
-- **Processing Animation**: Shows during processing
-- **Note**: Transcripts must be provided manually or through speech-to-text integration
+### Tabs
+- **Content**: Main content generation interface
+- **Projects Gallery**: Browse and manage projects
+- **Prompts Editor**: Edit AI prompts (requires authentication)
+- **API**: API documentation and setup instructions
 
-### Step 2: Guest Information
-- **Form Fields**: Name, Title, Company, LinkedIn
-- **Generate Button**: Triggers `generateContent()`
-- **Validation**: All fields required, LinkedIn must be valid URL
-
-### Results Section
-- **7 Deliverable Cards**: Each with download/copy buttons
-- **Transcript Display**: Formatted with timecodes
-- **Copy Feedback**: Visual confirmation (checkmark icon)
-- **Download**: Automatic filename based on deliverable type
+### Modals
+- **Login Modal**: Authentication
+- **Edit Password Modal**: Password verification for prompt editing
+- **Save Warnings Modal**: Confirmation before saving prompts
 
 ---
 
 ## Adding New Features
 
 ### Adding a New Content Type
+1. Add prompt template to `backend/prompts.json`
+2. Add generation method to `ContentGenerator`
+3. Add display section to `frontend/index.html`
+4. Add display logic to `frontend/app.js`
+5. Update cache structure if needed
 
-1. **Backend**:
-   - Add method in `ContentGenerator` class
-   - Add to `generate_all_content()` return dict
-   - Update `GenerateContentResponse` model in `models.py`
-
-2. **Frontend**:
-   - Add result card in `index.html`
-   - Add display logic in `displayResults()` function
-   - Add download/copy button handlers (already handled by event delegation)
-
-3. **Prompts**:
-   - Add prompt field in `prompts.json`
-   - Add textarea in Prompts Editor tab
-   - Update `PromptsService` if needed
-
-### Adding a New Cache Type
-
-1. **Generate unique cache key** (e.g., `newFeature_{identifier}`)
-2. **Check cache before operation**:
-   ```javascript
-   const cacheKey = `newFeature_${identifier}`;
-   const cached = localStorage.getItem(cacheKey);
-   if (cached) {
-     return JSON.parse(cached);
-   }
-   ```
-3. **Store after operation**:
-   ```javascript
-   localStorage.setItem(cacheKey, JSON.stringify(data));
-   ```
-
-### Modifying Processing Flow
-
-1. **Update `processVideo()` in `frontend/app.js`**
-2. **Update `/api/process-video` in `backend/main.py`**
-3. **Update `YouTubeService` methods if needed**
-4. **Test cache invalidation** (may need to clear old cache keys)
-
-### Adding New File Format Support
-
-1. **Frontend**: Update `accept` attribute in file input
-2. **Backend**: Update validation in `process_video()` endpoint
-3. **Documentation**: Update README and this file
+### Adding a New Prompt Variable
+1. Add variable to prompt template in `prompts.json`
+2. Add variable reference in Prompts Editor
+3. Update `format_prompt()` if special handling needed
 
 ---
 
@@ -684,4 +513,3 @@ const response = await fetch('/api/process-video', {
 **End of Documentation**
 
 For questions or updates, refer to the codebase or update this document accordingly.
-
