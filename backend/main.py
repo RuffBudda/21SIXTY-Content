@@ -338,13 +338,25 @@ async def process_video(
         except Exception as e:
             error_type = type(e).__name__
             error_message = str(e)
+            import traceback
+            full_traceback = traceback.format_exc()
+            
             logger.error(f"Error generating transcript with Faster Whisper: {error_type}: {error_message}", exc_info=True)
             logger.error(f"Full error details - Type: {error_type}, Message: {error_message}")
+            logger.error(f"Traceback: {full_traceback}")
+            
             # Continue with empty transcript - don't fail the request
             logger.warning("Continuing with empty transcript due to Faster Whisper error")
-            # Log the exception traceback for debugging
-            import traceback
-            logger.error(f"Traceback: {traceback.format_exc()}")
+            
+            # Set error message in transcript_data for frontend debugging
+            transcript_data = {
+                "transcript": "",
+                "transcript_with_timecodes": [],
+                "title": audio_file.filename or "Audio File",
+                "duration": 0,
+                "error": f"Faster Whisper error: {error_type}: {error_message}",
+                "error_details": full_traceback[:500] if len(full_traceback) > 500 else full_traceback  # Limit error details length
+            }
         
         # Store MP3 file path for download (don't cleanup immediately)
         if audio_path and os.path.exists(audio_path):

@@ -834,6 +834,19 @@ async function processVideo() {
             throw new Error('Invalid response from server. Please try again.');
         }
         
+        // Log the full response for debugging
+        console.log('=== PROCESS VIDEO RESPONSE ===');
+        console.log('Full response data:', data);
+        console.log('Success:', data.success);
+        console.log('Transcript:', data.transcript);
+        console.log('Transcript length:', data.transcript?.length || 0);
+        console.log('Transcript with timecodes:', data.transcript_with_timecodes);
+        console.log('Transcript with timecodes length:', Array.isArray(data.transcript_with_timecodes) ? data.transcript_with_timecodes.length : 'not an array');
+        console.log('Video title:', data.video_title);
+        console.log('Video duration:', data.video_duration);
+        console.log('Video ID:', data.video_id);
+        console.log('=============================');
+        
         if (data.success) {
             transcriptData = data;
             videoInfo = {
@@ -841,6 +854,12 @@ async function processVideo() {
                 duration: data.video_duration,
                 video_id: data.video_id
             };
+            
+            // Check if transcript is empty and log warning
+            if (!data.transcript && (!data.transcript_with_timecodes || data.transcript_with_timecodes.length === 0)) {
+                console.warn('⚠️ WARNING: Backend returned success but transcript is empty!');
+                console.warn('This indicates Faster Whisper may have failed silently. Check backend logs.');
+            }
             
             // Cache the processed data
             if (cacheKey) {
@@ -851,18 +870,22 @@ async function processVideo() {
                         timestamp: Date.now()
                     };
                     localStorage.setItem(cacheKey, JSON.stringify(cacheData));
-                    console.log(`Cached processed data with key: ${cacheKey}`);
+                    console.log(`✅ Cached processed data with key: ${cacheKey}`);
                 } catch (e) {
-                    console.error('Error caching processed data:', e);
+                    console.error('❌ Error caching processed data:', e);
                 }
             }
             
             // Display transcript in step 2 immediately after processing
             if (transcriptData) {
+                console.log('📝 Displaying transcript...');
+                console.log('transcriptData before display:', transcriptData);
                 // Display transcript in step 2 preview area
                 displayTranscript('step2Transcript');
                 // Also display in main transcript area (for results section)
                 displayTranscript('transcript');
+            } else {
+                console.error('❌ transcriptData is null or undefined!');
             }
             
             // Hide spinner and re-enable buttons
