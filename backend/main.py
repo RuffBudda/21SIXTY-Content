@@ -375,7 +375,9 @@ async def process_video(
             transcript_with_timecodes=transcript_data.get("transcript_with_timecodes", []),
             video_title=transcript_data.get("title", audio_file.filename or "Audio File"),
             video_duration=transcript_data.get("duration", 0),
-            video_id=video_id
+            video_id=video_id,
+            error=transcript_data.get("error"),
+            error_details=transcript_data.get("error_details")
         )
     except HTTPException:
         # Re-raise HTTP exceptions as-is
