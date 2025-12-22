@@ -1259,8 +1259,8 @@ body {
 
 /* Usage Dashboard Styles */
 .usage-modal-content {
-    width: 85vw !important;
-    height: 85vh !important;
+    width: 75vw !important;
+    height: 80vh !important;
     max-width: none !important;
     max-height: none !important;
     overflow: hidden;
@@ -1388,94 +1388,51 @@ body {
     min-height: 0;
     max-height: 100%;
     position: relative;
-    height: 160px;
+    height: 200px;
 }
 
 .usage-chart-wrapper canvas {
     max-height: 100%;
 }
 
-/* Billing Cards - Row 3 */
-.usage-billing-card {
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-color);
-    border-radius: 10px;
-    padding: 14px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    min-height: 0;
-}
-
-.usage-billing-content {
+/* Billing Footer */
+.usage-billing-footer {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: center;
     gap: 16px;
-}
-
-.usage-billing-btn {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 10px 16px;
-    background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-cyan) 100%);
-    color: white;
-    text-decoration: none;
-    border-radius: 6px;
-    font-weight: 500;
-    font-size: 0.875rem;
-    transition: all 0.2s ease;
-    border: none;
-    cursor: pointer;
+    padding: 16px;
+    border-top: 1px solid var(--border-color);
     flex-shrink: 0;
 }
 
-.usage-billing-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(30, 144, 255, 0.4);
-}
-
-.usage-billing-btn svg {
-    opacity: 0.9;
-    transition: opacity 0.2s ease;
-    width: 14px;
-    height: 14px;
-}
-
-.usage-billing-btn:hover svg {
-    opacity: 1;
-}
-
-.usage-billing-logo {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    flex: 1;
-}
-
-.usage-logo-svg {
-    width: 48px;
-    height: 48px;
-    color: var(--text-primary);
-    opacity: 0.9;
-}
-
-/* Account Info - Row 4 */
-.usage-account-info {
-    background: rgba(30, 144, 255, 0.08);
-    border: 1px solid rgba(30, 144, 255, 0.2);
-    border-radius: 8px;
-    padding: 12px 16px;
+.usage-billing-text {
     color: var(--text-secondary);
-    font-size: 0.8125rem;
-    line-height: 1.4;
-    text-align: center;
-    flex-shrink: 0;
+    font-size: 0.875rem;
 }
 
-.usage-account-info p {
-    margin: 0;
+.usage-billing-links {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.usage-billing-link {
+    color: var(--accent-cyan);
+    text-decoration: none;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: color 0.2s ease;
+}
+
+.usage-billing-link:hover {
+    color: var(--accent-blue);
+    text-decoration: underline;
+}
+
+.usage-billing-separator {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
 }
 
 /* Responsive adjustments for usage modal */
