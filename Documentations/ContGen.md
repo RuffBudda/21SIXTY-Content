@@ -1,6 +1,6 @@
 # 21SIXTY Content Generator - Feature Documentation
 
-**Version:** v170  
+**Version:** v170.2  
 **Last Updated:** 2024-12-22
 
 This document provides a comprehensive overview of all features, architecture, and implementation details for AI agents working on this codebase.
@@ -87,7 +87,7 @@ This document provides a comprehensive overview of all features, architecture, a
 - **Location**: `frontend/index.html` - `.header-pills`, `frontend/styles.css` - `.version`, `.openai-pill`
 - **Description**: Version and OpenAI credits displayed as matching pills on the same line
 - **Implementation**:
-  - Version pill: Shows current version (v170) with code-like font (Courier New)
+  - Version pill: Shows current version (v170.2) with code-like font (Courier New)
   - OpenAI pill: Shows "OpenAI:" label and credit value with matching styling
   - Both pills have same dimensions: padding 2px 8px, border-radius 12px
   - Same styling: background-color (var(--bg-card)), border (1px solid var(--border-color)), font-size (0.75rem)
@@ -336,6 +336,21 @@ This document provides a comprehensive overview of all features, architecture, a
   - Quotes now focus on compelling, attention-grabbing statements that capture insights
   - Updated method comments and descriptions
 
+### 30. Usage Dashboard Redesign (v170.2)
+- **Location**: `frontend/index.html`, `frontend/app.js`, `frontend/styles.css`
+- **Description**: Complete redesign of usage dashboard with improved row-based layout
+- **Implementation**:
+  - Modal set to 80% viewport width and height for better visibility
+  - Row-based layout with two-column structure:
+    - Row 1: Total OpenAI Cost & Total AssemblyAI Cost displayed side by side with large green numbers
+    - Row 2: Monthly Usage ($) and Cumulative Usage ($) charts displayed side by side
+    - Row 3: Billing section with two cards, each showing button on left and logo text on right
+    - Row 4: Single column with Email SSO authentication note
+  - Consistent heading formatting using `.usage-heading` class for all sections
+  - Close button positioned in top-right corner like standard modals
+  - Improved chart alignment and proper sizing
+  - Better visual hierarchy with consistent spacing
+
 ---
 
 ## Architecture Overview
@@ -501,7 +516,7 @@ Health check endpoint.
 ## Important Notes for AI Agents
 
 ### Version Management
-- **Current Version**: v170
+- **Current Version**: v170.2
 - **Version Location**: `frontend/index.html` (title and header)
 - **Update**: Change in both places when incrementing version
 

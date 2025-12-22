@@ -1259,24 +1259,32 @@ body {
 
 /* Usage Dashboard Styles */
 .usage-modal-content {
-    max-width: 1200px !important;
-    width: 95% !important;
-    max-height: 90vh;
+    width: 80vw !important;
+    height: 80vh !important;
+    max-width: none !important;
+    max-height: none !important;
     overflow-y: auto;
     padding: 0 !important;
     background: var(--bg-card);
     border-radius: 16px;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+}
+
+.usage-modal-content {
+    position: relative;
 }
 
 .usage-modal-header {
     display: flex;
-    justify-content: space-between;
+    justify-content: center;
     align-items: center;
     padding: 24px 32px;
     border-bottom: 1px solid var(--border-color);
     background: var(--bg-secondary);
     border-radius: 16px 16px 0 0;
+    position: relative;
 }
 
 .usage-modal-header h2 {
@@ -1288,6 +1296,9 @@ body {
 }
 
 .usage-close-btn {
+    position: absolute;
+    top: 16px;
+    right: 16px;
     background: transparent;
     border: 1px solid var(--border-color);
     color: var(--text-secondary);
@@ -1300,6 +1311,7 @@ body {
     transition: all 0.2s ease;
     width: 36px;
     height: 36px;
+    z-index: 10;
 }
 
 .usage-close-btn:hover {
@@ -1311,59 +1323,53 @@ body {
 
 .usage-dashboard {
     padding: 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    flex: 1;
+    min-height: 0;
 }
 
-.usage-dashboard-grid {
+.usage-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 24px;
 }
 
-.usage-dashboard-column {
-    display: flex;
-    flex-direction: column;
-    gap: 24px;
+.usage-row-single {
+    grid-template-columns: 1fr;
 }
 
-/* Total Costs Section */
-.usage-totals-section {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
+/* Common Heading Style */
+.usage-heading {
+    color: var(--text-primary);
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 16px;
+    letter-spacing: -0.3px;
 }
 
+/* Total Cost Cards - Row 1 */
 .usage-total-card {
-    background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-card) 100%);
+    background: var(--bg-secondary);
     border: 1px solid var(--border-color);
     border-radius: 12px;
-    padding: 20px 24px;
-    transition: all 0.2s ease;
-}
-
-.usage-total-card:hover {
-    border-color: var(--accent-cyan);
-    box-shadow: 0 4px 12px rgba(0, 191, 255, 0.15);
-    transform: translateY(-2px);
-}
-
-.usage-total-label {
-    color: var(--text-secondary);
-    font-size: 0.8125rem;
-    font-weight: 500;
-    margin-bottom: 8px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
 }
 
 .usage-total-value {
-    color: var(--accent-cyan);
-    font-size: 2rem;
+    color: #4CAF50;
+    font-size: 3rem;
     font-weight: 700;
     font-family: 'Courier New', Courier, monospace;
     line-height: 1.2;
+    margin-top: 8px;
 }
 
-/* Chart Cards */
+/* Chart Cards - Row 2 */
 .usage-chart-card {
     background: var(--bg-secondary);
     border: 1px solid var(--border-color);
@@ -1371,25 +1377,12 @@ body {
     padding: 24px;
     display: flex;
     flex-direction: column;
-    flex: 1;
     min-height: 0;
-}
-
-.usage-chart-header {
-    margin-bottom: 20px;
-}
-
-.usage-chart-header h3 {
-    color: var(--text-primary);
-    font-size: 1rem;
-    font-weight: 600;
-    margin: 0;
-    letter-spacing: -0.3px;
 }
 
 .usage-chart-wrapper {
     flex: 1;
-    min-height: 300px;
+    min-height: 280px;
     position: relative;
 }
 
@@ -1397,33 +1390,29 @@ body {
     max-height: 100%;
 }
 
-/* Billing Section */
-.usage-billing-section {
+/* Billing Cards - Row 3 */
+.usage-billing-card {
     background: var(--bg-secondary);
     border: 1px solid var(--border-color);
     border-radius: 12px;
     padding: 24px;
-}
-
-.usage-billing-section h3 {
-    color: var(--text-primary);
-    font-size: 1rem;
-    font-weight: 600;
-    margin: 0 0 16px 0;
-    letter-spacing: -0.3px;
-}
-
-.usage-billing-links {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 16px;
 }
 
-.usage-billing-link {
+.usage-billing-content {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 14px 18px;
+    gap: 20px;
+}
+
+.usage-billing-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 20px;
     background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-cyan) 100%);
     color: white;
     text-decoration: none;
@@ -1433,28 +1422,43 @@ body {
     transition: all 0.2s ease;
     border: none;
     cursor: pointer;
+    flex-shrink: 0;
 }
 
-.usage-billing-link:hover {
+.usage-billing-btn:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(30, 144, 255, 0.4);
 }
 
-.usage-billing-link svg {
+.usage-billing-btn svg {
     opacity: 0.9;
     transition: opacity 0.2s ease;
 }
 
-.usage-billing-link:hover svg {
+.usage-billing-btn:hover svg {
     opacity: 1;
 }
 
-/* Account Info */
+.usage-billing-logo {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex: 1;
+}
+
+.usage-logo-text {
+    color: var(--text-primary);
+    font-size: 1.25rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+/* Account Info - Row 4 */
 .usage-account-info {
     background: rgba(30, 144, 255, 0.08);
     border: 1px solid rgba(30, 144, 255, 0.2);
     border-radius: 8px;
-    padding: 16px 18px;
+    padding: 16px 20px;
     color: var(--text-secondary);
     font-size: 0.875rem;
     line-height: 1.5;
@@ -1467,19 +1471,20 @@ body {
 
 /* Responsive adjustments for usage modal */
 @media (max-width: 1024px) {
-    .usage-dashboard-grid {
-        grid-template-columns: 1fr;
+    .usage-modal-content {
+        width: 90vw !important;
+        height: 85vh !important;
     }
     
-    .usage-modal-content {
-        max-width: 95% !important;
+    .usage-row {
+        grid-template-columns: 1fr;
     }
 }
 
 @media (max-width: 768px) {
     .usage-modal-content {
-        width: 98% !important;
-        max-height: 95vh;
+        width: 95vw !important;
+        height: 90vh !important;
     }
     
     .usage-modal-header {
@@ -1487,18 +1492,24 @@ body {
     }
     
     .usage-dashboard {
-        padding: 24px;
-    }
-    
-    .usage-dashboard-grid {
+        padding: 20px;
         gap: 20px;
     }
     
     .usage-total-value {
-        font-size: 1.75rem;
+        font-size: 2.25rem;
     }
     
     .usage-chart-wrapper {
-        min-height: 250px;
+        min-height: 220px;
+    }
+    
+    .usage-billing-content {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .usage-billing-logo {
+        justify-content: center;
     }
 }
