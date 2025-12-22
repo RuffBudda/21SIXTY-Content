@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CONTENT GEN v141</title>
+    <title>CONTENT GEN v142</title>
     <link rel="icon" type="image/x-icon" href="/static/images/favicons/favicon.ico">
     <link rel="stylesheet" href="styles.css">
 </head>
@@ -51,7 +51,7 @@
                 <h1 class="title">CONTENT GEN</h1>
             </div>
             <div class="header-pills">
-                <span class="version">v141</span>
+                <span class="version">v142</span>
                 <span class="openai-pill">
                     <span class="openai-label">OpenAI:</span>
                     <span class="openai-value" id="creditsValue">Fetching...</span>
@@ -213,6 +213,36 @@
                                 </div>
                                 <p class="variable-description">Video/audio duration in seconds</p>
                             </div>
+                            
+                            <div class="variable-item" data-variable="{standard_static_content}">
+                                <div class="variable-content">
+                                    <code class="variable-code">{standard_static_content}</code>
+                                    <button class="variable-copy-btn" title="Copy variable">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                                <p class="variable-description">Standard static content (manually entered)</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Standard Static Content Section -->
+                    <div class="card" style="margin-bottom: 30px;">
+                        <div style="margin-bottom: 15px;">
+                            <h3 style="margin: 0 0 10px 0; color: var(--text-primary);">Standard Static Content</h3>
+                            <p class="info-text" style="margin: 0 0 15px 0;">Manually entered content that will be included in the Full Episode Description. This content is saved in the system and available as a variable for API and other prompts.</p>
+                        </div>
+                        <textarea id="standardStaticContent" class="prompt-textarea" placeholder="Enter standard static content (e.g., subscribe links, social media links, etc.)..." style="min-height: 150px; width: 100%; padding: 15px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--card-bg); color: var(--text-primary); font-family: inherit; font-size: 0.95rem; resize: vertical;"></textarea>
+                        <div style="margin-top: 10px; display: flex; gap: 10px;">
+                            <button class="btn btn-primary" id="saveStandardStaticContentBtn">Save Standard Static Content</button>
+                        </div>
+                        <div style="margin-top: 15px; padding: 10px; background: var(--bg-secondary); border-radius: 8px; border: 1px solid var(--border-color);">
+                            <p style="margin: 0; font-size: 0.9rem; color: var(--text-secondary);">
+                                <strong>Variable:</strong> <code style="color: var(--accent-cyan);">{standard_static_content}</code> - Use this variable in prompts to include the standard static content.
+                            </p>
                         </div>
                     </div>
                     
@@ -458,28 +488,28 @@
 
             <!-- Text Gen API Tab -->
             <div id="apiTab" class="tab-content" style="display: none;">
-                <div class="api-tiles-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 30px;">
-                    <div class="card api-tile" id="apiTile" style="cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; padding: 30px; text-align: center; aspect-ratio: 1; display: flex; flex-direction: column; justify-content: center; align-items: center;" onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 8px 16px rgba(0,0,0,0.2)'" onmouseout="this.style.transform=''; this.style.boxShadow=''">
-                        <div style="width: 100px; height: 100px; background: linear-gradient(135deg, var(--primary), #0066cc); border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
-                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                                <polyline points="14 2 14 8 20 8"></polyline>
-                                <line x1="16" y1="13" x2="8" y2="13"></line>
-                                <line x1="16" y1="17" x2="8" y2="17"></line>
-                                <polyline points="10 9 9 9 8 9"></polyline>
+                <div class="card" style="margin-bottom: 20px;">
+                    <div class="accordion-item" style="border: none;">
+                        <div class="accordion-header" id="apiAccordionHeader" style="cursor: pointer; padding: 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color);" onclick="toggleAccordion('apiAccordion')">
+                            <div style="display: flex; align-items: center; gap: 15px;">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--primary);">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                    <polyline points="14 2 14 8 20 8"></polyline>
+                                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                                </svg>
+                                <div>
+                                    <h3 style="margin: 0; color: var(--text-primary);">Text Gen API</h3>
+                                    <p style="margin: 5px 0 0 0; color: var(--text-secondary); font-size: 0.9rem;">Webhook API for programmatic content generation</p>
+                                </div>
+                            </div>
+                            <svg id="apiAccordionIcon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transition: transform 0.3s; color: var(--text-secondary);">
+                                <polyline points="6 9 12 15 18 9"></polyline>
                             </svg>
                         </div>
-                        <h3 style="margin: 0 0 10px 0; color: var(--text-primary);">Text Gen API</h3>
-                        <p style="margin: 0; color: var(--text-secondary); font-size: 0.9rem;">Webhook API for programmatic content generation</p>
-                    </div>
-                </div>
-                
-                <div id="apiDetails" class="card" style="display: none;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                        <h2 style="margin: 0;">Text Gen API Documentation</h2>
-                        <button class="btn btn-secondary" id="hideApiDetailsBtn" style="padding: 8px 16px;">← Back</button>
-                    </div>
-                    <p class="info-text" style="margin-bottom: 30px;">Use the webhook API to generate content programmatically in N8N or any automation tool. All endpoints require Bearer token authentication.</p>
+                        <div id="apiAccordion" class="accordion-content" style="display: none; padding: 20px;">
+                            <h2 style="margin: 0 0 20px 0;">Text Gen API Documentation</h2>
+                            <p class="info-text" style="margin-bottom: 30px;">Use the webhook API to generate content programmatically in N8N or any automation tool. All endpoints require Bearer token authentication.</p>
                     
                     <div style="margin-bottom: 30px;">
                         <h3 style="color: var(--primary); margin-bottom: 10px;">Webhook URL</h3>
@@ -633,6 +663,8 @@ console.log(data.youtube_summary);</code></pre>
                             <li><strong>400</strong> - Invalid request (missing fields, invalid content type, etc.)</li>
                             <li><strong>500</strong> - Server error</li>
                         </ul>
+                    </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -934,6 +966,32 @@ console.log(data.youtube_summary);</code></pre>
                         </div>
                     </div>
                     <div class="result-content" id="chapterTimestamps"></div>
+                </div>
+
+                <!-- Full Episode Description -->
+                <div class="card result-card">
+                    <div class="result-header">
+                        <div>
+                            <h2>Full Episode Description</h2>
+                            <p style="margin: 5px 0 0 0; color: var(--text-secondary); font-size: 0.9rem;">3 Paragraph Summary + Standard Static Content + Chapter Timestamps</p>
+                        </div>
+                        <div class="result-actions">
+                            <button class="btn btn-icon" data-action="download" data-target="fullEpisodeDescription" title="Download as TXT">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="7 10 12 15 17 10"></polyline>
+                                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                                </svg>
+                            </button>
+                            <button class="btn btn-icon" data-action="copy" data-target="fullEpisodeDescription" title="Copy to Clipboard">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="result-content" id="fullEpisodeDescription"></div>
                 </div>
 
                 <!-- LinkedIn Post -->

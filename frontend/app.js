@@ -193,6 +193,15 @@ function setupEventListeners() {
     document.getElementById('savePromptsBtn').addEventListener('click', savePrompts);
     document.getElementById('resetPromptsBtn').addEventListener('click', resetPrompts);
     
+    // Standard Static Content
+    const saveStandardStaticContentBtn = document.getElementById('saveStandardStaticContentBtn');
+    if (saveStandardStaticContentBtn) {
+        saveStandardStaticContentBtn.addEventListener('click', saveStandardStaticContent);
+    }
+    
+    // Load standard static content on page load
+    loadStandardStaticContent();
+    
     // Variable copy buttons
     document.querySelectorAll('.variable-copy-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
@@ -282,21 +291,7 @@ function setupEventListeners() {
         refreshGalleryBtn.addEventListener('click', loadGallery);
     }
     
-    // API tile click handler - use event delegation to ensure it works even if element is created later
-    document.addEventListener('click', (e) => {
-        const apiTile = e.target.closest('#apiTile');
-        if (apiTile) {
-            showApiDetails();
-        }
-    });
-    
-    // Hide API details button
-    const hideApiDetailsBtn = document.getElementById('hideApiDetailsBtn');
-    if (hideApiDetailsBtn) {
-        hideApiDetailsBtn.addEventListener('click', () => {
-            hideApiDetails();
-        });
-    }
+    // Accordion toggle function will be defined globally
     
     // Copy webhook URL button
     const copyWebhookUrlBtn = document.getElementById('copyWebhookUrlBtn');
@@ -1144,6 +1139,9 @@ function displayResults(data) {
     
     // Hashtags
     document.getElementById('hashtags').textContent = data.hashtags || '';
+    
+    // Full Episode Description (concatenate YouTube Summary + Standard Static Content + Chapter Timestamps)
+    updateFullEpisodeDescription();
 }
 
 function formatTranscriptWithTimecodes(timecodes) {
@@ -1258,6 +1256,11 @@ async function regenerateContent(contentType, targetId) {
             targetElement.textContent = Array.isArray(newContent) ? newContent.join('\n') : newContent;
         } else {
             targetElement.textContent = newContent;
+        }
+        
+        // Update Full Episode Description if relevant content was regenerated
+        if (targetId === 'youtubeSummary' || targetId === 'chapterTimestamps') {
+            updateFullEpisodeDescription();
         }
         
         // Update cached content
@@ -1510,23 +1513,24 @@ function switchTab(tabName) {
     }
 }
 
-function showApiDetails() {
-    const apiDetails = document.getElementById('apiDetails');
-    const apiTiles = document.querySelector('.api-tiles-container');
-    if (apiDetails) apiDetails.style.display = 'block';
-    if (apiTiles) apiTiles.style.display = 'none';
-    // Update webhook URL
-    const webhookUrlElement = document.getElementById('webhookUrl');
-    if (webhookUrlElement) {
-        webhookUrlElement.textContent = `${API_BASE_URL}/api/generate-content`;
+// Accordion toggle function
+function toggleAccordion(accordionId) {
+    const accordion = document.getElementById(accordionId);
+    const icon = document.getElementById(accordionId + 'Icon');
+    if (accordion) {
+        const isOpen = accordion.style.display === 'block';
+        accordion.style.display = isOpen ? 'none' : 'block';
+        if (icon) {
+            icon.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(180deg)';
+        }
+        // Update webhook URL when opening API accordion
+        if (accordionId === 'apiAccordion' && !isOpen) {
+            const webhookUrlElement = document.getElementById('webhookUrl');
+            if (webhookUrlElement) {
+                webhookUrlElement.textContent = `${API_BASE_URL}/api/generate-content`;
+            }
+        }
     }
-}
-
-function hideApiDetails() {
-    const apiDetails = document.getElementById('apiDetails');
-    const apiTiles = document.querySelector('.api-tiles-container');
-    if (apiDetails) apiDetails.style.display = 'none';
-    if (apiTiles) apiTiles.style.display = 'grid';
 }
 
 function copyWebhookUrl() {
@@ -2125,6 +2129,43 @@ async function resetPrompts() {
     } catch (error) {
         console.error('Error resetting prompts:', error);
         showStatus(document.getElementById('promptsStatus'), 'Error resetting prompts', 'error');
+    }
+}
+
+// Standard Static Content Functions
+function saveStandardStaticContent() {
+    const content = document.getElementById('standardStaticContent').value;
+    localStorage.setItem('standardStaticContent', content);
+    alert('Standard Static Content saved successfully!');
+}
+
+function loadStandardStaticContent() {
+    const savedContent = localStorage.getItem('standardStaticContent');
+    const textarea = document.getElementById('standardStaticContent');
+    if (textarea && savedContent) {
+        textarea.value = savedContent;
+    }
+}
+
+function getStandardStaticContent() {
+    return localStorage.getItem('standardStaticContent') || '';
+}
+
+// Full Episode Description concatenation
+function updateFullEpisodeDescription() {
+    const youtubeSummary = document.getElementById('youtubeSummary')?.textContent?.trim() || '';
+    const standardStaticContent = getStandardStaticContent().trim();
+    const chapterTimestamps = document.getElementById('chapterTimestamps')?.textContent?.trim() || '';
+    
+    const parts = [];
+    if (youtubeSummary) parts.push(youtubeSummary);
+    if (standardStaticContent) parts.push(standardStaticContent);
+    if (chapterTimestamps) parts.push(chapterTimestamps);
+    
+    const fullDescription = parts.join('\n\n');
+    const fullEpisodeDescriptionElement = document.getElementById('fullEpisodeDescription');
+    if (fullEpisodeDescriptionElement) {
+        fullEpisodeDescriptionElement.textContent = fullDescription || 'Content will appear here after generation.';
     }
 }
 

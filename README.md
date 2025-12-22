@@ -1,4 +1,4 @@
-# CONTENT GEN v141
+# CONTENT GEN v142
 
 A web-based tool for processing podcast audio files and generating comprehensive content including summaries, blog posts, titles, quotes, chapter timestamps, and LinkedIn posts using OpenAI APIs.
 
