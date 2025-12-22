@@ -474,6 +474,44 @@ async def get_openai_credits():
         logger.error(f"Error fetching credits: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error fetching credits: {str(e)}")
 
+@app.get("/api/assemblyai-status")
+async def get_assemblyai_status():
+    """Check AssemblyAI API key status"""
+    try:
+        if not ASSEMBLYAI_API_KEY:
+            return {
+                "success": False,
+                "status": "inactive",
+                "message": "AssemblyAI API key not configured",
+                "error": "missing_api_key"
+            }
+        
+        # Test API key by attempting to create a transcriber
+        try:
+            transcriber = aai.Transcriber()
+            # If we can create a transcriber, the API key is valid
+            return {
+                "success": True,
+                "status": "active",
+                "message": "AssemblyAI API key is configured and valid"
+            }
+        except Exception as api_error:
+            error_msg = str(api_error)
+            return {
+                "success": False,
+                "status": "inactive",
+                "message": f"AssemblyAI API key validation failed: {error_msg}",
+                "error": "invalid_api_key"
+            }
+    except Exception as e:
+        logger.error(f"Error checking AssemblyAI status: {str(e)}", exc_info=True)
+        return {
+            "success": False,
+            "status": "inactive",
+            "message": f"Error checking AssemblyAI status: {str(e)}",
+            "error": "check_failed"
+        }
+
 # COMMENTED OUT: Cookie upload endpoint - pytube doesn't support cookies
 # @app.post("/api/upload-cookies")
 # async def upload_cookies(
