@@ -1320,7 +1320,7 @@ body {
 }
 
 .usage-dashboard {
-    padding: 14px;
+    padding: 14px 14px 8px 14px;
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -1421,6 +1421,24 @@ body {
 .usage-billing-link:hover {
     color: var(--accent-blue);
     text-decoration: underline;
+}
+
+/* Account Info */
+.usage-account-info {
+    background: rgba(30, 144, 255, 0.08);
+    border: 1px solid rgba(30, 144, 255, 0.2);
+    border-radius: 8px;
+    padding: 10px 14px;
+    color: var(--text-secondary);
+    font-size: 0.8125rem;
+    line-height: 1.4;
+    text-align: center;
+    flex-shrink: 0;
+    margin-bottom: 0;
+}
+
+.usage-account-info p {
+    margin: 0;
 }
 
 /* Responsive adjustments for usage modal */

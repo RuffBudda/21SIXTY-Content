@@ -86,9 +86,47 @@ o<!DOCTYPE html>
                     </div>
                 </div>
                 
-                <!-- Billing Footer -->
-                <div class="usage-billing-footer">
-                    <span class="usage-billing-text">Auth with Google SSO • <a href="https://platform.openai.com/settings/organization/billing/" target="_blank" class="usage-billing-link">OpenAI Billing</a> • <a href="https://www.assemblyai.com/dashboard/cost" target="_blank" class="usage-billing-link">AssemblyAI Billing</a></span>
+                <!-- Row 3: Billing -->
+                <div class="usage-row">
+                    <div class="usage-billing-card">
+                        <div class="usage-heading">Billing</div>
+                        <div class="usage-billing-content">
+                            <a href="https://platform.openai.com/settings/organization/billing/" target="_blank" class="usage-billing-btn">
+                                View Billing
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                                    <polyline points="15 3 21 3 21 9"></polyline>
+                                    <line x1="10" y1="14" x2="21" y2="3"></line>
+                                </svg>
+                            </a>
+                            <div class="usage-billing-logo">
+                                <div class="usage-logo-text">OpenAI</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="usage-billing-card">
+                        <div class="usage-heading">Billing</div>
+                        <div class="usage-billing-content">
+                            <a href="https://www.assemblyai.com/dashboard/cost" target="_blank" class="usage-billing-btn">
+                                View Billing
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                                    <polyline points="15 3 21 3 21 9"></polyline>
+                                    <line x1="10" y1="14" x2="21" y2="3"></line>
+                                </svg>
+                            </a>
+                            <div class="usage-billing-logo">
+                                <div class="usage-logo-text">AssemblyAI</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Row 4: Account Info -->
+                <div class="usage-row usage-row-single">
+                    <div class="usage-account-info">
+                        <p>Both accounts are authenticated with Email SSO</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -102,7 +140,7 @@ o<!DOCTYPE html>
                 <h1 class="title">CONTENT GEN</h1>
             </div>
             <div class="header-pills">
-                <span class="version">v170.2</span>
+                <span class="version">v175</span>
                 <span class="openai-pill">
                     <span class="openai-label">OpenAI:</span>
                     <span class="openai-value" id="creditsValue">Fetching...</span>
