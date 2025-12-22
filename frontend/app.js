@@ -183,7 +183,8 @@ function setupEventListeners() {
     // Tab switching
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
-            const tabName = e.target.getAttribute('data-tab');
+            // Use currentTarget instead of target to handle clicks on child elements (e.g., SVG icons)
+            const tabName = e.currentTarget.getAttribute('data-tab');
             switchTab(tabName);
         });
     });
@@ -1746,18 +1747,22 @@ function deleteProject(projectId, cacheKey) {
     }
     
     try {
-        // Get video_id before deleting to clear OpenAI cache
+        // Get video_id from processed data before deleting to clear OpenAI cache
+        // Content is stored under content_${videoInfo.video_id}, not content_${projectId}
         let videoId = null;
-        const contentKey = `content_${projectId}`;
-        const contentData = localStorage.getItem(contentKey);
-        if (contentData) {
+        let contentKey = null;
+        
+        // First, read the processed data to get videoInfo.video_id
+        const processedData = localStorage.getItem(cacheKey);
+        if (processedData) {
             try {
-                const content = JSON.parse(contentData);
-                if (content.data && content.data.video_id) {
-                    videoId = content.data.video_id;
+                const parsed = JSON.parse(processedData);
+                if (parsed.videoInfo && parsed.videoInfo.video_id) {
+                    videoId = parsed.videoInfo.video_id;
+                    contentKey = `content_${videoId}`;
                 }
             } catch (e) {
-                console.error('Error parsing content for deletion:', e);
+                console.error('Error parsing processed data for deletion:', e);
             }
         }
         
@@ -1767,17 +1772,9 @@ function deleteProject(projectId, cacheKey) {
         // Delete audio file if exists
         localStorage.removeItem(`audio_${projectId}`);
         
-        // Delete generated content if exists
-        if (contentData) {
-            try {
-                const content = JSON.parse(contentData);
-                if (content.data && content.data.video_id) {
-                    localStorage.removeItem(`content_${content.data.video_id}`);
-                }
-            } catch (e) {
-                // Try to delete by projectId
-                localStorage.removeItem(contentKey);
-            }
+        // Delete generated content if exists (using correct content key)
+        if (contentKey) {
+            localStorage.removeItem(contentKey);
         }
         
         // Clear OpenAI cache if video_id exists (clear all content_ keys for this video)

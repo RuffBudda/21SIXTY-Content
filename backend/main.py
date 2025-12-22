@@ -263,19 +263,48 @@ async def process_video(
                     
                     # Extract segments with timestamps
                     transcript_with_timecodes = []
+                    # Check if segments exist and is iterable
                     if hasattr(transcript_response, 'segments') and transcript_response.segments:
-                        for segment in transcript_response.segments:
-                            transcript_with_timecodes.append({
-                                "start": segment.get("start", 0),
-                                "end": segment.get("end", 0),
-                                "text": segment.get("text", "").strip()
-                            })
+                        try:
+                            # segments should be a list
+                            for segment in transcript_response.segments:
+                                # Handle both dict-like and object-like segments
+                                if isinstance(segment, dict):
+                                    transcript_with_timecodes.append({
+                                        "start": segment.get("start", 0),
+                                        "end": segment.get("end", 0),
+                                        "text": segment.get("text", "").strip()
+                                    })
+                                else:
+                                    # Handle object-like segments
+                                    transcript_with_timecodes.append({
+                                        "start": getattr(segment, 'start', 0),
+                                        "end": getattr(segment, 'end', 0),
+                                        "text": getattr(segment, 'text', "").strip()
+                                    })
+                        except Exception as seg_error:
+                            logger.warning(f"Error processing segments: {seg_error}, using fallback")
+                            # Fallback: create single entry if segments processing fails
+                            duration = getattr(transcript_response, 'duration', 0)
+                            transcript_with_timecodes = [{
+                                "start": 0,
+                                "end": duration,
+                                "text": transcript_text
+                            }]
                     else:
                         # Fallback: create single entry if no segments
                         duration = getattr(transcript_response, 'duration', 0)
                         transcript_with_timecodes = [{
                             "start": 0,
                             "end": duration,
+                            "text": transcript_text
+                        }]
+                    
+                    # If still empty, use transcript text as fallback
+                    if not transcript_with_timecodes and transcript_text:
+                        transcript_with_timecodes = [{
+                            "start": 0,
+                            "end": getattr(transcript_response, 'duration', 0),
                             "text": transcript_text
                         }]
                     
