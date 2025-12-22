@@ -840,8 +840,20 @@ async function processVideo() {
         
         let data;
         try {
-            data = await response.json();
+            const responseText = await response.text();
+            console.log('📄 Raw response text length:', responseText.length);
+            console.log('📄 Raw response text (first 500 chars):', responseText.substring(0, 500));
+            
+            try {
+                data = JSON.parse(responseText);
+                console.log('✅ Successfully parsed JSON response');
+            } catch (parseError) {
+                console.error('❌ Failed to parse JSON response:', parseError);
+                console.error('Response text:', responseText);
+                throw new Error('Invalid JSON response from server. Please check backend logs.');
+            }
         } catch (e) {
+            console.error('❌ Error reading response:', e);
             throw new Error('Invalid response from server. Please try again.');
         }
         
@@ -856,6 +868,12 @@ async function processVideo() {
         console.log('Video title:', data.video_title);
         console.log('Video duration:', data.video_duration);
         console.log('Video ID:', data.video_id);
+        if (data.error) {
+            console.error('❌ Backend error in response:', data.error);
+            if (data.error_details) {
+                console.error('Error details:', data.error_details);
+            }
+        }
         console.log('=============================');
         
         if (data.success) {
