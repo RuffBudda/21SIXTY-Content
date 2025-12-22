@@ -1,6 +1,6 @@
 # 21SIXTY Content Generator - Feature Documentation
 
-**Version:** v138  
+**Version:** v140  
 **Last Updated:** 2024-12-21
 
 This document provides a comprehensive overview of all features, architecture, and implementation details for AI agents working on this codebase.
@@ -83,7 +83,7 @@ This document provides a comprehensive overview of all features, architecture, a
 - **Location**: `frontend/index.html` - `.header-pills`, `frontend/styles.css` - `.version`, `.openai-pill`
 - **Description**: Version and OpenAI credits displayed as matching pills on the same line
 - **Implementation**:
-  - Version pill: Shows current version (v94) with code-like font (Courier New)
+  - Version pill: Shows current version (v140) with code-like font (Courier New)
   - OpenAI pill: Shows "OpenAI:" label and credit value with matching styling
   - Both pills have same dimensions: padding 2px 8px, border-radius 12px
   - Same styling: background-color (var(--bg-card)), border (1px solid var(--border-color)), font-size (0.75rem)
@@ -172,6 +172,52 @@ This document provides a comprehensive overview of all features, architecture, a
   - Logs cleanup activity including number of files deleted and total size freed
   - Runs automatically on server startup and then every 2 weeks
   - Default cleanup period: 336 hours (configurable in FileHandler)
+
+### 11. API Tab with Clickable Tile (v140)
+- **Location**: `frontend/index.html` - API tab button and tile, `frontend/app.js` - event listeners
+- **Description**: API tab displays "API" text with SVG icon, clickable tile shows API documentation
+- **Implementation**:
+  - API tab button shows "API" text with document icon SVG
+  - API tile is clickable and shows API documentation when clicked
+  - Event listeners handle tile clicks properly (no inline onclick)
+  - Back button hides API details and returns to tile view
+
+### 12. Processing Spinner with Blackout (v140)
+- **Location**: `frontend/app.js` - `processVideo()` function
+- **Description**: Shows loading overlay (spinner + blackout background) during audio processing
+- **Implementation**:
+  - Uses `showLoading()` function for consistent loading UI
+  - Blackout background prevents user interaction during processing
+  - Spinner displays processing message
+  - Automatically hides when processing completes or errors
+
+### 13. Enhanced Transcript Display (v140)
+- **Location**: `frontend/app.js` - `displayTranscript()`, `formatTranscriptWithTimecodes()`
+- **Description**: Improved transcript display with better format handling
+- **Implementation**:
+  - Prioritizes `transcript_with_timecodes` array when available
+  - Handles multiple data format variations (`{start, text}`, `{start, end, text}`, `{start_time, transcript}`)
+  - Filters empty lines from formatted output
+  - Graceful fallback to plain transcript if timecodes unavailable
+  - See `Documentations/transcript_timecode_fixes.md` for detailed fix history
+
+### 14. Content Generation from Transcript (v140)
+- **Location**: `backend/services/prompts_service.py` - prompt templates
+- **Description**: Enhanced prompts to ensure content is generated from actual transcript content
+- **Implementation**:
+  - Two line summary prompt emphasizes using ONLY transcript content
+  - Quotes prompt requires EXACT wording from transcript (no paraphrasing)
+  - Chapter timestamps prompt requires identifying actual topic transitions in transcript
+  - All prompts explicitly state to use actual transcript content, not generic statements
+
+### 15. Project Deletion Cache Clearing (v140)
+- **Location**: `frontend/app.js` - `deleteProject()` function
+- **Description**: Comprehensive cache clearing when projects are deleted
+- **Implementation**:
+  - Clears all `content_` keys related to the deleted video_id
+  - Clears all `processed_` keys that reference the deleted video_id
+  - Ensures complete cleanup of all cached data related to the project
+  - Prevents orphaned cache entries
 
 ---
 
@@ -508,7 +554,7 @@ Display All Deliverables
 ## Important Notes for AI Agents
 
 ### Version Management
-- **Current Version**: v138
+- **Current Version**: v140
 - **Version Location**: `frontend/index.html` (title and header)
 - **Update**: Change in both places when incrementing version
 

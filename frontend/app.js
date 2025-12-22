@@ -281,6 +281,30 @@ function setupEventListeners() {
         refreshGalleryBtn.addEventListener('click', loadGallery);
     }
     
+    // API tile click handler
+    const apiTile = document.getElementById('apiTile');
+    if (apiTile) {
+        apiTile.addEventListener('click', () => {
+            showApiDetails();
+        });
+    }
+    
+    // Hide API details button
+    const hideApiDetailsBtn = document.getElementById('hideApiDetailsBtn');
+    if (hideApiDetailsBtn) {
+        hideApiDetailsBtn.addEventListener('click', () => {
+            hideApiDetails();
+        });
+    }
+    
+    // Copy webhook URL button
+    const copyWebhookUrlBtn = document.getElementById('copyWebhookUrlBtn');
+    if (copyWebhookUrlBtn) {
+        copyWebhookUrlBtn.addEventListener('click', () => {
+            copyWebhookUrl();
+        });
+    }
+    
     // Audio file selection button
     const selectAudioBtn = document.getElementById('selectAudioBtn');
     const audioFileInput = document.getElementById('audioFile');
@@ -612,20 +636,13 @@ async function processVideo() {
         return;
     }
     
-    // Disable all buttons and show spinner
+    // Disable all buttons and show spinner with blackout
     processBtn.disabled = true;
     const selectAudioBtn = document.getElementById('selectAudioBtn');
     if (selectAudioBtn) selectAudioBtn.disabled = true;
     
-    // Show processing spinner
-    const processingAnimation = document.getElementById('processingAnimation');
-    const processingText = document.getElementById('processingText');
-    if (processingAnimation) {
-        processingAnimation.style.display = 'flex';
-    }
-    if (processingText) {
-        processingText.textContent = 'Processing audio and generating transcript...';
-    }
+    // Show loading overlay (spinner + blackout background)
+    showLoading('Processing audio and generating transcript with Whisper API...');
     
     // Generate file hash for caching
     let fileHash = null;
@@ -644,12 +661,16 @@ async function processVideo() {
                     transcriptData = parsed.transcriptData;
                     videoInfo = parsed.videoInfo;
                     
+                    // Hide spinner and re-enable buttons
+                    hideLoading();
                     showStatus(statusDiv, 'Using cached data!', 'success');
                     const step2Card = document.getElementById('step2Card');
                     if (step2Card) {
                         step2Card.style.display = 'block';
                     }
                     processBtn.disabled = false;
+                    const selectAudioBtn = document.getElementById('selectAudioBtn');
+                    if (selectAudioBtn) selectAudioBtn.disabled = false;
                     return;
                 } catch (e) {
                     console.error('Error parsing cached data:', e);
@@ -666,15 +687,22 @@ async function processVideo() {
             localStorage.setItem(`audio_${fileHash}`, audioBase64);
         } catch (e) {
             if (e.name === 'QuotaExceededError' || e.message.includes('quota')) {
-                console.warn('localStorage quota exceeded, skipping audio file cache. Clearing old cache...');
-                // Try to clear old cache entries
+                // Silently clear old cache without warning
                 try {
                     clearOldCache();
+                    // Try again after clearing
+                    try {
+                        const audioBase64 = await fileToBase64(audioFile);
+                        localStorage.setItem(`audio_${fileHash}`, audioBase64);
+                    } catch (retryError) {
+                        // Skip audio caching if still fails after clearing
+                        console.debug('Skipping audio file cache after quota exceeded');
+                    }
                 } catch (clearError) {
-                    console.error('Error clearing old cache:', clearError);
+                    console.debug('Error clearing old cache:', clearError);
                 }
             } else {
-                console.warn('Error caching audio file:', e);
+                console.debug('Error caching audio file:', e);
             }
         }
         
@@ -826,8 +854,7 @@ async function processVideo() {
             }
             
             // Hide spinner and re-enable buttons
-            const processingAnimation = document.getElementById('processingAnimation');
-            if (processingAnimation) processingAnimation.style.display = 'none';
+            hideLoading();
             processBtn.disabled = false;
             const selectAudioBtn = document.getElementById('selectAudioBtn');
             if (selectAudioBtn) selectAudioBtn.disabled = false;
@@ -850,8 +877,7 @@ async function processVideo() {
         console.error('Error processing audio file:', error);
         
         // Hide spinner and re-enable buttons
-        const processingAnimation = document.getElementById('processingAnimation');
-        if (processingAnimation) processingAnimation.style.display = 'none';
+        hideLoading();
         processBtn.disabled = false;
         const selectAudioBtn = document.getElementById('selectAudioBtn');
         if (selectAudioBtn) selectAudioBtn.disabled = false;
@@ -1051,42 +1077,31 @@ function displayTranscript() {
         return;
     }
     
-    // Debug logging
-    console.log('displayTranscript called');
-    console.log('transcriptData:', transcriptData);
-    console.log('transcript_with_timecodes:', transcriptData?.transcript_with_timecodes);
+    if (!transcriptData) {
+        transcriptElement.textContent = 'No transcript data available. Please process an audio file first.';
+        return;
+    }
     
-    if (transcriptData && transcriptData.transcript_with_timecodes) {
+    // Prioritize transcript_with_timecodes if available
+    if (transcriptData.transcript_with_timecodes) {
         const timecodes = transcriptData.transcript_with_timecodes;
-        console.log('Timecodes type:', typeof timecodes, 'Is array:', Array.isArray(timecodes));
         
         if (Array.isArray(timecodes) && timecodes.length > 0) {
+            // Format array of timecode objects
             transcriptElement.textContent = formatTranscriptWithTimecodes(timecodes);
+            return;
         } else if (typeof timecodes === 'string' && timecodes.trim()) {
-            // If it's a string, display directly
+            // If it's already a formatted string, use it directly
             transcriptElement.textContent = timecodes;
-        } else if (typeof timecodes === 'object' && timecodes !== null) {
-            // If it's an object, try to format it or stringify
-            try {
-                transcriptElement.textContent = formatTranscriptWithTimecodes([timecodes]);
-            } catch (e) {
-                console.error('Error formatting timecodes:', e);
-                transcriptElement.textContent = JSON.stringify(timecodes, null, 2);
-            }
-        } else {
-            // Fallback to plain transcript
-            if (transcriptData.transcript) {
-                transcriptElement.textContent = transcriptData.transcript;
-            } else {
-                transcriptElement.textContent = 'No transcript data available. Please ensure the audio file was processed correctly.';
-            }
+            return;
         }
-    } else if (transcriptData && transcriptData.transcript) {
-        // Fallback to plain transcript if timecodes not available
+    }
+    
+    // Fallback to plain transcript if timecodes not available or invalid
+    if (transcriptData.transcript) {
         transcriptElement.textContent = transcriptData.transcript;
     } else {
-        // Clear if no transcript data
-        transcriptElement.textContent = 'No transcript data available. Please process an audio file first.';
+        transcriptElement.textContent = 'No transcript data available. Please ensure the audio file was processed correctly.';
     }
 }
 
@@ -1135,11 +1150,13 @@ function formatTranscriptWithTimecodes(timecodes) {
         return '';
     }
     
-    return timecodes.map((item, index) => {
-        const timestamp = item.start !== undefined ? formatTimestamp(item.start) : '';
-        const text = item.text || '';
+    return timecodes.map((item) => {
+        // Handle both {start, text} and {start, end, text} formats
+        const start = item.start !== undefined ? item.start : (item.start_time !== undefined ? item.start_time : 0);
+        const timestamp = formatTimestamp(start);
+        const text = item.text || item.transcript || '';
         return `${timestamp} ${text}`.trim();
-    }).join('\n');
+    }).filter(line => line.length > 0).join('\n');
 }
 
 function formatTimestamp(seconds) {
@@ -1487,7 +1504,28 @@ function switchTab(tabName) {
         if (webhookUrlElement) {
             webhookUrlElement.textContent = `${API_BASE_URL}/api/generate-content`;
         }
+        // Hide API details when switching to tab
+        hideApiDetails();
     }
+}
+
+function showApiDetails() {
+    const apiDetails = document.getElementById('apiDetails');
+    const apiTiles = document.querySelector('.api-tiles-container');
+    if (apiDetails) apiDetails.style.display = 'block';
+    if (apiTiles) apiTiles.style.display = 'none';
+    // Update webhook URL
+    const webhookUrlElement = document.getElementById('webhookUrl');
+    if (webhookUrlElement) {
+        webhookUrlElement.textContent = `${API_BASE_URL}/api/generate-content`;
+    }
+}
+
+function hideApiDetails() {
+    const apiDetails = document.getElementById('apiDetails');
+    const apiTiles = document.querySelector('.api-tiles-container');
+    if (apiDetails) apiDetails.style.display = 'none';
+    if (apiTiles) apiTiles.style.display = 'grid';
 }
 
 function copyWebhookUrl() {
@@ -1660,6 +1698,16 @@ function openProject(projectId) {
         // Switch to content tab
         switchTab('content');
         
+        // Clear guest information fields
+        const guestNameInput = document.getElementById('guestName');
+        const guestTitleInput = document.getElementById('guestTitle');
+        const guestCompanyInput = document.getElementById('guestCompany');
+        const guestLinkedInInput = document.getElementById('guestLinkedIn');
+        if (guestNameInput) guestNameInput.value = '';
+        if (guestTitleInput) guestTitleInput.value = '';
+        if (guestCompanyInput) guestCompanyInput.value = '';
+        if (guestLinkedInInput) guestLinkedInInput.value = '';
+        
         // Display transcript
         displayTranscript();
         
@@ -1698,6 +1746,21 @@ function deleteProject(projectId, cacheKey) {
     }
     
     try {
+        // Get video_id before deleting to clear OpenAI cache
+        let videoId = null;
+        const contentKey = `content_${projectId}`;
+        const contentData = localStorage.getItem(contentKey);
+        if (contentData) {
+            try {
+                const content = JSON.parse(contentData);
+                if (content.data && content.data.video_id) {
+                    videoId = content.data.video_id;
+                }
+            } catch (e) {
+                console.error('Error parsing content for deletion:', e);
+            }
+        }
+        
         // Delete processed data
         localStorage.removeItem(cacheKey);
         
@@ -1705,8 +1768,6 @@ function deleteProject(projectId, cacheKey) {
         localStorage.removeItem(`audio_${projectId}`);
         
         // Delete generated content if exists
-        const contentKey = `content_${projectId}`;
-        const contentData = localStorage.getItem(contentKey);
         if (contentData) {
             try {
                 const content = JSON.parse(contentData);
@@ -1716,6 +1777,52 @@ function deleteProject(projectId, cacheKey) {
             } catch (e) {
                 // Try to delete by projectId
                 localStorage.removeItem(contentKey);
+            }
+        }
+        
+        // Clear OpenAI cache if video_id exists (clear all content_ keys for this video)
+        // Also clear any processed_ keys that might reference this video
+        if (videoId) {
+            try {
+                // Find and delete all content_ keys related to this video
+                for (let i = localStorage.length - 1; i >= 0; i--) {
+                    const key = localStorage.key(i);
+                    if (key && key.startsWith('content_')) {
+                        try {
+                            const contentData = localStorage.getItem(key);
+                            if (contentData) {
+                                const parsed = JSON.parse(contentData);
+                                if (parsed.video_id === videoId || parsed.data?.video_id === videoId) {
+                                    localStorage.removeItem(key);
+                                }
+                            }
+                        } catch (e) {
+                            // If key contains videoId in the key name itself, remove it
+                            if (key.includes(videoId)) {
+                                localStorage.removeItem(key);
+                            }
+                        }
+                    }
+                }
+                // Also clear any processed_ keys that reference this video_id
+                for (let i = localStorage.length - 1; i >= 0; i--) {
+                    const key = localStorage.key(i);
+                    if (key && key.startsWith('processed_')) {
+                        try {
+                            const processedData = localStorage.getItem(key);
+                            if (processedData) {
+                                const parsed = JSON.parse(processedData);
+                                if (parsed.videoInfo?.video_id === videoId) {
+                                    localStorage.removeItem(key);
+                                }
+                            }
+                        } catch (e) {
+                            // Skip if can't parse
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error('Error clearing OpenAI cache:', e);
             }
         }
         

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CONTENT GEN v138</title>
+    <title>CONTENT GEN v140</title>
     <link rel="icon" type="image/x-icon" href="/static/images/favicons/favicon.ico">
     <link rel="stylesheet" href="styles.css">
 </head>
@@ -51,7 +51,7 @@
                 <h1 class="title">CONTENT GEN</h1>
             </div>
             <div class="header-pills">
-                <span class="version">v138</span>
+                <span class="version">v140</span>
                 <span class="openai-pill">
                     <span class="openai-label">OpenAI:</span>
                     <span class="openai-value" id="creditsValue">Fetching...</span>
@@ -82,7 +82,15 @@
             <button class="tab-btn active" data-tab="content">Content Generator</button>
             <button class="tab-btn" data-tab="gallery">Projects Gallery</button>
             <button class="tab-btn" data-tab="prompts">Prompts Editor</button>
-            <button class="tab-btn" data-tab="api">Text Gen API</button>
+            <button class="tab-btn" data-tab="api">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px; vertical-align: middle;">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                </svg>
+                API
+            </button>
             <!-- COMMENTED OUT: Cookies Setup tab - pytube doesn't support cookies -->
             <!-- <button class="tab-btn" data-tab="cookies">Cookies Setup</button> -->
         </nav>
@@ -459,27 +467,25 @@
             <!-- Text Gen API Tab -->
             <div id="apiTab" class="tab-content" style="display: none;">
                 <div class="api-tiles-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 30px;">
-                    <div class="card api-tile" style="cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onclick="showApiDetails()" onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 8px 16px rgba(0,0,0,0.2)'" onmouseout="this.style.transform=''; this.style.boxShadow=''">
-                        <div style="display: flex; align-items: center; gap: 15px;">
-                            <div style="width: 60px; height: 60px; background: linear-gradient(135deg, var(--primary), #0066cc); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
-                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                                    <polyline points="17 8 12 3 7 8"></polyline>
-                                    <line x1="12" y1="3" x2="12" y2="15"></line>
-                                </svg>
-                            </div>
-                            <div>
-                                <h3 style="margin: 0 0 5px 0; color: var(--text-primary);">Text Gen API</h3>
-                                <p style="margin: 0; color: var(--text-secondary); font-size: 0.9rem;">Webhook API for programmatic content generation</p>
-                            </div>
+                    <div class="card api-tile" id="apiTile" style="cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; padding: 30px; text-align: center;" onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 8px 16px rgba(0,0,0,0.2)'" onmouseout="this.style.transform=''; this.style.boxShadow=''">
+                        <div style="width: 100px; height: 100px; background: linear-gradient(135deg, var(--primary), #0066cc); border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                <polyline points="14 2 14 8 20 8"></polyline>
+                                <line x1="16" y1="13" x2="8" y2="13"></line>
+                                <line x1="16" y1="17" x2="8" y2="17"></line>
+                                <polyline points="10 9 9 9 8 9"></polyline>
+                            </svg>
                         </div>
+                        <h3 style="margin: 0 0 10px 0; color: var(--text-primary);">Text Gen API</h3>
+                        <p style="margin: 0; color: var(--text-secondary); font-size: 0.9rem;">Webhook API for programmatic content generation</p>
                     </div>
                 </div>
                 
                 <div id="apiDetails" class="card" style="display: none;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                         <h2 style="margin: 0;">Text Gen API Documentation</h2>
-                        <button class="btn btn-secondary" onclick="hideApiDetails()" style="padding: 8px 16px;">← Back</button>
+                        <button class="btn btn-secondary" id="hideApiDetailsBtn" style="padding: 8px 16px;">← Back</button>
                     </div>
                     <p class="info-text" style="margin-bottom: 30px;">Use the webhook API to generate content programmatically in N8N or any automation tool. All endpoints require Bearer token authentication.</p>
                     
@@ -487,7 +493,7 @@
                         <h3 style="color: var(--primary); margin-bottom: 10px;">Webhook URL</h3>
                         <div style="background: var(--card-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 15px;">
                             <code id="webhookUrl" style="font-size: 1rem; word-break: break-all; color: var(--primary);"></code>
-                            <button class="btn btn-icon" onclick="copyWebhookUrl()" style="margin-left: 10px; vertical-align: middle;" title="Copy URL">
+                            <button class="btn btn-icon" id="copyWebhookUrlBtn" style="margin-left: 10px; vertical-align: middle;" title="Copy URL">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                     <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                                     <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
