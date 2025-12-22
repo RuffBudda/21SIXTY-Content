@@ -161,13 +161,17 @@ async function logout() {
 }
 
 // Usage Modal Functions
-let usageChart = null;
+let monthlyUsageChart = null;
+let cumulativeUsageChart = null;
 
 function showUsageModal() {
     const modal = document.getElementById('usageModal');
     if (modal) {
         modal.style.display = 'flex';
-        loadUsageStats();
+        // Small delay to ensure modal is rendered before loading stats
+        setTimeout(() => {
+            loadUsageStats();
+        }, 100);
     }
 }
 
@@ -175,6 +179,15 @@ function hideUsageModal() {
     const modal = document.getElementById('usageModal');
     if (modal) {
         modal.style.display = 'none';
+        // Destroy charts to free memory
+        if (monthlyUsageChart) {
+            monthlyUsageChart.destroy();
+            monthlyUsageChart = null;
+        }
+        if (cumulativeUsageChart) {
+            cumulativeUsageChart.destroy();
+            cumulativeUsageChart = null;
+        }
     }
 }
 
@@ -204,8 +217,9 @@ async function loadUsageStats() {
         document.getElementById('totalOpenAICost').textContent = `$${data.total_openai_cost.toFixed(2)}`;
         document.getElementById('totalAssemblyAICost').textContent = `$${data.total_assemblyai_cost.toFixed(2)}`;
         
-        // Render chart
-        renderUsageChart(data);
+        // Render charts
+        renderMonthlyUsageChart(data);
+        renderCumulativeUsageChart(data);
     } catch (error) {
         console.error('Error loading usage stats:', error);
         document.getElementById('totalOpenAICost').textContent = 'Error';
@@ -213,13 +227,17 @@ async function loadUsageStats() {
     }
 }
 
-function renderUsageChart(data) {
-    const ctx = document.getElementById('usageChart');
-    if (!ctx) return;
+function renderMonthlyUsageChart(data) {
+    const ctx = document.getElementById('monthlyUsageChart');
+    if (!ctx) {
+        console.error('Monthly usage chart canvas not found');
+        return;
+    }
     
     // Destroy existing chart if it exists
-    if (usageChart) {
-        usageChart.destroy();
+    if (monthlyUsageChart) {
+        monthlyUsageChart.destroy();
+        monthlyUsageChart = null;
     }
     
     // Prepare data for chart
@@ -233,7 +251,7 @@ function renderUsageChart(data) {
     ]);
     const sortedMonths = Array.from(allMonths).sort();
     
-    // Prepare datasets
+    // Prepare datasets (monthly costs)
     const openaiCosts = sortedMonths.map(month => openaiByMonth[month]?.cost || 0);
     const assemblyaiCosts = sortedMonths.map(month => assemblyaiByMonth[month]?.cost || 0);
     
@@ -244,7 +262,7 @@ function renderUsageChart(data) {
         return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
     });
     
-    usageChart = new Chart(ctx, {
+    monthlyUsageChart = new Chart(ctx, {
         type: 'line',
         data: {
             labels: monthLabels,
@@ -252,43 +270,66 @@ function renderUsageChart(data) {
                 {
                     label: 'OpenAI',
                     data: openaiCosts,
-                    borderColor: 'rgb(75, 192, 192)',
-                    backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                    borderColor: '#4ECDC4',
+                    backgroundColor: 'rgba(78, 205, 196, 0.1)',
+                    borderWidth: 2,
                     tension: 0.4,
-                    fill: true
+                    fill: true,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    pointBackgroundColor: '#4ECDC4',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2
                 },
                 {
                     label: 'AssemblyAI',
                     data: assemblyaiCosts,
-                    borderColor: 'rgb(255, 99, 132)',
-                    backgroundColor: 'rgba(255, 99, 132, 0.1)',
+                    borderColor: '#FF6B6B',
+                    backgroundColor: 'rgba(255, 107, 107, 0.1)',
+                    borderWidth: 2,
                     tension: 0.4,
-                    fill: true
+                    fill: true,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    pointBackgroundColor: '#FF6B6B',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2
                 }
             ]
         },
         options: {
             responsive: true,
-            maintainAspectRatio: true,
-            aspectRatio: 2,
+            maintainAspectRatio: false,
             plugins: {
                 legend: {
                     display: true,
                     position: 'top',
                     labels: {
-                        color: '#e0e0e0',
+                        color: '#E0E0E0',
                         usePointStyle: true,
-                        padding: 15
+                        padding: 12,
+                        font: {
+                            size: 12,
+                            weight: '500'
+                        }
                     }
                 },
                 tooltip: {
                     mode: 'index',
                     intersect: false,
-                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                    titleColor: '#e0e0e0',
-                    bodyColor: '#e0e0e0',
-                    borderColor: '#444',
+                    backgroundColor: 'rgba(0, 0, 0, 0.85)',
+                    titleColor: '#E0E0E0',
+                    bodyColor: '#E0E0E0',
+                    borderColor: '#2a3a5a',
                     borderWidth: 1,
+                    padding: 12,
+                    titleFont: {
+                        size: 13,
+                        weight: '600'
+                    },
+                    bodyFont: {
+                        size: 12
+                    },
                     callbacks: {
                         label: function(context) {
                             return context.dataset.label + ': $' + context.parsed.y.toFixed(2);
@@ -299,19 +340,183 @@ function renderUsageChart(data) {
             scales: {
                 x: {
                     grid: {
-                        color: 'rgba(255, 255, 255, 0.1)'
+                        color: 'rgba(255, 255, 255, 0.08)',
+                        drawBorder: false
                     },
                     ticks: {
-                        color: '#b0b0b0'
+                        color: '#B0B0B0',
+                        font: {
+                            size: 11
+                        },
+                        padding: 8
                     }
                 },
                 y: {
                     beginAtZero: true,
                     grid: {
-                        color: 'rgba(255, 255, 255, 0.1)'
+                        color: 'rgba(255, 255, 255, 0.08)',
+                        drawBorder: false
                     },
                     ticks: {
-                        color: '#b0b0b0',
+                        color: '#B0B0B0',
+                        font: {
+                            size: 11
+                        },
+                        padding: 8,
+                        callback: function(value) {
+                            return '$' + value.toFixed(2);
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+function renderCumulativeUsageChart(data) {
+    const ctx = document.getElementById('cumulativeUsageChart');
+    if (!ctx) {
+        console.error('Cumulative usage chart canvas not found');
+        return;
+    }
+    
+    // Destroy existing chart if it exists
+    if (cumulativeUsageChart) {
+        cumulativeUsageChart.destroy();
+        cumulativeUsageChart = null;
+    }
+    
+    // Prepare data for chart
+    const openaiByMonth = data.openai_by_month || {};
+    const assemblyaiByMonth = data.assemblyai_by_month || {};
+    
+    // Get all unique months
+    const allMonths = new Set([
+        ...Object.keys(openaiByMonth),
+        ...Object.keys(assemblyaiByMonth)
+    ]);
+    const sortedMonths = Array.from(allMonths).sort();
+    
+    // Calculate cumulative costs
+    let openaiCumulative = 0;
+    let assemblyaiCumulative = 0;
+    const openaiCumulativeCosts = sortedMonths.map(month => {
+        openaiCumulative += openaiByMonth[month]?.cost || 0;
+        return openaiCumulative;
+    });
+    const assemblyaiCumulativeCosts = sortedMonths.map(month => {
+        assemblyaiCumulative += assemblyaiByMonth[month]?.cost || 0;
+        return assemblyaiCumulative;
+    });
+    
+    // Format month labels
+    const monthLabels = sortedMonths.map(month => {
+        const [year, monthNum] = month.split('-');
+        const date = new Date(year, parseInt(monthNum) - 1);
+        return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+    });
+    
+    cumulativeUsageChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: monthLabels,
+            datasets: [
+                {
+                    label: 'OpenAI',
+                    data: openaiCumulativeCosts,
+                    borderColor: '#4ECDC4',
+                    backgroundColor: 'rgba(78, 205, 196, 0.1)',
+                    borderWidth: 2,
+                    tension: 0.4,
+                    fill: true,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    pointBackgroundColor: '#4ECDC4',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2
+                },
+                {
+                    label: 'AssemblyAI',
+                    data: assemblyaiCumulativeCosts,
+                    borderColor: '#FF6B6B',
+                    backgroundColor: 'rgba(255, 107, 107, 0.1)',
+                    borderWidth: 2,
+                    tension: 0.4,
+                    fill: true,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    pointBackgroundColor: '#FF6B6B',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top',
+                    labels: {
+                        color: '#E0E0E0',
+                        usePointStyle: true,
+                        padding: 12,
+                        font: {
+                            size: 12,
+                            weight: '500'
+                        }
+                    }
+                },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false,
+                    backgroundColor: 'rgba(0, 0, 0, 0.85)',
+                    titleColor: '#E0E0E0',
+                    bodyColor: '#E0E0E0',
+                    borderColor: '#2a3a5a',
+                    borderWidth: 1,
+                    padding: 12,
+                    titleFont: {
+                        size: 13,
+                        weight: '600'
+                    },
+                    bodyFont: {
+                        size: 12
+                    },
+                    callbacks: {
+                        label: function(context) {
+                            return context.dataset.label + ': $' + context.parsed.y.toFixed(2);
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.08)',
+                        drawBorder: false
+                    },
+                    ticks: {
+                        color: '#B0B0B0',
+                        font: {
+                            size: 11
+                        },
+                        padding: 8
+                    }
+                },
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.08)',
+                        drawBorder: false
+                    },
+                    ticks: {
+                        color: '#B0B0B0',
+                        font: {
+                            size: 11
+                        },
+                        padding: 8,
                         callback: function(value) {
                             return '$' + value.toFixed(2);
                         }
