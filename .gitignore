@@ -47,6 +47,8 @@ logs/
 Documentations/
 # Content Generator feature documentation (for AI agents)
 Documentations/ContGen.md
+# Update documentation files
+Documentations/updatev*.md
 
 # Update documentation files
 updatev*.md
