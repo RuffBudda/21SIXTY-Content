@@ -738,6 +738,12 @@ async function processVideo() {
         // #region agent log
         fetch('http://127.0.0.1:7243/ingest/b207b689-8405-4a20-bd10-ddb3167454cd',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app.js:653',message:'Before fetch request',data:{headers,hasContentType:!!headers['Content-Type'],url:`${API_BASE_URL}/api/process-video`},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B,C'})}).catch(()=>{});
         // #endregion
+        console.log('🚀 Starting API request to process video...');
+        console.log('API URL:', `${API_BASE_URL}/api/process-video`);
+        console.log('File name:', audioFile.name);
+        console.log('File size:', audioFile.size, 'bytes');
+        console.log('File type:', audioFile.type);
+        
         let response;
         try {
             response = await fetch(`${API_BASE_URL}/api/process-video`, {
@@ -745,7 +751,12 @@ async function processVideo() {
                 headers: headers,
                 body: formData
             });
+            console.log('📡 API Response received');
+            console.log('Response status:', response.status);
+            console.log('Response statusText:', response.statusText);
+            console.log('Response headers:', Object.fromEntries(response.headers.entries()));
         } catch (fetchError) {
+            console.error('❌ Fetch error:', fetchError);
             // #region agent log
             fetch('http://127.0.0.1:7243/ingest/b207b689-8405-4a20-bd10-ddb3167454cd',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app.js:656',message:'Fetch error caught',data:{error:fetchError?.message,errorType:fetchError?.constructor?.name},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
             // #endregion
@@ -1163,12 +1174,34 @@ function displayTranscript(targetElementId = 'transcript') {
     
     // Final fallback message (Fix Attempt #3, #5)
     if (!displayText) {
-        console.error('No transcript text available. transcriptData:', transcriptData);
-        displayText = 'No transcript data available. Please ensure the audio file was processed correctly.';
+        console.error('❌ No transcript text available. transcriptData:', transcriptData);
+        
+        // Check if there's an error message from backend
+        if (transcriptData.error) {
+            console.error('Backend error:', transcriptData.error);
+            if (transcriptData.error_details) {
+                console.error('Error details:', transcriptData.error_details);
+            }
+            displayText = `No transcript data available. Error: ${transcriptData.error}\n\nPlease check backend logs for more details.`;
+        } else {
+            displayText = 'No transcript data available. Please ensure the audio file was processed correctly.';
+        }
     }
     
     transcriptElement.textContent = displayText;
-    console.log('Transcript displayed. Length:', displayText.length);
+    console.log('✅ Transcript displayed. Length:', displayText.length);
+    
+    // Log final state
+    if (displayText.includes('No transcript')) {
+        console.warn('⚠️ WARNING: Transcript display is showing error/empty message');
+        console.warn('transcriptData state:', {
+            hasTranscript: !!transcriptData.transcript,
+            transcriptLength: transcriptData.transcript?.length || 0,
+            hasTimecodes: !!transcriptData.transcript_with_timecodes,
+            timecodesLength: Array.isArray(transcriptData.transcript_with_timecodes) ? transcriptData.transcript_with_timecodes.length : 'not array',
+            hasError: !!transcriptData.error
+        });
+    }
 }
 
 // Display Results
