@@ -340,10 +340,7 @@ function setupEventListeners() {
     
     document.getElementById('processVideoBtn').addEventListener('click', processVideo);
     document.getElementById('generateContentBtn').addEventListener('click', () => generateContent(false));
-    const regenerateBtn = document.getElementById('regenerateContentBtn');
-    if (regenerateBtn) {
-        regenerateBtn.addEventListener('click', () => generateContent(true));
-    }
+    // Regenerate button removed from step 2 - regenerate is only available in results section
     
     // Event delegation for result action buttons (copy and download)
     document.addEventListener('click', (e) => {
@@ -860,9 +857,12 @@ async function processVideo() {
                 }
             }
             
-            // Display transcript immediately after processing
+            // Display transcript in step 2 immediately after processing
             if (transcriptData) {
-                displayTranscript();
+                // Display transcript in step 2 preview area
+                displayTranscript('step2Transcript');
+                // Also display in main transcript area (for results section)
+                displayTranscript('transcript');
             }
             
             // Hide spinner and re-enable buttons
@@ -872,15 +872,13 @@ async function processVideo() {
             if (selectAudioBtn) selectAudioBtn.disabled = false;
             
             if (statusDiv) {
-                showStatus(statusDiv, 'Audio processed successfully! Please fill in guest information.', 'success');
+                showStatus(statusDiv, 'Audio processed successfully! Please review the transcript and fill in guest information.', 'success');
             }
             const step2Card = document.getElementById('step2Card');
             if (step2Card) {
                 step2Card.style.display = 'block';
-            }
-            const step1Card = document.getElementById('step1Card');
-            if (step1Card) {
-                step1Card.scrollIntoView({ behavior: 'smooth' });
+                // Scroll to step 2 to show transcript
+                step2Card.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
         } else {
             throw new Error('Processing failed');
@@ -1067,10 +1065,7 @@ async function generateContent(forceRegenerate = false, regenerateType = null) {
         document.getElementById('resultsContainer').scrollIntoView({ behavior: 'smooth' });
         
         // Show regenerate button
-        const regenerateBtn = document.getElementById('regenerateContentBtn');
-        if (regenerateBtn) {
-            regenerateBtn.style.display = 'inline-block';
-        }
+        // Regenerate button removed from step 2
         
     } catch (error) {
         console.error('Error generating content:', error);
@@ -1082,10 +1077,10 @@ async function generateContent(forceRegenerate = false, regenerateType = null) {
 }
 
 // Display transcript separately (called after processing and when opening projects)
-function displayTranscript() {
-    const transcriptElement = document.getElementById('transcript');
+function displayTranscript(targetElementId = 'transcript') {
+    const transcriptElement = document.getElementById(targetElementId);
     if (!transcriptElement) {
-        console.error('Transcript element not found');
+        console.error(`Transcript element not found: ${targetElementId}`);
         return;
     }
     
@@ -1094,27 +1089,46 @@ function displayTranscript() {
         return;
     }
     
-    // Prioritize transcript_with_timecodes if available
+    let displayText = '';
+    
+    // Fix Attempt #5 (v147): Comprehensive transcript display considering all previous fixes
+    // Prioritize transcript_with_timecodes if available (Fix Attempt #4)
     if (transcriptData.transcript_with_timecodes) {
         const timecodes = transcriptData.transcript_with_timecodes;
         
+        // Handle array format (Fix Attempt #1, #3, #4)
         if (Array.isArray(timecodes) && timecodes.length > 0) {
-            // Format array of timecode objects
-            transcriptElement.textContent = formatTranscriptWithTimecodes(timecodes);
-            return;
-        } else if (typeof timecodes === 'string' && timecodes.trim()) {
-            // If it's already a formatted string, use it directly
-            transcriptElement.textContent = timecodes;
-            return;
+            displayText = formatTranscriptWithTimecodes(timecodes);
+        } 
+        // Handle string format (Fix Attempt #4)
+        else if (typeof timecodes === 'string' && timecodes.trim()) {
+            displayText = timecodes;
+        }
+        // Handle object format (Fix Attempt #3)
+        else if (typeof timecodes === 'object' && timecodes !== null) {
+            // Try to extract text from object
+            if (timecodes.text) {
+                displayText = timecodes.text;
+            } else if (timecodes.transcript) {
+                displayText = timecodes.transcript;
+            } else {
+                // Last resort: stringify the object
+                displayText = JSON.stringify(timecodes, null, 2);
+            }
         }
     }
     
-    // Fallback to plain transcript if timecodes not available or invalid
-    if (transcriptData.transcript) {
-        transcriptElement.textContent = transcriptData.transcript;
-    } else {
-        transcriptElement.textContent = 'No transcript data available. Please ensure the audio file was processed correctly.';
+    // Fallback to plain transcript if timecodes not available or invalid (Fix Attempt #2, #4)
+    if (!displayText && transcriptData.transcript) {
+        displayText = transcriptData.transcript;
     }
+    
+    // Final fallback message (Fix Attempt #3)
+    if (!displayText) {
+        displayText = 'No transcript data available. Please ensure the audio file was processed correctly.';
+    }
+    
+    transcriptElement.textContent = displayText;
 }
 
 // Display Results
@@ -1148,7 +1162,13 @@ function displayResults(data) {
     
     // Chapter Timestamps
     const timestampsElement = document.getElementById('chapterTimestamps');
-    timestampsElement.textContent = data.chapter_timestamps.join('\n');
+    if (Array.isArray(data.chapter_timestamps)) {
+        timestampsElement.textContent = data.chapter_timestamps.join('\n');
+    } else if (typeof data.chapter_timestamps === 'string') {
+        timestampsElement.textContent = data.chapter_timestamps;
+    } else {
+        timestampsElement.textContent = '';
+    }
     
     // Keywords
     document.getElementById('keywords').textContent = data.keywords || '';
@@ -1789,19 +1809,23 @@ function openProject(projectId) {
         
         // Show step 2 (guest info) if transcript is loaded
         if (transcriptData) {
-            document.getElementById('step2Card').style.display = 'block';
+            const step2Card = document.getElementById('step2Card');
+            if (step2Card) {
+                step2Card.style.display = 'block';
+                // Display transcript in step 2 preview
+                displayTranscript('step2Transcript');
+                // Also display in main transcript area
+                displayTranscript('transcript');
+            }
             document.getElementById('step1Card').scrollIntoView({ behavior: 'smooth' });
         }
         
-        // Show regenerate button if content exists
+        // Show regenerate button if content exists (removed from step 2, only in results)
         if (videoInfo && videoInfo.video_id) {
             const contentKey = `content_${videoInfo.video_id}`;
             const contentData = localStorage.getItem(contentKey);
             if (contentData) {
-                const regenerateBtn = document.getElementById('regenerateContentBtn');
-                if (regenerateBtn) {
-                    regenerateBtn.style.display = 'inline-block';
-                }
+                // Regenerate button removed from step 2
             }
         }
         

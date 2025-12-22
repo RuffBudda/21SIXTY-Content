@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CONTENT GEN v145</title>
+    <title>CONTENT GEN v147</title>
     <link rel="icon" type="image/x-icon" href="/static/images/favicons/favicon.ico">
     <link rel="stylesheet" href="styles.css">
 </head>
@@ -51,7 +51,7 @@
                 <h1 class="title">CONTENT GEN</h1>
             </div>
             <div class="header-pills">
-                <span class="version">v145</span>
+                <span class="version">v147</span>
                 <span class="openai-pill">
                     <span class="openai-label">OpenAI:</span>
                     <span class="openai-value" id="creditsValue">Fetching...</span>
@@ -781,7 +781,21 @@ console.log(data.youtube_summary);</code></pre>
 
             <!-- Guest Information -->
             <div class="card" id="step2Card" style="display: none;">
-                <h2>Guest Information</h2>
+                <h2>Step 2: Review Transcript & Enter Guest Information</h2>
+                
+                <!-- Transcript Preview Section -->
+                <div style="margin-bottom: 30px;">
+                    <h3 style="margin-bottom: 15px; color: var(--primary);">Generated Transcript</h3>
+                    <div class="card" style="background: var(--bg-secondary); padding: 20px; border: 1px solid var(--border-color); border-radius: 8px; max-height: 400px; overflow-y: auto;">
+                        <div id="step2Transcript" style="white-space: pre-wrap; font-family: 'Courier New', monospace; font-size: 0.9rem; line-height: 1.6; color: var(--text-primary);">
+                            <p style="color: var(--text-secondary); font-style: italic;">Transcript will appear here after processing...</p>
+                        </div>
+                    </div>
+                    <p class="info-text" style="margin-top: 10px; font-size: 0.85rem;">
+                        <strong>Note:</strong> Please review the transcript above. If the transcript is correct, proceed to fill in the guest information below and generate content.
+                    </p>
+                </div>
+                
                 <div class="form-grid">
                     <div class="input-group">
                         <label for="guestName">Name *</label>
@@ -802,7 +816,6 @@ console.log(data.youtube_summary);</code></pre>
                 </div>
                 <div style="display: flex; gap: 10px; align-items: center;">
                     <button class="btn btn-primary" id="generateContentBtn">Generate Content</button>
-                    <button class="btn btn-secondary" id="regenerateContentBtn" style="display: none;">Regenerate</button>
                 </div>
                 <div id="generatingStatus" class="status-message"></div>
             </div>

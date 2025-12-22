@@ -1,6 +1,6 @@
 # 21SIXTY Content Generator - Feature Documentation
 
-**Version:** v145  
+**Version:** v147  
 **Last Updated:** 2024-12-21
 
 This document provides a comprehensive overview of all features, architecture, and implementation details for AI agents working on this codebase.
@@ -84,7 +84,7 @@ This document provides a comprehensive overview of all features, architecture, a
 - **Location**: `frontend/index.html` - `.header-pills`, `frontend/styles.css` - `.version`, `.openai-pill`
 - **Description**: Version and OpenAI credits displayed as matching pills on the same line
 - **Implementation**:
-  - Version pill: Shows current version (v145) with code-like font (Courier New)
+  - Version pill: Shows current version (v147) with code-like font (Courier New)
   - OpenAI pill: Shows "OpenAI:" label and credit value with matching styling
   - Both pills have same dimensions: padding 2px 8px, border-radius 12px
   - Same styling: background-color (var(--bg-card)), border (1px solid var(--border-color)), font-size (0.75rem)
@@ -235,6 +235,27 @@ This document provides a comprehensive overview of all features, architecture, a
   - `updateFullEpisodeDescription()` called after saving prompts to keep display in sync
   - Removed localStorage dependency - content now persisted on server
   - Migration support: localStorage value loaded initially, then overwritten by server data
+
+### 22. Transcript Display in Step 2 and Enhanced Display Function (v147)
+- **Location**: `frontend/index.html` - Step 2 card, `frontend/app.js` - `displayTranscript()`
+- **Description**: Show transcript in Step 2 before generating deliverables, enhanced display function considering all previous fixes
+- **Implementation**:
+  - Added transcript preview section in Step 2 (Guest Information)
+  - Enhanced `displayTranscript()` to accept optional target element ID
+  - Comprehensive handling of all data formats (array, string, object)
+  - Displays transcript in both Step 2 preview and main transcript area
+  - User workflow: Process Audio → Review Transcript → Enter Guest Info → Generate Content
+  - Removed Regenerate button from Step 2 (only in results section)
+  - See `Documentations/transcript_timecode_fixes.md` for detailed fix history
+
+### 23. Strengthened Prompts for Quotes and Chapter Timestamps (v147)
+- **Location**: `backend/prompts.json`, `backend/services/prompts_service.py`
+- **Description**: Enhanced prompts to ensure quotes and chapter timestamps are accurate to transcript
+- **Implementation**:
+  - Quotes prompt: Added CRITICAL REQUIREMENTS emphasizing exact wording, no paraphrasing
+  - Chapter timestamps prompt: Added CRITICAL REQUIREMENTS emphasizing actual content and real topic transitions
+  - Both prompts explicitly state to use only what is in the transcript
+  - Prevents AI from creating generic or made-up content
 
 ---
 
@@ -401,7 +422,7 @@ Health check endpoint.
 ## Important Notes for AI Agents
 
 ### Version Management
-- **Current Version**: v145
+- **Current Version**: v147
 - **Version Location**: `frontend/index.html` (title and header)
 - **Update**: Change in both places when incrementing version
 
