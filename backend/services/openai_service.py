@@ -6,6 +6,22 @@ from datetime import datetime, timedelta
 
 logger = logging.getLogger(__name__)
 
+# Safe prompt length for 16k-context models (~12.5k tokens); leave room for system message and output
+MAX_PROMPT_CHARS = 50_000
+TRUNCATION_NOTE = "\n\n[Transcript truncated due to length. Content generated from the first part of the episode.]"
+
+
+def _truncate_prompt(prompt: str, max_chars: int = MAX_PROMPT_CHARS) -> str:
+    """Truncate prompt to stay under context limit; append a note so the model knows."""
+    if len(prompt) <= max_chars:
+        return prompt
+    return prompt[: max_chars - len(TRUNCATION_NOTE)] + TRUNCATION_NOTE
+
+
+def _is_context_length_error(error_msg: str) -> bool:
+    return "context_length_exceeded" in error_msg or "maximum context length" in error_msg
+
+
 class OpenAIService:
     def __init__(self, api_key: Optional[str] = None):
         self.api_key = api_key or os.getenv("OPENAI_API_KEY")
@@ -23,38 +39,43 @@ class OpenAIService:
         ]
         
     async def generate_text(self, prompt: str, max_tokens: int = 2000, temperature: float = 0.7) -> str:
-        """Generate text using OpenAI API with automatic fallback to alternative models"""
+        """Generate text using OpenAI API with automatic fallback and truncation on context limit."""
         models_to_try = [self.model] + [m for m in self.fallback_models if m != self.model]
         last_error = None
-        
+        system_msg = "You are a professional content writer specializing in podcast summaries, blog posts, and marketing content."
+
         for model_to_try in models_to_try:
-            try:
-                response = self.client.chat.completions.create(
-                    model=model_to_try,
-                    messages=[
-                        {"role": "system", "content": "You are a professional content writer specializing in podcast summaries, blog posts, and marketing content."},
-                        {"role": "user", "content": prompt}
-                    ],
-                    max_tokens=max_tokens,
-                    temperature=temperature
-                )
-                
-                # If we used a fallback model, log it
-                if model_to_try != self.model:
-                    logger.info(f"Successfully used fallback model '{model_to_try}' instead of '{self.model}'")
-                
-                return response.choices[0].message.content.strip()
-            except Exception as e:
-                error_msg = str(e)
-                last_error = e
-                # If it's a model access error, try next fallback
-                if "model_not_found" in error_msg or "does not have access" in error_msg:
-                    logger.warning(f"Model '{model_to_try}' not available, trying fallback models...")
-                    continue
-                # For other errors, break and raise immediately
-                break
-        
-        # If we get here, all models failed
+            user_content = prompt
+            truncated = False
+            for attempt in range(2):
+                try:
+                    response = self.client.chat.completions.create(
+                        model=model_to_try,
+                        messages=[
+                            {"role": "system", "content": system_msg},
+                            {"role": "user", "content": user_content}
+                        ],
+                        max_tokens=max_tokens,
+                        temperature=temperature
+                    )
+                    if model_to_try != self.model:
+                        logger.info(f"Successfully used fallback model '{model_to_try}' instead of '{self.model}'")
+                    if truncated:
+                        logger.info("Request succeeded after truncating prompt for context length.")
+                    return response.choices[0].message.content.strip()
+                except Exception as e:
+                    error_msg = str(e)
+                    last_error = e
+                    if _is_context_length_error(error_msg) and attempt == 0 and len(user_content) > MAX_PROMPT_CHARS:
+                        user_content = _truncate_prompt(user_content)
+                        truncated = True
+                        logger.warning("Context length exceeded; truncating prompt and retrying once.")
+                        continue
+                    if "model_not_found" in error_msg or "does not have access" in error_msg:
+                        logger.warning(f"Model '{model_to_try}' not available, trying fallback models...")
+                        break
+                    break
+
         error_msg = str(last_error) if last_error else "Unknown error"
         logger.error(f"Error generating text with OpenAI: {error_msg}", exc_info=True)
         if "model_not_found" in error_msg or "does not have access" in error_msg:
@@ -62,45 +83,48 @@ class OpenAIService:
         raise Exception(f"OpenAI API error: {error_msg}")
     
     async def generate_text_with_tokens(self, prompt: str, max_tokens: int = 2000, temperature: float = 0.7) -> Dict:
-        """Generate text and return both content and token usage with automatic fallback to alternative models"""
+        """Generate text and return both content and token usage; fallback models and truncate on context limit."""
         models_to_try = [self.model] + [m for m in self.fallback_models if m != self.model]
         last_error = None
-        
+        system_msg = "You are a professional content writer specializing in podcast summaries, blog posts, and marketing content."
+
         for model_to_try in models_to_try:
-            try:
-                response = self.client.chat.completions.create(
-                    model=model_to_try,
-                    messages=[
-                        {"role": "system", "content": "You are a professional content writer specializing in podcast summaries, blog posts, and marketing content."},
-                        {"role": "user", "content": prompt}
-                    ],
-                    max_tokens=max_tokens,
-                    temperature=temperature
-                )
-                
-                # If we used a fallback model, log it
-                if model_to_try != self.model:
-                    logger.info(f"Successfully used fallback model '{model_to_try}' instead of '{self.model}'")
-                
-                return {
-                    'content': response.choices[0].message.content.strip(),
-                    'tokens_used': response.usage.total_tokens if response.usage else 0,
-                    'prompt_tokens': response.usage.prompt_tokens if response.usage else 0,
-                    'completion_tokens': response.usage.completion_tokens if response.usage else 0,
-                    'total_tokens': response.usage.total_tokens if response.usage else 0,
-                    'model': model_to_try
-                }
-            except Exception as e:
-                error_msg = str(e)
-                last_error = e
-                # If it's a model access error, try next fallback
-                if "model_not_found" in error_msg or "does not have access" in error_msg:
-                    logger.warning(f"Model '{model_to_try}' not available, trying fallback models...")
-                    continue
-                # For other errors, break and raise immediately
-                break
-        
-        # If we get here, all models failed
+            user_content = prompt
+            for attempt in range(2):
+                try:
+                    response = self.client.chat.completions.create(
+                        model=model_to_try,
+                        messages=[
+                            {"role": "system", "content": system_msg},
+                            {"role": "user", "content": user_content}
+                        ],
+                        max_tokens=max_tokens,
+                        temperature=temperature
+                    )
+                    if model_to_try != self.model:
+                        logger.info(f"Successfully used fallback model '{model_to_try}' instead of '{self.model}'")
+                    if attempt == 1:
+                        logger.info("Request succeeded after truncating prompt for context length.")
+                    return {
+                        'content': response.choices[0].message.content.strip(),
+                        'tokens_used': response.usage.total_tokens if response.usage else 0,
+                        'prompt_tokens': response.usage.prompt_tokens if response.usage else 0,
+                        'completion_tokens': response.usage.completion_tokens if response.usage else 0,
+                        'total_tokens': response.usage.total_tokens if response.usage else 0,
+                        'model': model_to_try
+                    }
+                except Exception as e:
+                    error_msg = str(e)
+                    last_error = e
+                    if _is_context_length_error(error_msg) and attempt == 0 and len(user_content) > MAX_PROMPT_CHARS:
+                        user_content = _truncate_prompt(user_content)
+                        logger.warning("Context length exceeded; truncating prompt and retrying once.")
+                        continue
+                    if "model_not_found" in error_msg or "does not have access" in error_msg:
+                        logger.warning(f"Model '{model_to_try}' not available, trying fallback models...")
+                        break
+                    break
+
         error_msg = str(last_error) if last_error else "Unknown error"
         logger.error(f"Error generating text with OpenAI: {error_msg}", exc_info=True)
         if "model_not_found" in error_msg or "does not have access" in error_msg:
