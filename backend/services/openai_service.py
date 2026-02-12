@@ -13,11 +13,14 @@ class OpenAIService:
             raise ValueError("OPENAI_API_KEY environment variable is required")
         
         self.client = OpenAI(api_key=self.api_key)
-        # Default to gpt-5-mini (large context, cost-efficient); override via OPENAI_MODEL
+        # Default: gpt-5-mini if available; override via OPENAI_MODEL
         configured_model = os.getenv("OPENAI_MODEL", "gpt-5-mini")
         self.model = configured_model
-        # Fallbacks: 5-series only (large context), no deprecated 4.x
-        self.fallback_models = ["gpt-5-nano", "gpt-5", "gpt-5.1", "gpt-5.2"]
+        # Fallbacks: try 5-series first (large context), then 4o/4o-mini for projects without 5 access
+        self.fallback_models = [
+            "gpt-5-nano", "gpt-5", "gpt-5.1", "gpt-5.2",
+            "gpt-4o-mini", "gpt-4o", "gpt-3.5-turbo"
+        ]
         
     async def generate_text(self, prompt: str, max_tokens: int = 2000, temperature: float = 0.7) -> str:
         """Generate text using OpenAI API with automatic fallback to alternative models"""
