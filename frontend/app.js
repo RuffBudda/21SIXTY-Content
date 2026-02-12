@@ -1742,9 +1742,11 @@ function showResultsArea() {
     const container = document.getElementById('resultsContainer');
     const nav = document.getElementById('sectionNav');
     const placeholder = document.getElementById('generateRightPlaceholder');
+    const layout = document.querySelector('.generate-layout');
     if (placeholder) placeholder.style.display = 'none';
     if (container) container.style.display = 'block';
     if (nav) nav.style.display = 'flex';
+    if (layout) layout.classList.add('has-results');
 }
 
 // Display Results
