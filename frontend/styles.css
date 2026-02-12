@@ -8,6 +8,7 @@
     --bg-primary: #000000;
     --bg-secondary: #0f0f0f;
     --bg-tertiary: #141414;
+    --bg-main: #181818;
     --bg-card: #1a1a1a;
     --text-primary: #fafafa;
     --text-secondary: #a3a3a3;
@@ -56,6 +57,9 @@ body::before {
 
 /* Top Bar - Vercel-style with subtle grey */
 .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 100;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -179,7 +183,7 @@ body::before {
     padding: 24px 32px 48px;
     overflow: auto;
     width: 100%;
-    background: var(--bg-secondary);
+    background: transparent;
 }
 
 .main-wrap .main-content {
