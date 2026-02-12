@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CONTENT GEN</title>
     <link rel="icon" type="image/x-icon" href="/static/images/favicons/favicon.ico">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
     <link rel="stylesheet" href="styles.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
@@ -41,6 +42,17 @@
             </div>
             <div id="loginError" class="error-message" style="display: none;"></div>
             <button class="btn btn-primary" id="loginBtn">Login</button>
+        </div>
+        <!-- Right panel overlay and container (Prompts Editor) -->
+        <div id="panelOverlay" class="panel-overlay" aria-hidden="true"></div>
+        <div id="rightPanel" class="panel panel-right" aria-hidden="true">
+            <div class="panel-header">
+                <h2 class="panel-title">Prompts Editor</h2>
+                <button type="button" class="panel-close" id="closePanelBtn" title="Close">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+            </div>
+            <div class="panel-body" id="panelContent"></div>
         </div>
     </div>
 
@@ -94,14 +106,21 @@
         </div>
     </div>
 
-    <div class="container" id="mainContainer" style="display: none;">
-        <!-- Header -->
-        <header class="header">
-            <div class="logo-container">
-                <img src="/static/images/logos/logo.png" alt="21SIXTY Logo" class="logo" onerror="this.onerror=null; this.src='/static/images/logo.svg';">
-                <h1 class="title">CONTENT GEN</h1>
+    <div class="container app-layout" id="mainContainer" style="display: none;">
+        <!-- Left Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <img src="/static/images/logos/logo.png" alt="21SIXTY Logo" class="sidebar-logo" onerror="this.onerror=null; this.src='/static/images/logo.svg';">
+                <h1 class="sidebar-title">CONTENT GEN</h1>
             </div>
-            <div class="header-pills">
+            <nav class="sidebar-nav">
+                <button class="tab-btn sidebar-link active" data-tab="content">Content Generator</button>
+                <button class="tab-btn sidebar-link" data-tab="gallery">Projects Gallery</button>
+                <button class="tab-btn sidebar-link" data-tab="prompts">Prompts Editor</button>
+                <button class="tab-btn sidebar-link" data-tab="api">API</button>
+                <button class="btn btn-secondary sidebar-btn" id="usageBtn">Usage</button>
+            </nav>
+            <div class="sidebar-footer">
                 <span class="version">v180</span>
                 <span class="openai-pill">
                     <span class="openai-label">OpenAI:</span>
@@ -111,39 +130,12 @@
                     <span class="openai-label">AssemblyAI:</span>
                     <span class="openai-value" id="assemblyaiValue">Checking...</span>
                 </span>
+                <button class="btn btn-secondary sidebar-logout" id="logoutBtn">Logout</button>
             </div>
-            <div class="status-container" style="display: none;">
-                <div class="status-item">
-                    <span class="status-label">OpenAI:</span>
-                    <span class="status-value" id="creditsValueOld">Fetching...</span>
-                </div>
-                <!-- COMMENTED OUT: Cookie status - pytube doesn't support cookies -->
-                <!-- <div class="status-item">
-                    <span class="status-dot" id="cookiesDot"></span>
-                    <span class="status-label">Cookies:</span>
-                    <span class="status-value" id="cookiesValue">Loading...</span>
-                </div> -->
-            </div>
-            <div class="header-actions">
-                <!-- COMMENTED OUT: Cookie upload - pytube doesn't support cookies -->
-                <!-- <input type="file" id="cookieFileInput" accept=".txt" style="display: none;" /> -->
-                <!-- <button class="btn btn-secondary" id="uploadCookiesBtn">Upload Cookies</button> -->
-                <button class="btn btn-secondary" id="usageBtn">Usage</button>
-                <button class="btn btn-secondary" id="logoutBtn">Logout</button>
-            </div>
-        </header>
-
-        <!-- Navigation Tabs -->
-        <nav class="tabs">
-            <button class="tab-btn active" data-tab="content">Content Generator</button>
-            <button class="tab-btn" data-tab="gallery">Projects Gallery</button>
-            <button class="tab-btn" data-tab="prompts">Prompts Editor</button>
-            <button class="tab-btn" data-tab="api">API</button>
-            <!-- COMMENTED OUT: Cookies Setup tab - pytube doesn't support cookies -->
-            <!-- <button class="tab-btn" data-tab="cookies">Cookies Setup</button> -->
-        </nav>
+        </aside>
 
         <!-- Main Content -->
+        <div class="main-wrap">
         <main class="main-content">
             <!-- Prompts Tab -->
             <div id="promptsTab" class="tab-content" style="display: none;">
@@ -804,6 +796,8 @@ console.log(data.youtube_summary);</code></pre>
 
             <!-- Content Generator Tab -->
             <div id="contentTab" class="tab-content">
+            <div class="generate-layout">
+            <div class="generate-left">
             <!-- Audio Upload -->
             <div class="card" id="step1Card">
                 <h2>Upload Audio File</h2>
@@ -875,12 +869,28 @@ console.log(data.youtube_summary);</code></pre>
                 </div>
                 <div id="generatingStatus" class="status-message"></div>
             </div>
+            </div>
 
+            <div class="generate-right">
+            <nav class="section-nav" id="sectionNav" style="display: none;">
+                <a href="#section-transcript" class="section-nav-link">Transcript with Timecodes</a>
+                <a href="#section-youtube-summary" class="section-nav-link">YouTube Summary</a>
+                <a href="#section-blog-post" class="section-nav-link">Blog post</a>
+                <a href="#section-summary" class="section-nav-link">Summary</a>
+                <a href="#section-clickbait" class="section-nav-link">Clickbait titles</a>
+                <a href="#section-quotes" class="section-nav-link">Quotes</a>
+                <a href="#section-chapters" class="section-nav-link">YouTube-Ready Chapter Timestamps</a>
+                <a href="#section-full-desc" class="section-nav-link">Full Episode Description</a>
+                <a href="#section-linkedin" class="section-nav-link">LinkedIn Post</a>
+                <a href="#section-keywords" class="section-nav-link">Keywords</a>
+                <a href="#section-hashtags" class="section-nav-link">Hashtags</a>
+            </nav>
             <!-- Results -->
             <div id="resultsContainer" style="display: none;">
                 <!-- Transcript with Timecodes -->
-                <div class="card result-card">
+                <div class="card result-card result-card-collapsible" id="section-transcript" data-section="transcript">
                     <div class="result-header">
+                        <button type="button" class="result-card-toggle" aria-expanded="true"></button>
                         <h2>Transcript with Timecodes</h2>
                         <div class="result-actions">
                             <button class="btn btn-icon" data-action="download" data-target="transcript" title="Download as TXT">
@@ -902,9 +912,10 @@ console.log(data.youtube_summary);</code></pre>
                 </div>
 
                 <!-- YouTube Summary -->
-                <div class="card result-card">
+                <div class="card result-card result-card-collapsible" id="section-youtube-summary" data-section="youtubeSummary">
                     <div class="result-header">
-                        <h2>3 Paragraph YouTube Summary</h2>
+                        <button type="button" class="result-card-toggle" aria-expanded="true"></button>
+                        <h2>YouTube Summary</h2>
                         <div class="result-actions">
                             <button class="btn btn-icon" data-action="regenerate" data-type="youtube_summary" data-target="youtubeSummary" title="Regenerate">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -932,9 +943,10 @@ console.log(data.youtube_summary);</code></pre>
                 </div>
 
                 <!-- Blog Post -->
-                <div class="card result-card">
+                <div class="card result-card result-card-collapsible" id="section-blog-post" data-section="blogPost">
                     <div class="result-header">
-                        <h2>2000 Word Blog Post</h2>
+                        <button type="button" class="result-card-toggle" aria-expanded="true"></button>
+                        <h2>Blog post</h2>
                         <div class="result-actions">
                             <button class="btn btn-icon" data-action="regenerate" data-type="blog_post" data-target="blogPost" title="Regenerate">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -962,9 +974,10 @@ console.log(data.youtube_summary);</code></pre>
                 </div>
 
                 <!-- One Line Summary -->
-                <div class="card result-card">
+                <div class="card result-card result-card-collapsible" id="section-summary" data-section="twoLineSummary">
                     <div class="result-header">
-                        <h2>2 Line Summary</h2>
+                        <button type="button" class="result-card-toggle" aria-expanded="true"></button>
+                        <h2>Summary</h2>
                         <div class="result-actions">
                             <button class="btn btn-icon" data-action="regenerate" data-type="two_line_summary" data-target="twoLineSummary" title="Regenerate">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -992,9 +1005,10 @@ console.log(data.youtube_summary);</code></pre>
                 </div>
 
                 <!-- Clickbait Titles -->
-                <div class="card result-card">
+                <div class="card result-card result-card-collapsible" id="section-clickbait" data-section="clickbaitTitles">
                     <div class="result-header">
-                        <h2>20 Clickbait Titles</h2>
+                        <button type="button" class="result-card-toggle" aria-expanded="true"></button>
+                        <h2>Clickbait titles</h2>
                         <div class="result-actions">
                             <button class="btn btn-icon" data-action="regenerate" data-type="clickbait_titles" data-target="clickbaitTitles" title="Regenerate">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1022,9 +1036,10 @@ console.log(data.youtube_summary);</code></pre>
                 </div>
 
                 <!-- Quotes -->
-                <div class="card result-card">
+                <div class="card result-card result-card-collapsible" id="section-quotes" data-section="quotes">
                     <div class="result-header">
-                        <h2>20 Quotes</h2>
+                        <button type="button" class="result-card-toggle" aria-expanded="true"></button>
+                        <h2>Quotes</h2>
                         <div class="result-actions">
                             <button class="btn btn-icon" data-action="regenerate" data-type="quotes" data-target="quotes" title="Regenerate">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1052,8 +1067,9 @@ console.log(data.youtube_summary);</code></pre>
                 </div>
 
                 <!-- Chapter Timestamps -->
-                <div class="card result-card">
+                <div class="card result-card result-card-collapsible" id="section-chapters" data-section="chapterTimestamps">
                     <div class="result-header">
+                        <button type="button" class="result-card-toggle" aria-expanded="true"></button>
                         <h2>YouTube-Ready Chapter Timestamps</h2>
                         <div class="result-actions">
                             <button class="btn btn-icon" data-action="regenerate" data-type="chapter_timestamps" data-target="chapterTimestamps" title="Regenerate">
@@ -1082,8 +1098,9 @@ console.log(data.youtube_summary);</code></pre>
                 </div>
 
                 <!-- Full Episode Description -->
-                <div class="card result-card">
+                <div class="card result-card result-card-collapsible" id="section-full-desc" data-section="fullEpisodeDescription">
                     <div class="result-header">
+                        <button type="button" class="result-card-toggle" aria-expanded="true"></button>
                         <div>
                             <h2>Full Episode Description</h2>
                             <p style="margin: 5px 0 0 0; color: var(--text-secondary); font-size: 0.9rem;">3 Paragraph Summary + Standard Static Content + Chapter Timestamps</p>
@@ -1108,8 +1125,9 @@ console.log(data.youtube_summary);</code></pre>
                 </div>
 
                 <!-- LinkedIn Post -->
-                <div class="card result-card">
+                <div class="card result-card result-card-collapsible" id="section-linkedin" data-section="linkedinPost">
                     <div class="result-header">
+                        <button type="button" class="result-card-toggle" aria-expanded="true"></button>
                         <h2>LinkedIn Post</h2>
                         <div class="result-actions">
                             <button class="btn btn-icon" data-action="regenerate" data-type="linkedin_post" data-target="linkedinPost" title="Regenerate">
@@ -1138,8 +1156,9 @@ console.log(data.youtube_summary);</code></pre>
                 </div>
 
                 <!-- Keywords -->
-                <div class="card result-card">
+                <div class="card result-card result-card-collapsible" id="section-keywords" data-section="keywords">
                     <div class="result-header">
+                        <button type="button" class="result-card-toggle" aria-expanded="true"></button>
                         <h2>Keywords</h2>
                         <div class="result-actions">
                             <button class="btn btn-icon" data-action="regenerate" data-type="keywords" data-target="keywords" title="Regenerate">
@@ -1168,8 +1187,9 @@ console.log(data.youtube_summary);</code></pre>
                 </div>
 
                 <!-- Hashtags -->
-                <div class="card result-card">
+                <div class="card result-card result-card-collapsible" id="section-hashtags" data-section="hashtags">
                     <div class="result-header">
+                        <button type="button" class="result-card-toggle" aria-expanded="true"></button>
                         <h2>Hashtags</h2>
                         <div class="result-actions">
                             <button class="btn btn-icon" data-action="regenerate" data-type="hashtags" data-target="hashtags" title="Regenerate">
@@ -1198,7 +1218,9 @@ console.log(data.youtube_summary);</code></pre>
                 </div>
             </div>
             </div>
+            </div>
         </main>
+        </div>
     </div>
 
     <!-- Loading Overlay -->

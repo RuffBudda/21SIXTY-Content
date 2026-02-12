@@ -1,10 +1,50 @@
 const API_BASE_URL = window.location.origin;
+const GUEST_DETAILS_STORAGE_KEY = 'contentGen_guestDetails';
 
 // State
 let transcriptData = null;
 let videoInfo = null;
 let authToken = localStorage.getItem('authToken') || sessionStorage.getItem('authToken') || null;
 let rememberMe = localStorage.getItem('rememberMe') === 'true';
+
+// Guest details persistence
+function saveGuestDetailsToStorage() {
+    const guestName = document.getElementById('guestName');
+    const guestTitle = document.getElementById('guestTitle');
+    const guestCompany = document.getElementById('guestCompany');
+    const guestLinkedIn = document.getElementById('guestLinkedIn');
+    if (!guestName || !guestTitle || !guestCompany || !guestLinkedIn) return;
+    const payload = {
+        guest_name: guestName.value.trim(),
+        guest_title: guestTitle.value.trim(),
+        guest_company: guestCompany.value.trim(),
+        guest_linkedin: guestLinkedIn.value.trim()
+    };
+    try {
+        localStorage.setItem(GUEST_DETAILS_STORAGE_KEY, JSON.stringify(payload));
+    } catch (e) {
+        console.error('Error saving guest details:', e);
+    }
+}
+
+function loadGuestDetailsFromStorage() {
+    const guestName = document.getElementById('guestName');
+    const guestTitle = document.getElementById('guestTitle');
+    const guestCompany = document.getElementById('guestCompany');
+    const guestLinkedIn = document.getElementById('guestLinkedIn');
+    if (!guestName || !guestTitle || !guestCompany || !guestLinkedIn) return;
+    try {
+        const raw = localStorage.getItem(GUEST_DETAILS_STORAGE_KEY);
+        if (!raw) return;
+        const payload = JSON.parse(raw);
+        if (payload.guest_name != null) guestName.value = payload.guest_name;
+        if (payload.guest_title != null) guestTitle.value = payload.guest_title;
+        if (payload.guest_company != null) guestCompany.value = payload.guest_company;
+        if (payload.guest_linkedin != null) guestLinkedIn.value = payload.guest_linkedin;
+    } catch (e) {
+        console.error('Error loading guest details:', e);
+    }
+}
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
@@ -81,6 +121,7 @@ function showLoginModal() {
 function showMainApp() {
     document.getElementById('loginModal').style.display = 'none';
     document.getElementById('mainContainer').style.display = 'block';
+    loadGuestDetailsFromStorage();
     // Ensure content tab is shown by default
     switchTab('content');
 }
@@ -566,6 +607,11 @@ function setupEventListeners() {
         closeUsageModal.addEventListener('click', hideUsageModal);
     }
     
+    const closePanelBtn = document.getElementById('closePanelBtn');
+    if (closePanelBtn) closePanelBtn.addEventListener('click', closePromptsPanel);
+    const panelOverlay = document.getElementById('panelOverlay');
+    if (panelOverlay) panelOverlay.addEventListener('click', closePromptsPanel);
+    
     // Close modal when clicking outside
     const usageModal = document.getElementById('usageModal');
     if (usageModal) {
@@ -583,6 +629,12 @@ function setupEventListeners() {
             const tabName = e.currentTarget.getAttribute('data-tab');
             switchTab(tabName);
         });
+    });
+    
+    // Guest details: persist on blur
+    ['guestName', 'guestTitle', 'guestCompany', 'guestLinkedIn'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('blur', saveGuestDetailsToStorage);
     });
     
     // Prompts editor
@@ -732,6 +784,32 @@ function setupEventListeners() {
     document.getElementById('generateContentBtn').addEventListener('click', () => generateContent(false));
     // Regenerate button removed from step 2 - regenerate is only available in results section
     
+    // Section nav: smooth scroll to result section
+    document.addEventListener('click', (e) => {
+        const link = e.target.closest('.section-nav-link');
+        if (link && link.hash) {
+            e.preventDefault();
+            const id = link.hash.slice(1);
+            const el = document.getElementById(id);
+            if (el) el.scrollIntoView({ behavior: 'smooth' });
+        }
+    });
+
+    // Result card collapsible toggle (button or header click, not action buttons)
+    document.addEventListener('click', (e) => {
+        const card = e.target.closest('.result-card-collapsible');
+        if (!card) return;
+        if (e.target.closest('.result-actions')) return; // don't toggle when clicking copy/download/regenerate
+        const header = e.target.closest('.result-header');
+        const btn = e.target.closest('.result-card-toggle');
+        if (!header && !btn) return;
+        e.preventDefault();
+        e.stopPropagation();
+        card.classList.toggle('collapsed');
+        const toggleBtn = card.querySelector('.result-card-toggle');
+        if (toggleBtn) toggleBtn.setAttribute('aria-expanded', !card.classList.contains('collapsed'));
+    });
+
     // Event delegation for result action buttons (copy and download)
     document.addEventListener('click', (e) => {
         const button = e.target.closest('[data-action]');
@@ -1425,6 +1503,8 @@ async function generateContent(forceRegenerate = false, regenerateType = null) {
         return;
     }
     
+    saveGuestDetailsToStorage();
+    
     if (!transcriptData) {
         showStatus(statusDiv, 'Please process a video first', 'error');
         return;
@@ -1448,7 +1528,7 @@ async function generateContent(forceRegenerate = false, regenerateType = null) {
                     const useCached = confirm('Content already generated for this project. Use cached content? Click OK to use cached, Cancel to regenerate.');
                     if (useCached) {
                         displayResults(content.data);
-                        document.getElementById('resultsContainer').style.display = 'block';
+                        showResultsArea();
                         document.getElementById('resultsContainer').scrollIntoView({ behavior: 'smooth' });
                         showStatus(statusDiv, 'Using cached content!', 'success');
                         return;
@@ -1510,6 +1590,9 @@ async function generateContent(forceRegenerate = false, regenerateType = null) {
                     data: data,
                     video_id: videoInfo.video_id,
                     guest_name: guestName,
+                    guest_title: guestTitle,
+                    guest_company: guestCompany,
+                    guest_linkedin: guestLinkedIn,
                     timestamp: Date.now()
                 };
                 localStorage.setItem(contentKey, JSON.stringify(contentData));
@@ -1536,7 +1619,7 @@ async function generateContent(forceRegenerate = false, regenerateType = null) {
         }
         
         showStatus(statusDiv, 'Content generated successfully!', 'success');
-        document.getElementById('resultsContainer').style.display = 'block';
+        showResultsArea();
         document.getElementById('resultsContainer').scrollIntoView({ behavior: 'smooth' });
         
         // Show regenerate button
@@ -1643,6 +1726,13 @@ function displayTranscript(targetElementId = 'transcript') {
             hasError: !!transcriptData.error
         });
     }
+}
+
+function showResultsArea() {
+    const container = document.getElementById('resultsContainer');
+    const nav = document.getElementById('sectionNav');
+    if (container) container.style.display = 'block';
+    if (nav) nav.style.display = 'flex';
 }
 
 // Display Results
@@ -1761,6 +1851,8 @@ async function regenerateContent(contentType, targetId) {
         alert('Please fill in all guest information fields first');
         return;
     }
+    
+    saveGuestDetailsToStorage();
     
     const targetElement = document.getElementById(targetId);
     if (!targetElement) {
@@ -2018,8 +2110,67 @@ function isValidUrl(url) {
     }
 }
 
+// Right panel (Prompts Editor)
+function openPromptsPanel() {
+    const overlay = document.getElementById('panelOverlay');
+    const panel = document.getElementById('rightPanel');
+    const panelContent = document.getElementById('panelContent');
+    const promptsTab = document.getElementById('promptsTab');
+    if (!overlay || !panel || !panelContent || !promptsTab) return;
+    if (promptsTab.parentElement === panelContent) return;
+    overlay.classList.add('is-open');
+    overlay.setAttribute('aria-hidden', 'false');
+    panel.classList.add('is-open');
+    panel.setAttribute('aria-hidden', 'false');
+    panelContent.appendChild(promptsTab);
+    promptsTab.style.display = 'block';
+    document.addEventListener('keydown', onPanelEscape);
+}
+
+function closePromptsPanel() {
+    const overlay = document.getElementById('panelOverlay');
+    const panel = document.getElementById('rightPanel');
+    const panelContent = document.getElementById('panelContent');
+    const promptsTab = document.getElementById('promptsTab');
+    const mainContent = document.querySelector('.main-content');
+    if (!overlay || !panel || !mainContent) return;
+    if (promptsTab && promptsTab.parentElement === panelContent) {
+        mainContent.insertBefore(promptsTab, mainContent.firstChild);
+        promptsTab.style.display = 'none';
+    }
+    overlay.classList.remove('is-open');
+    overlay.setAttribute('aria-hidden', 'true');
+    panel.classList.remove('is-open');
+    panel.setAttribute('aria-hidden', 'true');
+    document.removeEventListener('keydown', onPanelEscape);
+    switchTab('content');
+}
+
+function onPanelEscape(e) {
+    if (e.key === 'Escape') closePromptsPanel();
+}
+
 // Tab Management
 function switchTab(tabName) {
+    // Prompts open in right panel instead of main
+    if (tabName === 'prompts') {
+        if (!authToken) {
+            showLoginModal();
+            return;
+        }
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        const tabBtn = document.querySelector(`[data-tab="prompts"]`);
+        if (tabBtn) tabBtn.classList.add('active');
+        document.querySelectorAll('.tab-content').forEach(content => { content.style.display = 'none'; });
+        openPromptsPanel();
+        loadPrompts();
+        return;
+    }
+    
+    // Ensure panel is closed when switching to another tab
+    const panel = document.getElementById('rightPanel');
+    if (panel && panel.classList.contains('is-open')) closePromptsPanel();
+    
     // Hide all tab contents
     document.querySelectorAll('.tab-content').forEach(content => {
         content.style.display = 'none';
@@ -2310,7 +2461,7 @@ function openProject(projectId) {
                 try {
                     const content = JSON.parse(contentData);
                     displayResults(content.data);
-                    document.getElementById('resultsContainer').style.display = 'block';
+                    showResultsArea();
                 } catch (e) {
                     console.error('Error parsing content:', e);
                 }
@@ -2320,15 +2471,39 @@ function openProject(projectId) {
         // Switch to content tab
         switchTab('content');
         
-        // Clear guest information fields
+        // Fill guest fields from project content cache if available, else from localStorage
         const guestNameInput = document.getElementById('guestName');
         const guestTitleInput = document.getElementById('guestTitle');
         const guestCompanyInput = document.getElementById('guestCompany');
         const guestLinkedInInput = document.getElementById('guestLinkedIn');
-        if (guestNameInput) guestNameInput.value = '';
-        if (guestTitleInput) guestTitleInput.value = '';
-        if (guestCompanyInput) guestCompanyInput.value = '';
-        if (guestLinkedInInput) guestLinkedInInput.value = '';
+        if (videoInfo && videoInfo.video_id) {
+            const contentKey = `content_${videoInfo.video_id}`;
+            const contentStr = localStorage.getItem(contentKey);
+            if (contentStr) {
+                try {
+                    const content = JSON.parse(contentStr);
+                    if (content.guest_name != null && guestNameInput) guestNameInput.value = content.guest_name;
+                    if (content.guest_title != null && guestTitleInput) guestTitleInput.value = content.guest_title;
+                    if (content.guest_company != null && guestCompanyInput) guestCompanyInput.value = content.guest_company;
+                    if (content.guest_linkedin != null && guestLinkedInInput) guestLinkedInInput.value = content.guest_linkedin;
+                } catch (e) {
+                    loadGuestDetailsFromStorage();
+                }
+            }
+            // Fill any still-empty guest fields from localStorage (e.g. old cache with only guest_name)
+            try {
+                const raw = localStorage.getItem(GUEST_DETAILS_STORAGE_KEY);
+                if (raw) {
+                    const fallback = JSON.parse(raw);
+                    if (guestNameInput && !guestNameInput.value.trim() && fallback.guest_name) guestNameInput.value = fallback.guest_name;
+                    if (guestTitleInput && !guestTitleInput.value.trim() && fallback.guest_title) guestTitleInput.value = fallback.guest_title;
+                    if (guestCompanyInput && !guestCompanyInput.value.trim() && fallback.guest_company) guestCompanyInput.value = fallback.guest_company;
+                    if (guestLinkedInInput && !guestLinkedInInput.value.trim() && fallback.guest_linkedin) guestLinkedInInput.value = fallback.guest_linkedin;
+                }
+            } catch (e) { /* ignore */ }
+        } else {
+            loadGuestDetailsFromStorage();
+        }
         
         // Display transcript
         displayTranscript();
