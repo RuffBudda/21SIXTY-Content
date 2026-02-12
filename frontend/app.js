@@ -579,9 +579,6 @@ function renderCumulativeUsageChart(data) {
 }
 
 function getAuthHeaders(includeContentType = true) {
-    // #region agent log
-    fetch('http://127.0.0.1:7243/ingest/b207b689-8405-4a20-bd10-ddb3167454cd',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app.js:154',message:'getAuthHeaders called',data:{includeContentType,authToken:authToken?'present':'missing'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-    // #endregion
     const headers = {
         'Authorization': `Bearer ${authToken}`
     };
@@ -589,9 +586,6 @@ function getAuthHeaders(includeContentType = true) {
     if (includeContentType) {
         headers['Content-Type'] = 'application/json';
     }
-    // #region agent log
-    fetch('http://127.0.0.1:7243/ingest/b207b689-8405-4a20-bd10-ddb3167454cd',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app.js:162',message:'getAuthHeaders returning',data:{headers,hasContentType:!!headers['Content-Type']},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-    // #endregion
     return headers;
 }
 
@@ -1236,19 +1230,10 @@ async function processVideo() {
     }
     
     try {
-        // #region agent log
-        fetch('http://127.0.0.1:7243/ingest/b207b689-8405-4a20-bd10-ddb3167454cd',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app.js:645',message:'Before FormData creation',data:{audioFileExists:!!audioFile,audioFileName:audioFile?.name,audioFileSize:audioFile?.size,audioFileType:audioFile?.type},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-        // #endregion
         const formData = new FormData();
         formData.append('audio_file', audioFile);
-        // #region agent log
-        fetch('http://127.0.0.1:7243/ingest/b207b689-8405-4a20-bd10-ddb3167454cd',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app.js:648',message:'After FormData.append',data:{formDataHasAudioFile:formData.has('audio_file'),audioFileStillExists:!!audioFile},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-        // #endregion
         
         const headers = getAuthHeaders(false); // Don't set Content-Type for FormData - browser sets it automatically
-        // #region agent log
-        fetch('http://127.0.0.1:7243/ingest/b207b689-8405-4a20-bd10-ddb3167454cd',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app.js:653',message:'Before fetch request',data:{headers,hasContentType:!!headers['Content-Type'],url:`${API_BASE_URL}/api/process-video`},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B,C'})}).catch(()=>{});
-        // #endregion
         console.log('🚀 Starting API request to process video...');
         console.log('API URL:', `${API_BASE_URL}/api/process-video`);
         console.log('File name:', audioFile.name);
@@ -1268,18 +1253,12 @@ async function processVideo() {
             console.log('Response headers:', Object.fromEntries(response.headers.entries()));
         } catch (fetchError) {
             console.error('❌ Fetch error:', fetchError);
-            // #region agent log
-            fetch('http://127.0.0.1:7243/ingest/b207b689-8405-4a20-bd10-ddb3167454cd',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app.js:656',message:'Fetch error caught',data:{error:fetchError?.message,errorType:fetchError?.constructor?.name},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-            // #endregion
             // Handle network errors (no response received)
             const networkErrorMsg = fetchError instanceof Error 
                 ? fetchError.message 
                 : String(fetchError);
             throw new Error(`Network error: ${networkErrorMsg || 'Failed to connect to server'}`);
         }
-        // #region agent log
-        fetch('http://127.0.0.1:7243/ingest/b207b689-8405-4a20-bd10-ddb3167454cd',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app.js:664',message:'Response received',data:{status:response.status,statusText:response.statusText,contentType:response.headers.get('content-type')},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
-        // #endregion
         
         if (response.status === 401) {
             authToken = null;

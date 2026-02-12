@@ -13,17 +13,11 @@ class OpenAIService:
             raise ValueError("OPENAI_API_KEY environment variable is required")
         
         self.client = OpenAI(api_key=self.api_key)
-        # Default to gpt-4o-mini (more accessible) or gpt-3.5-turbo as fallback
-        # Users can override via OPENAI_MODEL environment variable
-        configured_model = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
-        # If gpt-4 is configured but not available, fallback to gpt-4o-mini
-        if configured_model == "gpt-4":
-            logger.warning("gpt-4 model configured but may not be available. Using gpt-4o-mini as fallback.")
-            self.model = "gpt-4o-mini"
-        else:
-            self.model = configured_model
-        # List of fallback models to try if primary model fails
-        self.fallback_models = ["gpt-4o-mini", "gpt-3.5-turbo", "gpt-4o"]
+        # Default to gpt-5-mini (large context, cost-efficient); override via OPENAI_MODEL
+        configured_model = os.getenv("OPENAI_MODEL", "gpt-5-mini")
+        self.model = configured_model
+        # Fallbacks: 5-series only (large context), no deprecated 4.x
+        self.fallback_models = ["gpt-5-nano", "gpt-5", "gpt-5.1", "gpt-5.2"]
         
     async def generate_text(self, prompt: str, max_tokens: int = 2000, temperature: float = 0.7) -> str:
         """Generate text using OpenAI API with automatic fallback to alternative models"""
@@ -127,7 +121,7 @@ class OpenAIService:
             try:
                 # Make a minimal test call (1 token) to verify API key works
                 test_response = self.client.chat.completions.create(
-                    model="gpt-3.5-turbo",
+                    model=self.model,
                     messages=[{"role": "user", "content": "hi"}],
                     max_tokens=1
                 )
