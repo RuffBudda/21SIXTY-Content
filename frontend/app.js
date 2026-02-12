@@ -209,10 +209,15 @@ function showUsageModal() {
     const modal = document.getElementById('usageModal');
     if (modal) {
         modal.style.display = 'flex';
-        // Small delay to ensure modal is rendered before loading stats
+        // Delay so modal is laid out before charts render (fixes zero-size canvas)
         setTimeout(() => {
             loadUsageStats();
-        }, 100);
+            // After charts render, force resize so they fill container
+            setTimeout(() => {
+                if (monthlyUsageChart) monthlyUsageChart.resize();
+                if (cumulativeUsageChart) cumulativeUsageChart.resize();
+            }, 150);
+        }, 150);
     }
 }
 
@@ -291,17 +296,20 @@ function renderMonthlyUsageChart(data) {
         ...Object.keys(assemblyaiByMonth)
     ]);
     const sortedMonths = Array.from(allMonths).sort();
-    
-    // Prepare datasets (monthly costs)
-    const openaiCosts = sortedMonths.map(month => openaiByMonth[month]?.cost || 0);
-    const assemblyaiCosts = sortedMonths.map(month => assemblyaiByMonth[month]?.cost || 0);
-    
-    // Format month labels (e.g., "2024-01" -> "Jan 2024")
-    const monthLabels = sortedMonths.map(month => {
-        const [year, monthNum] = month.split('-');
-        const date = new Date(year, parseInt(monthNum) - 1);
-        return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-    });
+    // Ensure we have at least one label so chart axes render when empty
+    const monthLabels = sortedMonths.length > 0
+        ? sortedMonths.map(month => {
+            const [year, monthNum] = month.split('-');
+            const date = new Date(year, parseInt(monthNum) - 1);
+            return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+        })
+        : [new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })];
+    const openaiCosts = sortedMonths.length > 0
+        ? sortedMonths.map(month => openaiByMonth[month]?.cost || 0)
+        : [0];
+    const assemblyaiCosts = sortedMonths.length > 0
+        ? sortedMonths.map(month => assemblyaiByMonth[month]?.cost || 0)
+        : [0];
     
     monthlyUsageChart = new Chart(ctx, {
         type: 'line',
@@ -437,25 +445,27 @@ function renderCumulativeUsageChart(data) {
         ...Object.keys(assemblyaiByMonth)
     ]);
     const sortedMonths = Array.from(allMonths).sort();
-    
-    // Calculate cumulative costs
+    const monthLabels = sortedMonths.length > 0
+        ? sortedMonths.map(month => {
+            const [year, monthNum] = month.split('-');
+            const date = new Date(year, parseInt(monthNum) - 1);
+            return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+        })
+        : [new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })];
     let openaiCumulative = 0;
     let assemblyaiCumulative = 0;
-    const openaiCumulativeCosts = sortedMonths.map(month => {
-        openaiCumulative += openaiByMonth[month]?.cost || 0;
-        return openaiCumulative;
-    });
-    const assemblyaiCumulativeCosts = sortedMonths.map(month => {
-        assemblyaiCumulative += assemblyaiByMonth[month]?.cost || 0;
-        return assemblyaiCumulative;
-    });
-    
-    // Format month labels
-    const monthLabels = sortedMonths.map(month => {
-        const [year, monthNum] = month.split('-');
-        const date = new Date(year, parseInt(monthNum) - 1);
-        return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-    });
+    const openaiCumulativeCosts = sortedMonths.length > 0
+        ? sortedMonths.map(month => {
+            openaiCumulative += openaiByMonth[month]?.cost || 0;
+            return openaiCumulative;
+        })
+        : [0];
+    const assemblyaiCumulativeCosts = sortedMonths.length > 0
+        ? sortedMonths.map(month => {
+            assemblyaiCumulative += assemblyaiByMonth[month]?.cost || 0;
+            return assemblyaiCumulative;
+        })
+        : [0];
     
     cumulativeUsageChart = new Chart(ctx, {
         type: 'line',
