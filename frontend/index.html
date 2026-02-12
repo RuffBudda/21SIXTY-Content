@@ -106,33 +106,33 @@
         </div>
     </div>
 
-    <div class="container app-layout" id="mainContainer" style="display: none;">
-        <!-- Left Sidebar -->
-        <aside class="sidebar">
-            <div class="sidebar-brand">
-                <img src="/static/images/logos/logo.png" alt="21SIXTY Logo" class="sidebar-logo" onerror="this.onerror=null; this.src='/static/images/logo.svg';">
-                <h1 class="sidebar-title">CONTENT GEN</h1>
+    <div class="app-layout" id="mainContainer" style="display: none;">
+        <!-- Top Bar -->
+        <header class="topbar">
+            <div class="topbar-left">
+                <img src="/static/images/logos/logo.png" alt="Logo" class="topbar-logo" onerror="this.onerror=null; this.src='/static/images/logo.svg';">
+                <span class="topbar-title">CONTENT GEN</span>
+                <nav class="topbar-nav">
+                    <button class="tab-btn topbar-link active" data-tab="content">Content Generator</button>
+                    <button class="tab-btn topbar-link" data-tab="gallery">Projects Gallery</button>
+                    <button class="tab-btn topbar-link" data-tab="prompts">Prompts Editor</button>
+                    <button class="tab-btn topbar-link" data-tab="api">API</button>
+                </nav>
             </div>
-            <nav class="sidebar-nav">
-                <button class="tab-btn sidebar-link active" data-tab="content">Content Generator</button>
-                <button class="tab-btn sidebar-link" data-tab="gallery">Projects Gallery</button>
-                <button class="tab-btn sidebar-link" data-tab="prompts">Prompts Editor</button>
-                <button class="tab-btn sidebar-link" data-tab="api">API</button>
-                <button class="btn btn-secondary sidebar-btn" id="usageBtn">Usage</button>
-            </nav>
-            <div class="sidebar-footer">
-                <span class="version">v190</span>
-                <span class="openai-pill">
+            <div class="topbar-right">
+                <button class="topbar-btn" id="usageBtn">Usage</button>
+                <span class="topbar-pill version">v190</span>
+                <span class="topbar-pill openai-pill">
                     <span class="openai-label">OpenAI:</span>
                     <span class="openai-value" id="creditsValue">Fetching...</span>
                 </span>
-                <span class="openai-pill">
+                <span class="topbar-pill openai-pill">
                     <span class="openai-label">AssemblyAI:</span>
                     <span class="openai-value" id="assemblyaiValue">Checking...</span>
                 </span>
-                <button class="btn btn-secondary sidebar-logout" id="logoutBtn">Logout</button>
+                <button class="topbar-btn topbar-logout" id="logoutBtn">Logout</button>
             </div>
-        </aside>
+        </header>
 
         <!-- Main Content -->
         <div class="main-wrap">
