@@ -2166,61 +2166,40 @@ function onPanelEscape(e) {
 
 // Tab Management
 function switchTab(tabName) {
-    // Prompts open in right panel instead of main
-    if (tabName === 'prompts') {
-        if (!authToken) {
-            showLoginModal();
-            return;
-        }
-        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-        const tabBtn = document.querySelector(`[data-tab="prompts"]`);
-        if (tabBtn) tabBtn.classList.add('active');
-        document.querySelectorAll('.tab-content').forEach(content => { content.style.display = 'none'; });
-        openPromptsPanel();
-        loadPrompts();
+    // Prompts require auth; show login and abort if not authenticated
+    if (tabName === 'prompts' && !authToken) {
+        showLoginModal();
         return;
     }
-    
-    // Ensure panel is closed when switching to another tab
+
+    // When switching to any other tab, close the right panel if it's open
     const panel = document.getElementById('rightPanel');
     if (panel && panel.classList.contains('is-open')) closePromptsPanel();
-    
+
     // Hide all tab contents
     document.querySelectorAll('.tab-content').forEach(content => {
         content.style.display = 'none';
     });
-    
+
     // Remove active class from all tab buttons
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.classList.remove('active');
     });
-    
-    // Show selected tab content
+
+    // Show selected tab content in main area
     const tabContent = document.getElementById(`${tabName}Tab`);
     if (tabContent) {
         tabContent.style.display = 'block';
     }
-    
+
     // Add active class to selected tab button
     const tabBtn = document.querySelector(`[data-tab="${tabName}"]`);
     if (tabBtn) {
         tabBtn.classList.add('active');
     }
-    
-    // Load prompts if switching to prompts tab (requires authentication)
+
+    // Load data when switching to specific tabs
     if (tabName === 'prompts') {
-        if (!authToken) {
-            showLoginModal();
-            // Switch back to content tab if not authenticated
-            setTimeout(() => {
-                switchTab('content');
-                const contentTabBtn = document.querySelector('[data-tab="content"]');
-                if (contentTabBtn) {
-                    contentTabBtn.classList.add('active');
-                }
-            }, 100);
-            return;
-        }
         loadPrompts();
     }
     

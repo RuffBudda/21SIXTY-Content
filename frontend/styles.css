@@ -183,9 +183,8 @@ body::before {
 }
 
 .main-wrap .main-content {
-    max-width: 1200px;
-    margin: 0 auto;
     width: 100%;
+    max-width: none;
 }
 
 /* Generate: single-column when no results, two-column when results exist */
@@ -195,14 +194,12 @@ body::before {
     gap: 24px;
     align-items: start;
     width: 100%;
-    max-width: 520px;
-    margin: 0 auto;
 }
 
 .generate-layout.has-results {
     grid-template-columns: 340px 1fr;
-    max-width: 1000px;
     gap: 32px;
+    width: 100%;
 }
 
 .generate-left {
@@ -274,7 +271,6 @@ body::before {
 @media (max-width: 900px) {
     .generate-layout.has-results {
         grid-template-columns: 1fr;
-        max-width: 520px;
     }
     .generate-layout.has-results .generate-left {
         max-width: none;
