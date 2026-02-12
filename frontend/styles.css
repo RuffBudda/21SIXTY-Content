@@ -6,18 +6,20 @@
 
 :root {
     --bg-primary: #000000;
-    --bg-secondary: #0a0a0a;
-    --bg-card: #171717;
+    --bg-secondary: #0f0f0f;
+    --bg-tertiary: #141414;
+    --bg-card: #1a1a1a;
     --text-primary: #fafafa;
-    --text-secondary: #a1a1a1;
-    --border-color: #262626;
+    --text-secondary: #a3a3a3;
+    --border-color: #2e2e2e;
+    --border-light: #383838;
     --accent: #ffffff;
-    --shadow: rgba(0, 0, 0, 0.25);
-    --glow-border: #262626;
+    --shadow: rgba(0, 0, 0, 0.3);
+    --glow-border: #2e2e2e;
     --glow-subtle: rgba(255, 255, 255, 0.04);
-    --glow-focus: rgba(255, 255, 255, 0.15);
-    --gradient-card: #171717;
-    --gradient-sidebar: #0a0a0a;
+    --glow-focus: rgba(255, 255, 255, 0.12);
+    --gradient-card: #1a1a1a;
+    --gradient-sidebar: #0f0f0f;
     --gradient-btn: #ffffff;
 }
 
@@ -30,14 +32,15 @@ body {
     font-size: 14px;
 }
 
-/* v0-style subtle background: very faint grid */
+/* v0-style subtle background: very faint grid + soft grey tint */
 body::before {
     content: '';
     position: fixed;
     inset: 0;
+    background-color: rgba(15, 15, 15, 0.4);
     background-image:
-        linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+        linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
     background-size: 64px 64px;
     pointer-events: none;
     z-index: 0;
@@ -51,14 +54,14 @@ body::before {
     z-index: 1;
 }
 
-/* Top Bar - Vercel-style */
+/* Top Bar - Vercel-style with subtle grey */
 .topbar {
     display: flex;
     align-items: center;
     justify-content: space-between;
     height: 56px;
     padding: 0 24px;
-    background: var(--bg-primary);
+    background: var(--bg-tertiary);
     border-bottom: 1px solid var(--border-color);
     flex-shrink: 0;
 }
@@ -118,9 +121,9 @@ body::before {
 
 .topbar-btn {
     padding: 6px 12px;
-    border: 1px solid var(--border-color);
+    border: 1px solid var(--border-light);
     border-radius: 6px;
-    background: transparent;
+    background: var(--bg-card);
     color: var(--text-primary);
     font-size: 0.8125rem;
     font-weight: 500;
@@ -129,7 +132,7 @@ body::before {
 }
 
 .topbar-btn:hover {
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--border-color);
     border-color: var(--text-secondary);
 }
 
@@ -137,7 +140,7 @@ body::before {
     padding: 4px 10px;
     border-radius: 9999px;
     background: var(--bg-card);
-    border: 1px solid var(--border-color);
+    border: 1px solid var(--border-light);
     font-size: 0.75rem;
     color: var(--text-secondary);
 }
@@ -158,12 +161,14 @@ body::before {
 }
 
 .topbar-nav .tab-btn:hover {
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--border-color);
 }
 
 .topbar-nav .tab-btn.active {
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--bg-card);
+    color: var(--text-primary);
     border-bottom: none;
+    border: 1px solid var(--border-light);
 }
 
 .main-wrap {
@@ -174,6 +179,7 @@ body::before {
     padding: 24px 32px 48px;
     overflow: auto;
     width: 100%;
+    background: var(--bg-secondary);
 }
 
 .main-wrap .main-content {
@@ -226,8 +232,8 @@ body::before {
     min-height: 200px;
     position: relative;
     border-radius: 12px;
-    border: 1px dashed var(--border-color);
-    background: var(--bg-secondary);
+    border: 1px dashed var(--border-light);
+    background: var(--bg-tertiary);
     overflow: hidden;
 }
 
@@ -320,7 +326,7 @@ body::before {
     display: none;
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.5);
+    background: rgba(0, 0, 0, 0.55);
     z-index: 1000;
 }
 
@@ -336,7 +342,7 @@ body::before {
     width: 100%;
     max-width: 480px;
     height: 100%;
-    background: var(--bg-secondary);
+    background: var(--bg-tertiary);
     border-left: 1px solid var(--border-color);
     box-shadow: -8px 0 40px var(--shadow);
     z-index: 1001;
@@ -379,7 +385,7 @@ body::before {
 
 .panel-close:hover {
     color: var(--text-primary);
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--border-color);
 }
 
 .panel-body {
