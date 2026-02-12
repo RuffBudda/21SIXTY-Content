@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CONTENT GEN</title>
     <link rel="icon" type="image/x-icon" href="/static/images/favicons/favicon.ico">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
     <link rel="stylesheet" href="styles.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
@@ -121,7 +121,7 @@
                 <button class="btn btn-secondary sidebar-btn" id="usageBtn">Usage</button>
             </nav>
             <div class="sidebar-footer">
-                <span class="version">v180</span>
+                <span class="version">v190</span>
                 <span class="openai-pill">
                     <span class="openai-label">OpenAI:</span>
                     <span class="openai-value" id="creditsValue">Fetching...</span>
@@ -872,6 +872,14 @@ console.log(data.youtube_summary);</code></pre>
             </div>
 
             <div class="generate-right">
+            <div class="generate-right-placeholder" id="generateRightPlaceholder">
+                <div class="placeholder-glow"></div>
+                <div class="placeholder-content">
+                    <span class="placeholder-icon" aria-hidden="true">◇</span>
+                    <h3>Generated content will appear here</h3>
+                    <p>Process an audio file, then generate content to see transcripts, summaries, blog posts, and more in this panel.</p>
+                </div>
+            </div>
             <nav class="section-nav" id="sectionNav" style="display: none;">
                 <a href="#section-transcript" class="section-nav-link">Transcript with Timecodes</a>
                 <a href="#section-youtube-summary" class="section-nav-link">YouTube Summary</a>

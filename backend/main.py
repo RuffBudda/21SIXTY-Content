@@ -39,7 +39,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="21SIXTY CONTENT GEN API", version="1.0.0")
+app = FastAPI(title="21SIXTY CONTENT GEN API", version="1.9.0")
 
 # CORS configuration
 allowed_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,https://contents.2160.media").split(",")
