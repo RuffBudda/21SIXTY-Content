@@ -84,10 +84,10 @@ You can get your API keys from:
 
 4. Run the application:
 ```bash
-uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+uvicorn main:app --host 0.0.0.0 --port 8001 --reload
 ```
 
-5. Open your browser to `http://localhost:8000`
+5. Open your browser to `http://localhost:8001`
 
 ## Usage
 
