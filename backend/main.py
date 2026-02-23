@@ -39,7 +39,7 @@ security = HTTPBearer(auto_error=False)
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.DEBUG,  # Set to DEBUG to see auth diagnostics
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
@@ -79,7 +79,6 @@ async def get_db():
 
 # Initialize file handler for cleanup (2 weeks = 336 hours)
 file_handler = FileHandler(upload_dir=youtube_service.upload_dir, max_age_hours=336)
-
 # Store MP3 file paths by video ID (in production, use Redis or database)
 # Format: {video_id: file_path}
 mp3_files = {}
@@ -128,6 +127,11 @@ async def startup_event():
         logger.info("=" * 50)
         logger.info("Starting Content Generator API")
         logger.info("=" * 50)
+        
+        # Log authentication setup
+        logger.info(f"🔐 Authentication enabled")
+        logger.info(f"   Master password: {MASTER_PASSWORD[:8]}..." if len(MASTER_PASSWORD) > 8 else f"   Master password loaded")
+        logger.info(f"   Password hash: {MASTER_PASSWORD_HASH[:16]}...")
         
         # Initialize database
         try:
@@ -183,9 +187,14 @@ def verify_password(password: str) -> bool:
 def verify_auth(credentials: Optional[HTTPAuthorizationCredentials]) -> bool:
     """Verify authentication token (compares against hashed environment password)"""
     if not credentials:
+        logger.debug("🔓 No credentials provided")
         return False
     token_hash = credentials.credentials
-    return token_hash == MASTER_PASSWORD_HASH
+    logger.debug(f"🔓 Token received: {token_hash[:16]}..." if len(token_hash) > 16 else f"🔓 Token received: {token_hash}")
+    logger.debug(f"   Expected: {MASTER_PASSWORD_HASH[:16]}...")
+    match = token_hash == MASTER_PASSWORD_HASH
+    logger.debug(f"   Match: {match}")
+    return match
 
 # Frontend path
 frontend_path = os.path.join(os.path.dirname(__file__), "..", "frontend")
@@ -746,11 +755,18 @@ async def login(password_data: Dict[str, str]):
     """Login endpoint to authenticate with master password"""
     try:
         password = password_data.get("password", "")
+        logger.debug(f"🔓 Login attempt with password: {password[:8]}..." if len(password) > 8 else f"🔓 Login attempt")
+        logger.debug(f"   Expected password: {MASTER_PASSWORD[:8]}..." if len(MASTER_PASSWORD) > 8 else f"   Expected password length: {len(MASTER_PASSWORD)}")
+        logger.debug(f"   Passwords match: {password == MASTER_PASSWORD}")
+        
         if verify_password(password):
             # Return hashed password as token (derived from environment password)
             token = MASTER_PASSWORD_HASH
+            logger.info(f"✓ Login successful for password")
+            logger.debug(f"   Returning token: {token[:16]}...")
             return {"success": True, "message": "Login successful", "token": token}
         else:
+            logger.warning(f"✗ Login failed - invalid credentials")
             raise HTTPException(status_code=401, detail="Invalid credentials")
     except HTTPException:
         raise
