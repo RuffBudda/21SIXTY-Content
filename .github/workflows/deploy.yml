@@ -46,7 +46,15 @@ jobs:
           
           # Restart the service
           sudo systemctl restart content-generator
-          sudo systemctl status content-generator --no-pager -l
+          sleep 3
+          
+          # Check service status
+          echo "=== Service Status ==="
+          sudo systemctl status content-generator --no-pager -l || true
+          
+          # Check for errors in logs
+          echo "=== Recent Logs ==="
+          sudo journalctl -u content-generator -n 50 --no-pager || true
           
     - name: Verify deployment
       uses: appleboy/ssh-action@v0.1.7

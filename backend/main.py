@@ -125,27 +125,46 @@ scheduler.add_job(
 @app.on_event("startup")
 async def startup_event():
     try:
+        logger.info("=" * 50)
+        logger.info("Starting Content Generator API")
+        logger.info("=" * 50)
+        
         # Initialize database
-        logger.info("Initializing database...")
-        await init_db()
-        logger.info("Database tables created successfully")
+        try:
+            logger.info("Initializing database...")
+            await init_db()
+            logger.info("✓ Database tables created successfully")
+        except Exception as db_err:
+            logger.error(f"⚠ Database initialization error (app will continue): {str(db_err)}", exc_info=True)
         
         # Initialize prompt templates
-        async with AsyncSessionLocal() as session:
-            await init_prompt_templates(session)
-        logger.info("Prompt templates initialized")
+        try:
+            logger.info("Initializing prompt templates...")
+            async with AsyncSessionLocal() as session:
+                await init_prompt_templates(session)
+            logger.info("✓ Prompt templates initialized")
+        except Exception as template_err:
+            logger.error(f"⚠ Prompt template initialization error (app will continue): {str(template_err)}", exc_info=True)
         
         # Start scheduler
-        scheduler.start()
-        logger.info("Scheduler started. Periodic cleanup will run every 2 weeks.")
+        try:
+            logger.info("Starting background scheduler...")
+            scheduler.start()
+            logger.info("✓ Scheduler started - periodic cleanup will run every 2 weeks")
+            
+            # Run initial cleanup check
+            await periodic_cleanup()
+            logger.info("✓ Initial cleanup check completed")
+        except Exception as scheduler_err:
+            logger.error(f"⚠ Scheduler error (app will continue): {str(scheduler_err)}", exc_info=True)
         
-        # Run initial cleanup check
-        await periodic_cleanup()
-        logger.info("Startup event completed successfully")
+        logger.info("=" * 50)
+        logger.info("✅ Application startup completed successfully")
+        logger.info("=" * 50)
+        
     except Exception as e:
-        logger.error(f"Error during startup: {str(e)}", exc_info=True)
-        # Don't raise, allow app to start even if db init fails - will retry on first request
-        logger.warning("App starting without full initialization - database will be initialized on first request")
+        logger.error(f"Unexpected startup error: {str(e)}", exc_info=True)
+        logger.warning("App continuing despite startup errors")
 
 @app.on_event("shutdown")
 async def shutdown_event():
@@ -201,8 +220,20 @@ async def serve_frontend():
 
 @app.get("/api/health")
 async def health_check():
-    """Health check endpoint"""
-    return {"status": "healthy"}
+    """Health check endpoint - simple status without dependencies"""
+    try:
+        return {
+            "status": "healthy",
+            "version": "1.9.0",
+            "timestamp": datetime.utcnow().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Health check error: {str(e)}", exc_info=True)
+        return {
+            "status": "degraded",
+            "error": str(e),
+            "timestamp": datetime.utcnow().isoformat()
+        }
 
 @app.post("/api/process-video", response_model=ProcessVideoResponse)
 async def process_video(
