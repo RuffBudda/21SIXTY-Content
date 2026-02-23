@@ -547,7 +547,7 @@
             <div id="apiTab" class="tab-content" style="display: none;">
                 <div class="card" style="margin-bottom: 20px;">
                     <div class="accordion-item" style="border: none;">
-                        <div class="accordion-header" id="apiAccordionHeader" style="cursor: pointer; padding: 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color);" onclick="toggleAccordion('apiAccordion')">
+                        <div class="accordion-header" id="apiAccordionHeader" style="padding: 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color);" onclick="toggleAccordion('apiAccordion')">
                             <div style="display: flex; align-items: center; gap: 15px;">
                                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--primary);">
                                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
@@ -631,7 +631,7 @@
                             <p style="margin-bottom: 10px;"><strong>POST</strong> <code>/api/generate-content</code></p>
                             <p style="margin-bottom: 10px;">Generates all content types in a single request.</p>
                             <details style="margin-top: 10px;">
-                                <summary style="cursor: pointer; color: var(--primary); margin-bottom: 10px;">Request Body</summary>
+                                <summary style="color: var(--primary); margin-bottom: 10px;">Request Body</summary>
                                 <pre style="background: var(--card-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); overflow-x: auto; margin-top: 10px;"><code>{
   "transcript": "Full transcript text...",
   "transcript_with_timecodes": [
@@ -647,7 +647,7 @@
 }</code></pre>
                             </details>
                             <details style="margin-top: 10px;">
-                                <summary style="cursor: pointer; color: var(--primary); margin-bottom: 10px;">Response</summary>
+                                <summary style="color: var(--primary); margin-bottom: 10px;">Response</summary>
                                 <pre style="background: var(--card-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); overflow-x: auto; margin-top: 10px;"><code>{
   "youtube_summary": "3 paragraph summary...",
   "blog_post": "2000 word blog post...",
@@ -678,7 +678,7 @@
                                 <li><code>hashtags</code></li>
                             </ul>
                             <details style="margin-top: 10px;">
-                                <summary style="cursor: pointer; color: var(--primary); margin-bottom: 10px;">Example Request</summary>
+                                <summary style="color: var(--primary); margin-bottom: 10px;">Example Request</summary>
                                 <pre style="background: var(--card-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); overflow-x: auto; margin-top: 10px;"><code>POST /api/generate-content/youtube_summary
 Authorization: Bearer YOUR_TOKEN_HERE
 Content-Type: application/json
@@ -695,7 +695,7 @@ Content-Type: application/json
 }</code></pre>
                             </details>
                             <details style="margin-top: 10px;">
-                                <summary style="cursor: pointer; color: var(--primary); margin-bottom: 10px;">Example Response</summary>
+                                <summary style="color: var(--primary); margin-bottom: 10px;">Example Response</summary>
                                 <pre style="background: var(--card-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); overflow-x: auto; margin-top: 10px;"><code>{
   "youtube_summary": "3 paragraph summary..."
 }</code></pre>

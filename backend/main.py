@@ -212,15 +212,7 @@ async def process_video(
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)
 ):
     """Process uploaded audio file"""
-    # #region agent log
-    import json
-    try:
-        log_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '.cursor', 'debug.log')
-        with open(log_path, 'a', encoding='utf-8') as f:
-            f.write(json.dumps({"location":"main.py:177","message":"process_video endpoint called","data":{"audio_file_received":audio_file is not None,"audio_file_filename":audio_file.filename if audio_file else None,"credentials_present":credentials is not None},"timestamp":int(time.time()*1000),"sessionId":"debug-session","runId":"run1","hypothesisId":"D"})+"\n")
-    except Exception as e:
-        logger.error(f"Debug log error: {e}")
-    # #endregion
+    
     if not verify_auth(credentials):
         raise HTTPException(status_code=401, detail="Authentication required")
     
