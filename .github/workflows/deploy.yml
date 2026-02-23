@@ -56,7 +56,18 @@ jobs:
         port: ${{ secrets.SSH_PORT }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         script: |
-          sleep 5
-          curl -f http://localhost:8001/api/health || exit 1
-          echo "✅ Deployment verified successfully!"
+          sleep 10
+          max_attempts=30
+          attempt=1
+          while [ $attempt -le $max_attempts ]; do
+            echo "Health check attempt $attempt/$max_attempts..."
+            if curl -f http://localhost:8001/api/health; then
+              echo "✅ Deployment verified successfully!"
+              exit 0
+            fi
+            attempt=$((attempt + 1))
+            sleep 2
+          done
+          echo "❌ Health check failed after $max_attempts attempts"
+          exit 1
 

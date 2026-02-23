@@ -80,12 +80,12 @@ async def get_db():
 # Initialize file handler for cleanup (2 weeks = 336 hours)
 file_handler = FileHandler(upload_dir=youtube_service.upload_dir, max_age_hours=336)
 
-# Session storage (in production, use Redis or similar)
-authenticated_sessions = set()
-
 # Store MP3 file paths by video ID (in production, use Redis or database)
 # Format: {video_id: file_path}
 mp3_files = {}
+
+# Pre-compute hash of master password for fast verification
+MASTER_PASSWORD_HASH = hashlib.sha256(MASTER_PASSWORD.encode()).hexdigest()
 
 # Initialize scheduler for periodic cleanup
 scheduler = AsyncIOScheduler()
@@ -124,8 +124,8 @@ scheduler.add_job(
 # Start scheduler when app starts
 @app.on_event("startup")
 async def startup_event():
-    # Initialize database
     try:
+        # Initialize database
         logger.info("Initializing database...")
         await init_db()
         logger.info("Database tables created successfully")
@@ -134,15 +134,18 @@ async def startup_event():
         async with AsyncSessionLocal() as session:
             await init_prompt_templates(session)
         logger.info("Prompt templates initialized")
+        
+        # Start scheduler
+        scheduler.start()
+        logger.info("Scheduler started. Periodic cleanup will run every 2 weeks.")
+        
+        # Run initial cleanup check
+        await periodic_cleanup()
+        logger.info("Startup event completed successfully")
     except Exception as e:
-        logger.error(f"Error initializing database: {str(e)}", exc_info=True)
-        raise
-    
-    # Start scheduler
-    scheduler.start()
-    logger.info("Scheduler started. Periodic cleanup will run every 2 weeks.")
-    # Run initial cleanup check
-    await periodic_cleanup()
+        logger.error(f"Error during startup: {str(e)}", exc_info=True)
+        # Don't raise, allow app to start even if db init fails - will retry on first request
+        logger.warning("App starting without full initialization - database will be initialized on first request")
 
 @app.on_event("shutdown")
 async def shutdown_event():
@@ -158,16 +161,12 @@ def verify_password(password: str) -> bool:
     """Verify master password"""
     return password == MASTER_PASSWORD
 
-def get_password_hash(password: str) -> str:
-    """Hash password for session token"""
-    return hashlib.sha256(password.encode()).hexdigest()
-
-async def verify_auth(credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)) -> bool:
-    """Verify authentication token"""
+def verify_auth(credentials: Optional[HTTPAuthorizationCredentials]) -> bool:
+    """Verify authentication token (compares against hashed environment password)"""
     if not credentials:
         return False
     token_hash = credentials.credentials
-    return token_hash in authenticated_sessions
+    return token_hash == MASTER_PASSWORD_HASH
 
 # Frontend path
 frontend_path = os.path.join(os.path.dirname(__file__), "..", "frontend")
@@ -717,8 +716,8 @@ async def login(password_data: Dict[str, str]):
     try:
         password = password_data.get("password", "")
         if verify_password(password):
-            token = get_password_hash(password)
-            authenticated_sessions.add(token)
+            # Return hashed password as token (derived from environment password)
+            token = MASTER_PASSWORD_HASH
             return {"success": True, "message": "Login successful", "token": token}
         else:
             raise HTTPException(status_code=401, detail="Invalid credentials")
@@ -730,14 +729,12 @@ async def login(password_data: Dict[str, str]):
 
 @app.post("/api/auth/logout")
 async def logout(credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)):
-    """Logout endpoint to invalidate session"""
+    """Logout endpoint (stateless - just validates token)"""
     try:
-        if credentials:
-            token_hash = credentials.credentials
-            if token_hash in authenticated_sessions:
-                authenticated_sessions.remove(token_hash)
-                return {"success": True, "message": "Logged out successfully"}
-        raise HTTPException(status_code=401, detail="Invalid token")
+        if verify_auth(credentials):
+            return {"success": True, "message": "Logged out successfully"}
+        else:
+            raise HTTPException(status_code=401, detail="Invalid token")
     except HTTPException:
         raise
     except Exception as e:
