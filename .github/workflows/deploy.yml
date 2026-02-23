@@ -25,36 +25,94 @@ jobs:
           set -e  # Exit immediately if any command fails
           cd /opt/content-generator
           
-          # Ensure we're on main branch
+          echo "========== GIT UPDATE =========="
           git checkout main 2>/dev/null || true
-          
-          # Fetch latest from GitHub
           git fetch origin main
-          
-          # Reset to match GitHub exactly (discard any local changes)
           git reset --hard origin/main
-          
-          # Clean up any untracked files
           git clean -fd
-          
           echo "✅ Updated to commit: $(git log -1 --oneline)"
           
-          # Update backend dependencies
+          echo ""
+          echo "========== DEPENDENCY INSTALLATION =========="
           cd backend
           source venv/bin/activate
-          pip install -r requirements.txt --upgrade --quiet
           
-          # Restart the service
+          # Show Python version
+          echo "Python: $(python --version)"
+          echo "Pip: $(pip --version)"
+          
+          # Install with verbose output to see errors
+          echo "Installing requirements..."
+          pip install -r requirements.txt --upgrade
+          
+          # List installed packages
+          echo ""
+          echo "========== INSTALLED PACKAGES =========="
+          pip list | grep -E "sqlalchemy|aiosqlite|fastapi|uvicorn" || true
+          
+          # Test Python imports
+          echo ""
+          echo "========== TESTING IMPORTS =========="
+          python -c "
+import sys
+print('Testing critical imports...')
+try:
+    import fastapi
+    print('✓ fastapi')
+except Exception as e:
+    print('✗ fastapi:', e)
+    sys.exit(1)
+try:
+    from dotenv import load_dotenv
+    print('✓ dotenv')
+except Exception as e:
+    print('✗ dotenv:', e)
+    sys.exit(1)
+try:
+    import sqlalchemy
+    print('✓ sqlalchemy')
+except Exception as e:
+    print('✗ sqlalchemy:', e)
+    sys.exit(1)
+try:
+    import aiosqlite
+    print('✓ aiosqlite')
+except Exception as e:
+    print('✗ aiosqlite:', e)
+    sys.exit(1)
+print('All imports successful!')
+" || exit 1
+          
+          # Test main.py syntax
+          echo ""
+          echo "========== TESTING MAIN.PY SYNTAX =========="
+          python -m py_compile main.py && echo "✓ main.py syntax OK" || exit 1
+          
+          # Check .env file
+          echo ""
+          echo "========== CHECKING .env =========="
+          if [ -f .env ]; then
+            echo "✓ .env file exists"
+            echo "  MASTER_PASSWORD set: $(grep -q 'MASTER_PASSWORD=' .env && echo 'YES' || echo 'NO')"
+          else
+            echo "✗ .env file NOT FOUND"
+            exit 1
+          fi
+          
+          echo ""
+          echo "========== RESTARTING SERVICE =========="
           sudo systemctl restart content-generator
           sleep 3
           
           # Check service status
-          echo "=== Service Status ==="
-          sudo systemctl status content-generator --no-pager -l || true
+          echo ""
+          echo "========== SERVICE STATUS =========="
+          sudo systemctl status content-generator --no-pager || true
           
-          # Check for errors in logs
-          echo "=== Recent Logs ==="
-          sudo journalctl -u content-generator -n 50 --no-pager || true
+          # Show recent logs
+          echo ""
+          echo "========== RECENT SERVICE LOGS =========="
+          sudo journalctl -u content-generator -n 100 --no-pager || true
           
     - name: Verify deployment
       uses: appleboy/ssh-action@v0.1.7
