@@ -287,6 +287,7 @@ class ContentGenerator:
         return timestamps if timestamps else ["00:00:00 - Introduction"]
     
     # Original methods preserved for backward compatibility
+    async def generate_all_content(
         self,
         transcript: str,
         transcript_with_timecodes: List[dict],
