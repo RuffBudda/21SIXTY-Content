@@ -1,0 +1,56 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv
+
+# Environment variables
+.env
+.env.local
+
+# Uploads
+uploads/
+*.mp3
+*.mp4
+*.webm
+
+# Cookies (security sensitive)
+cookies.txt
+*.cookies
+cookies/
+backend/cookies/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Markdown files (keep only README.md for GitHub)
+*.md
+!README.md
+
+# Documentation folder (internal docs)
+Documentations/
+# Content Generator feature documentation (for AI agents)
+Documentations/ContGen.md
+# Update documentation files
+Documentations/updatev*.md
+
+# Update documentation files
+updatev*.md
+!Documentations/updatev*.md
+

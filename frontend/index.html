@@ -1,0 +1,1246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CONTENT GEN</title>
+    <link rel="icon" type="image/x-icon" href="/static/images/favicons/favicon.ico">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <!-- Login Modal -->
+    <div id="loginModal" class="modal">
+        <div class="modal-content">
+            <div class="login-logo-container">
+                <img src="/static/images/logos/logo.png" alt="21SIXTY Logo" class="login-logo" onerror="this.onerror=null; this.src='/static/images/logo.svg';">
+            </div>
+            <h2>Authentication Required</h2>
+            <p>Please enter the master password to access the tool.</p>
+            <div class="input-group">
+                <label for="passwordInput">Master Password</label>
+                <div class="password-input-wrapper">
+                    <input type="password" id="passwordInput" placeholder="Enter password" autocomplete="current-password" />
+                    <button type="button" class="password-toggle" id="passwordToggle" aria-label="Toggle password visibility">
+                        <svg class="eye-icon eye-open" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                            <circle cx="12" cy="12" r="3"></circle>
+                        </svg>
+                        <svg class="eye-icon eye-closed" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
+                            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                            <line x1="1" y1="1" x2="23" y2="23"></line>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div class="input-group remember-me-group">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="rememberMe" checked>
+                    <span>Remember</span>
+                </label>
+            </div>
+            <div id="loginError" class="error-message" style="display: none;"></div>
+            <button class="btn btn-primary" id="loginBtn">Login</button>
+        </div>
+    </div>
+
+    <!-- Right panel overlay and container (Prompts Editor) - outside login so it can open when logged in -->
+    <div id="panelOverlay" class="panel-overlay" aria-hidden="true"></div>
+    <div id="rightPanel" class="panel panel-right" aria-hidden="true">
+        <div class="panel-header">
+            <h2 class="panel-title">Prompts Editor</h2>
+            <button type="button" class="panel-close" id="closePanelBtn" title="Close">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+        </div>
+        <div class="panel-body" id="panelContent"></div>
+    </div>
+
+    <!-- Usage Modal -->
+    <div id="usageModal" class="modal">
+        <div class="modal-content usage-modal-content">
+            <div class="usage-modal-header">
+                <h2>Usage Dashboard</h2>
+                <button class="usage-close-btn" id="closeUsageModal" title="Close">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            
+            <div class="usage-dashboard">
+                <!-- Row 1: Total Costs -->
+                <div class="usage-row">
+                    <div class="usage-total-card">
+                        <div class="usage-heading">Total OpenAI Cost</div>
+                        <div class="usage-total-value" id="totalOpenAICost">$0.00</div>
+                    </div>
+                    <div class="usage-total-card">
+                        <div class="usage-heading">Total AssemblyAI Cost</div>
+                        <div class="usage-total-value" id="totalAssemblyAICost">$0.00</div>
+                    </div>
+                </div>
+                
+                <!-- Row 2: Charts -->
+                <div class="usage-row">
+                    <div class="usage-chart-card">
+                        <div class="usage-heading">Monthly Usage ($)</div>
+                        <div class="usage-chart-wrapper">
+                            <canvas id="monthlyUsageChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="usage-chart-card">
+                        <div class="usage-heading">Cumulative Usage ($)</div>
+                        <div class="usage-chart-wrapper">
+                            <canvas id="cumulativeUsageChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Billing Footer -->
+                <div class="usage-billing-footer">
+                    <span class="usage-billing-text">Auth with Google SSO • <a href="https://platform.openai.com/settings/organization/billing/" target="_blank" class="usage-billing-link">OpenAI Billing</a> • <a href="https://www.assemblyai.com/dashboard/cost" target="_blank" class="usage-billing-link">AssemblyAI Billing</a></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="app-layout" id="mainContainer" style="display: none;">
+        <!-- Top Bar -->
+        <header class="topbar">
+            <div class="topbar-left">
+                <img src="/static/images/logos/logo.png" alt="Logo" class="topbar-logo" onerror="this.onerror=null; this.src='/static/images/logo.svg';">
+                <span class="topbar-title">CONTENT GEN</span>
+                <nav class="topbar-nav">
+                    <button class="tab-btn topbar-link active" data-tab="content">Content Generator</button>
+                    <button class="tab-btn topbar-link" data-tab="gallery">Projects Gallery</button>
+                    <button class="tab-btn topbar-link" data-tab="prompts">Prompts Editor</button>
+                    <button class="tab-btn topbar-link" data-tab="api">API</button>
+                </nav>
+            </div>
+            <div class="topbar-right">
+                <button class="topbar-btn" id="usageBtn">Usage</button>
+                <span class="topbar-pill version">v190</span>
+                <span class="topbar-pill openai-pill">
+                    <span class="openai-label">OpenAI:</span>
+                    <span class="openai-value" id="creditsValue">Fetching...</span>
+                </span>
+                <span class="topbar-pill openai-pill">
+                    <span class="openai-label">AssemblyAI:</span>
+                    <span class="openai-value" id="assemblyaiValue">Checking...</span>
+                </span>
+                <button class="topbar-btn topbar-logout" id="logoutBtn">Logout</button>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <div class="main-wrap">
+        <main class="main-content">
+            <!-- Prompts Tab -->
+            <div id="promptsTab" class="tab-content" style="display: none;">
+                <div class="card">
+                    <div class="prompts-header">
+                        <div>
+                            <h2>OpenAI Prompts Editor</h2>
+                            <p class="info-text">View and edit prompts used for generating content. Click "Expand" to view full prompt, "Edit" to modify (password required).</p>
+                        </div>
+                        <div class="prompts-actions-header">
+                            <button class="btn btn-secondary" id="resetPromptsBtn">Reset to Default</button>
+                            <button class="btn btn-primary" id="savePromptsBtn">Save All Prompts</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Available Variables Reference -->
+                    <div class="variables-reference">
+                        <div class="variables-header">
+                            <h3>Available Variables</h3>
+                            <p class="variables-subtitle">Click any variable to copy it to your clipboard</p>
+                        </div>
+                        <div class="variables-grid">
+                            <div class="variable-item" data-variable="{guest_name}">
+                                <div class="variable-content">
+                                    <code class="variable-code">{guest_name}</code>
+                                    <button class="variable-copy-btn" title="Copy variable">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                                <p class="variable-description">Guest's full name</p>
+                            </div>
+                            
+                            <div class="variable-item" data-variable="{guest_title}">
+                                <div class="variable-content">
+                                    <code class="variable-code">{guest_title}</code>
+                                    <button class="variable-copy-btn" title="Copy variable">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                                <p class="variable-description">Guest's job title or role</p>
+                            </div>
+                            
+                            <div class="variable-item" data-variable="{guest_company}">
+                                <div class="variable-content">
+                                    <code class="variable-code">{guest_company}</code>
+                                    <button class="variable-copy-btn" title="Copy variable">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                                <p class="variable-description">Guest's company or organization name</p>
+                            </div>
+                            
+                            <div class="variable-item" data-variable="{guest_linkedin}">
+                                <div class="variable-content">
+                                    <code class="variable-code">{guest_linkedin}</code>
+                                    <button class="variable-copy-btn" title="Copy variable">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                                <p class="variable-description">Guest's LinkedIn profile URL</p>
+                            </div>
+                            
+                            <div class="variable-item" data-variable="{transcript}">
+                                <div class="variable-content">
+                                    <code class="variable-code">{transcript}</code>
+                                    <button class="variable-copy-btn" title="Copy variable">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                                <p class="variable-description">Full episode transcript text (auto-truncated per prompt type)</p>
+                            </div>
+                            
+                            <div class="variable-item" data-variable="{transcript_with_timecodes}">
+                                <div class="variable-content">
+                                    <code class="variable-code">{transcript_with_timecodes}</code>
+                                    <button class="variable-copy-btn" title="Copy variable">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                                <p class="variable-description">Transcript with timestamps formatted as [HH:MM:SS] (for quotes and chapters)</p>
+                            </div>
+                            
+                            <div class="variable-item" data-variable="{video_title}">
+                                <div class="variable-content">
+                                    <code class="variable-code">{video_title}</code>
+                                    <button class="variable-copy-btn" title="Copy variable">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                                <p class="variable-description">Audio file or video title</p>
+                            </div>
+                            
+                            <div class="variable-item" data-variable="{video_duration}">
+                                <div class="variable-content">
+                                    <code class="variable-code">{video_duration}</code>
+                                    <button class="variable-copy-btn" title="Copy variable">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                                <p class="variable-description">Video/audio duration in seconds</p>
+                            </div>
+                            
+                            <div class="variable-item" data-variable="{standard_static_content}">
+                                <div class="variable-content">
+                                    <code class="variable-code">{standard_static_content}</code>
+                                    <button class="variable-copy-btn" title="Copy variable">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                                <p class="variable-description">Standard static content (manually entered)</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="prompts-tiles-grid">
+                        <!-- Standard Static Content Tile -->
+                        <div class="prompt-tile" data-prompt-id="standard_static_content">
+                            <div class="prompt-tile-header">
+                                <div class="prompt-tile-title-group">
+                                    <h3>Standard Static Content</h3>
+                                </div>
+                                <div class="prompt-tile-actions">
+                                    <button class="btn-icon btn-expand" data-action="expand" data-target="standard_static_content" title="Expand/Collapse">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                                    </button>
+                                    <button class="btn-icon btn-edit" data-action="edit" data-target="standard_static_content" title="Edit">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="prompt-tile-preview" data-preview="standard_static_content"></div>
+                            <div class="prompt-tile-content" style="display: none;">
+                                <textarea id="standardStaticContent" class="prompt-textarea" readonly placeholder="Enter standard static content (e.g., subscribe links, social media links, etc.)..."></textarea>
+                                <div style="margin-top: 15px; padding: 10px; background: var(--bg-secondary); border-radius: 8px; border: 1px solid var(--border-color);">
+                                    <p style="margin: 0; font-size: 0.9rem; color: var(--text-secondary);">
+                                        <strong>Variable:</strong> <code style="color: var(--accent-cyan);">{standard_static_content}</code> - Use this variable in prompts to include the standard static content.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- YouTube Summary Tile -->
+                        <div class="prompt-tile" data-prompt-id="youtube_summary">
+                            <div class="prompt-tile-header">
+                                <div class="prompt-tile-title-group">
+                                    <h3>YouTube Summary</h3>
+                                </div>
+                                <div class="prompt-tile-actions">
+                                    <button class="btn-icon btn-expand" data-action="expand" data-target="youtube_summary" title="Expand/Collapse">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                                    </button>
+                                    <button class="btn-icon btn-edit" data-action="edit" data-target="youtube_summary" title="Edit (Password Required)">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="prompt-tile-preview" data-preview="youtube_summary"></div>
+                            <div class="prompt-tile-content" style="display: none;">
+                                <textarea id="prompt_youtube_summary" class="prompt-textarea" readonly placeholder="Enter YouTube summary prompt..."></textarea>
+                            </div>
+                        </div>
+                        
+                        <!-- Blog Post Tile -->
+                        <div class="prompt-tile" data-prompt-id="blog_post">
+                            <div class="prompt-tile-header">
+                                <div class="prompt-tile-title-group">
+                                    <h3>Blog Post</h3>
+                                </div>
+                                <div class="prompt-tile-actions">
+                                    <button class="btn-icon btn-expand" data-action="expand" data-target="blog_post" title="Expand/Collapse">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                                    </button>
+                                    <button class="btn-icon btn-edit" data-action="edit" data-target="blog_post" title="Edit (Password Required)">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="prompt-tile-preview" data-preview="blog_post"></div>
+                            <div class="prompt-tile-content" style="display: none;">
+                                <textarea id="prompt_blog_post" class="prompt-textarea" readonly placeholder="Enter blog post prompt..."></textarea>
+                            </div>
+                        </div>
+                        
+                        <!-- Clickbait Titles Tile -->
+                        <div class="prompt-tile" data-prompt-id="clickbait_titles">
+                            <div class="prompt-tile-header">
+                                <div class="prompt-tile-title-group">
+                                    <h3>Clickbait Titles</h3>
+                                </div>
+                                <div class="prompt-tile-actions">
+                                    <button class="btn-icon btn-expand" data-action="expand" data-target="clickbait_titles" title="Expand/Collapse">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                                    </button>
+                                    <button class="btn-icon btn-edit" data-action="edit" data-target="clickbait_titles" title="Edit (Password Required)">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="prompt-tile-preview" data-preview="clickbait_titles"></div>
+                            <div class="prompt-tile-content" style="display: none;">
+                                <textarea id="prompt_clickbait_titles" class="prompt-textarea" readonly placeholder="Enter clickbait titles prompt..."></textarea>
+                            </div>
+                        </div>
+                        
+                        <!-- One Line Summary Tile -->
+                        <div class="prompt-tile" data-prompt-id="two_line_summary">
+                            <div class="prompt-tile-header">
+                                <div class="prompt-tile-title-group">
+                                    <h3>One Line Summary</h3>
+                                </div>
+                                <div class="prompt-tile-actions">
+                                    <button class="btn-icon btn-expand" data-action="expand" data-target="two_line_summary" title="Expand/Collapse">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                                    </button>
+                                    <button class="btn-icon btn-edit" data-action="edit" data-target="two_line_summary" title="Edit (Password Required)">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="prompt-tile-preview" data-preview="two_line_summary"></div>
+                            <div class="prompt-tile-content" style="display: none;">
+                                <textarea id="prompt_two_line_summary" class="prompt-textarea" readonly placeholder="Enter one line summary prompt..."></textarea>
+                            </div>
+                        </div>
+                        
+                        <!-- Quotes Tile -->
+                        <div class="prompt-tile" data-prompt-id="quotes">
+                            <div class="prompt-tile-header">
+                                <div class="prompt-tile-title-group">
+                                    <h3>Quotes</h3>
+                                </div>
+                                <div class="prompt-tile-actions">
+                                    <button class="btn-icon btn-expand" data-action="expand" data-target="quotes" title="Expand/Collapse">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                                    </button>
+                                    <button class="btn-icon btn-edit" data-action="edit" data-target="quotes" title="Edit (Password Required)">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="prompt-tile-preview" data-preview="quotes"></div>
+                            <div class="prompt-tile-content" style="display: none;">
+                                <textarea id="prompt_quotes" class="prompt-textarea" readonly placeholder="Enter quotes prompt..."></textarea>
+                            </div>
+                        </div>
+                        
+                        <!-- Chapter Timestamps Tile -->
+                        <div class="prompt-tile" data-prompt-id="chapter_timestamps">
+                            <div class="prompt-tile-header">
+                                <div class="prompt-tile-title-group">
+                                    <h3>Chapter Timestamps</h3>
+                                </div>
+                                <div class="prompt-tile-actions">
+                                    <button class="btn-icon btn-expand" data-action="expand" data-target="chapter_timestamps" title="Expand/Collapse">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                                    </button>
+                                    <button class="btn-icon btn-edit" data-action="edit" data-target="chapter_timestamps" title="Edit (Password Required)">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="prompt-tile-preview" data-preview="chapter_timestamps"></div>
+                            <div class="prompt-tile-content" style="display: none;">
+                                <textarea id="prompt_chapter_timestamps" class="prompt-textarea" readonly placeholder="Enter chapter timestamps prompt..."></textarea>
+                            </div>
+                        </div>
+                        
+                        <!-- LinkedIn Post Tile -->
+                        <div class="prompt-tile" data-prompt-id="linkedin_post">
+                            <div class="prompt-tile-header">
+                                <div class="prompt-tile-title-group">
+                                    <h3>LinkedIn Post</h3>
+                                </div>
+                                <div class="prompt-tile-actions">
+                                    <button class="btn-icon btn-expand" data-action="expand" data-target="linkedin_post" title="Expand/Collapse">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                                    </button>
+                                    <button class="btn-icon btn-edit" data-action="edit" data-target="linkedin_post" title="Edit (Password Required)">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="prompt-tile-preview" data-preview="linkedin_post"></div>
+                            <div class="prompt-tile-content" style="display: none;">
+                                <textarea id="prompt_linkedin_post" class="prompt-textarea" readonly placeholder="Enter LinkedIn post prompt..."></textarea>
+                            </div>
+                        </div>
+                        
+                        <!-- Keywords Tile -->
+                        <div class="prompt-tile" data-prompt-id="keywords">
+                            <div class="prompt-tile-header">
+                                <div class="prompt-tile-title-group">
+                                    <h3>Keywords</h3>
+                                </div>
+                                <div class="prompt-tile-actions">
+                                    <button class="btn-icon btn-expand" data-action="expand" data-target="keywords" title="Expand/Collapse">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                                    </button>
+                                    <button class="btn-icon btn-edit" data-action="edit" data-target="keywords" title="Edit (Password Required)">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="prompt-tile-preview" data-preview="keywords"></div>
+                            <div class="prompt-tile-content" style="display: none;">
+                                <textarea id="prompt_keywords" class="prompt-textarea" readonly placeholder="Enter keywords prompt..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="promptsStatus" class="status-message"></div>
+                </div>
+            </div>
+            
+            <!-- Password Verification Modal for Edit -->
+            <div id="editPasswordModal" class="modal" style="display: none;">
+                <div class="modal-content" style="max-width: 400px;">
+                    <h2>Password Required</h2>
+                    <p>Enter master password to edit this prompt.</p>
+                    <div class="input-group">
+                        <label for="editPasswordInput">Master Password</label>
+                        <input type="password" id="editPasswordInput" placeholder="Enter password" autocomplete="current-password" />
+                    </div>
+                    <div id="editPasswordError" class="error-message" style="display: none;"></div>
+                    <div style="display: flex; gap: 10px; margin-top: 20px;">
+                        <button class="btn btn-secondary" id="cancelEditBtn" style="flex: 1;">Cancel</button>
+                        <button class="btn btn-primary" id="confirmEditBtn" style="flex: 1;">Verify</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Save Warnings Modal -->
+            <div id="saveWarningsModal" class="modal" style="display: none;">
+                <div class="modal-content" style="max-width: 600px;">
+                    <h2 style="color: #f44336; margin-bottom: 15px;">⚠️ Warning: Prompt Changes</h2>
+                    <div class="warning-content">
+                        <p style="font-weight: 600; margin-bottom: 15px; color: var(--text-primary);">Changing prompts will affect all future content generation deliverables:</p>
+                        <ul style="text-align: left; margin: 15px 0; padding-left: 25px; color: var(--text-primary);">
+                            <li>All newly generated content will use the updated prompts</li>
+                            <li>Existing generated content will NOT be affected</li>
+                            <li>Changes will impact: YouTube Summary, Blog Post, Titles, Quotes, LinkedIn Posts, Keywords, and all other deliverables</li>
+                            <li>This action cannot be easily undone</li>
+                        </ul>
+                        <p style="font-weight: 600; color: #f44336; margin-top: 20px;">Are you absolutely sure you want to save these changes?</p>
+                    </div>
+                    <div style="display: flex; gap: 10px; margin-top: 25px;">
+                        <button class="btn btn-secondary" id="cancelSaveBtn" style="flex: 1;">Cancel</button>
+                        <button class="btn btn-primary" id="confirmSaveBtn" style="flex: 1; background-color: #f44336; border-color: #f44336;">Yes, Save Changes</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Projects Gallery Tab -->
+            <div id="galleryTab" class="tab-content" style="display: none;">
+                <div class="card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h2>Projects Gallery</h2>
+                        <button class="btn btn-secondary" id="refreshGalleryBtn">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
+                                <polyline points="23 4 23 10 17 10"></polyline>
+                                <polyline points="1 20 1 14 7 14"></polyline>
+                                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                            </svg>
+                            Refresh
+                        </button>
+                    </div>
+                    <p class="info-text" style="margin-bottom: 20px;">Browse and open your previously processed projects from local storage.</p>
+                    <div id="galleryContainer" class="gallery-container">
+                        <div class="gallery-empty" id="galleryEmpty">
+                            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.5; margin-bottom: 16px;">
+                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                <line x1="9" y1="3" x2="9" y2="21"></line>
+                            </svg>
+                            <p>No projects found in local storage.</p>
+                            <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 8px;">Process a video to create your first project.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Text Gen API Tab -->
+            <div id="apiTab" class="tab-content" style="display: none;">
+                <div class="card" style="margin-bottom: 20px;">
+                    <div class="accordion-item" style="border: none;">
+                        <div class="accordion-header" id="apiAccordionHeader" style="cursor: pointer; padding: 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color);" onclick="toggleAccordion('apiAccordion')">
+                            <div style="display: flex; align-items: center; gap: 15px;">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--primary);">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                    <polyline points="14 2 14 8 20 8"></polyline>
+                                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                                </svg>
+                                <div>
+                                    <h3 style="margin: 0; color: var(--text-primary);">Text Gen API</h3>
+                                    <p style="margin: 5px 0 0 0; color: var(--text-secondary); font-size: 0.9rem;">Webhook API for programmatic content generation</p>
+                                </div>
+                            </div>
+                            <svg id="apiAccordionIcon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transition: transform 0.3s; color: var(--text-secondary);">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                            </svg>
+                        </div>
+                        <div id="apiAccordion" class="accordion-content" style="display: none; padding: 20px;">
+                            <h2 style="margin: 0 0 20px 0;">Text Gen API Documentation</h2>
+                            <p class="info-text" style="margin-bottom: 30px;">Use the webhook API to generate content programmatically in N8N or any automation tool. All endpoints require Bearer token authentication.</p>
+                    
+                    <div style="margin-bottom: 30px;">
+                        <h3 style="color: var(--primary); margin-bottom: 10px;">Webhook URL</h3>
+                        <div style="background: var(--card-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 15px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                            <code id="webhookUrl" style="font-size: 1rem; word-break: break-all; color: var(--primary); flex: 1; min-width: 200px;"></code>
+                            <button class="btn btn-icon" id="copyWebhookUrlBtn" style="flex-shrink: 0;" title="Copy URL">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 30px;">
+                        <h3 style="color: var(--primary); margin-bottom: 10px;">Bearer Token</h3>
+                        <p style="margin-bottom: 10px;">Use this token for authentication in N8N or other automation tools:</p>
+                        <div style="background: var(--card-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 15px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                            <code id="bearerToken" style="font-size: 1rem; word-break: break-all; color: var(--primary); flex: 1; min-width: 200px; font-family: 'Courier New', monospace;"></code>
+                            <button class="btn btn-icon" id="toggleBearerTokenBtn" style="flex-shrink: 0;" title="Toggle Visibility">
+                                <svg id="toggleBearerTokenIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                </svg>
+                            </button>
+                            <button class="btn btn-icon" id="copyBearerTokenBtn" style="flex-shrink: 0;" title="Copy Token">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 30px;">
+                        <h3 style="color: var(--primary); margin-bottom: 15px;">N8N Setup Instructions</h3>
+                        <div style="background: var(--bg-secondary); padding: 20px; border-radius: 8px; border: 1px solid var(--border-color);">
+                            <ol style="margin: 0; padding-left: 20px; line-height: 1.8;">
+                                <li style="margin-bottom: 10px;">Create a new HTTP Request node in your N8N workflow</li>
+                                <li style="margin-bottom: 10px;">Set the <strong>Method</strong> to <code>POST</code></li>
+                                <li style="margin-bottom: 10px;">Set the <strong>URL</strong> to the Webhook URL shown above</li>
+                                <li style="margin-bottom: 10px;">In <strong>Authentication</strong>, select <code>Generic Credential Type</code> → <code>Header Auth</code></li>
+                                <li style="margin-bottom: 10px;">Set <strong>Name</strong> to <code>Authorization</code></li>
+                                <li style="margin-bottom: 10px;">Set <strong>Value</strong> to <code>Bearer YOUR_TOKEN</code> (use the Bearer Token shown above)</li>
+                                <li style="margin-bottom: 10px;">In <strong>Body</strong>, select <code>JSON</code> and add your request body with required fields (transcript, guest_name, guest_title, guest_company, guest_linkedin)</li>
+                                <li style="margin-bottom: 10px;">Connect the node to trigger your workflow</li>
+                            </ol>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 30px;">
+                        <h3 style="color: var(--primary); margin-bottom: 15px;">Authentication</h3>
+                        <p>All API requests require Bearer token authentication in the Authorization header:</p>
+                        <pre style="background: var(--card-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); overflow-x: auto;"><code>Authorization: Bearer YOUR_TOKEN_HERE</code></pre>
+                    </div>
+
+                    <div style="margin-bottom: 30px;">
+                        <h3 style="color: var(--primary); margin-bottom: 15px;">Endpoints</h3>
+                        
+                        <div style="margin-bottom: 20px;">
+                            <h4 style="color: var(--text-primary); margin-bottom: 10px;">1. Generate All Content</h4>
+                            <p style="margin-bottom: 10px;"><strong>POST</strong> <code>/api/generate-content</code></p>
+                            <p style="margin-bottom: 10px;">Generates all content types in a single request.</p>
+                            <details style="margin-top: 10px;">
+                                <summary style="cursor: pointer; color: var(--primary); margin-bottom: 10px;">Request Body</summary>
+                                <pre style="background: var(--card-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); overflow-x: auto; margin-top: 10px;"><code>{
+  "transcript": "Full transcript text...",
+  "transcript_with_timecodes": [
+    {"start": 0, "text": "First sentence"},
+    {"start": 5, "text": "Second sentence"}
+  ],
+  "guest_name": "John Doe",
+  "guest_title": "CEO",
+  "guest_company": "Company Name",
+  "guest_linkedin": "https://www.linkedin.com/in/johndoe",
+  "video_title": "Episode Title",
+  "video_duration": 3600
+}</code></pre>
+                            </details>
+                            <details style="margin-top: 10px;">
+                                <summary style="cursor: pointer; color: var(--primary); margin-bottom: 10px;">Response</summary>
+                                <pre style="background: var(--card-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); overflow-x: auto; margin-top: 10px;"><code>{
+  "youtube_summary": "3 paragraph summary...",
+  "blog_post": "2000 word blog post...",
+  "clickbait_titles": ["Title 1", "Title 2", ...],
+  "two_line_summary": "Two line summary...",
+  "quotes": ["Quote 1", "Quote 2", ...],
+  "chapter_timestamps": ["00:00 Introduction", ...],
+  "linkedin_post": "LinkedIn post content...",
+  "keywords": "keyword1, keyword2, ...",
+  "hashtags": "#keyword1 #keyword2 ..."
+}</code></pre>
+                            </details>
+                        </div>
+
+                        <div style="margin-bottom: 20px;">
+                            <h4 style="color: var(--text-primary); margin-bottom: 10px;">2. Generate Single Content Type</h4>
+                            <p style="margin-bottom: 10px;"><strong>POST</strong> <code>/api/generate-content/{content_type}</code></p>
+                            <p style="margin-bottom: 10px;">Generates a single content type. Available types:</p>
+                            <ul style="margin-left: 20px; margin-bottom: 10px;">
+                                <li><code>youtube_summary</code></li>
+                                <li><code>blog_post</code></li>
+                                <li><code>clickbait_titles</code></li>
+                                <li><code>two_line_summary</code></li>
+                                <li><code>quotes</code></li>
+                                <li><code>chapter_timestamps</code></li>
+                                <li><code>linkedin_post</code></li>
+                                <li><code>keywords</code></li>
+                                <li><code>hashtags</code></li>
+                            </ul>
+                            <details style="margin-top: 10px;">
+                                <summary style="cursor: pointer; color: var(--primary); margin-bottom: 10px;">Example Request</summary>
+                                <pre style="background: var(--card-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); overflow-x: auto; margin-top: 10px;"><code>POST /api/generate-content/youtube_summary
+Authorization: Bearer YOUR_TOKEN_HERE
+Content-Type: application/json
+
+{
+  "transcript": "Full transcript text...",
+  "transcript_with_timecodes": [],
+  "guest_name": "John Doe",
+  "guest_title": "CEO",
+  "guest_company": "Company Name",
+  "guest_linkedin": "https://www.linkedin.com/in/johndoe",
+  "video_title": "Episode Title",
+  "video_duration": 3600
+}</code></pre>
+                            </details>
+                            <details style="margin-top: 10px;">
+                                <summary style="cursor: pointer; color: var(--primary); margin-bottom: 10px;">Example Response</summary>
+                                <pre style="background: var(--card-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); overflow-x: auto; margin-top: 10px;"><code>{
+  "youtube_summary": "3 paragraph summary..."
+}</code></pre>
+                            </details>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 30px;">
+                        <h3 style="color: var(--primary); margin-bottom: 15px;">Sample cURL Request</h3>
+                        <pre style="background: var(--card-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); overflow-x: auto;"><code>curl -X POST "https://contents.2160.media/api/generate-content/youtube_summary" \
+  -H "Authorization: Bearer YOUR_TOKEN_HERE" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "transcript": "Full transcript text...",
+    "transcript_with_timecodes": [],
+    "guest_name": "John Doe",
+    "guest_title": "CEO",
+    "guest_company": "Company Name",
+    "guest_linkedin": "https://www.linkedin.com/in/johndoe",
+    "video_title": "Episode Title",
+    "video_duration": 3600
+  }'</code></pre>
+                    </div>
+
+                    <div style="margin-bottom: 30px;">
+                        <h3 style="color: var(--primary); margin-bottom: 15px;">Sample JavaScript Request</h3>
+                        <pre style="background: var(--card-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); overflow-x: auto;"><code>const response = await fetch('https://contents.2160.media/api/generate-content/youtube_summary', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer YOUR_TOKEN_HERE',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    transcript: 'Full transcript text...',
+    transcript_with_timecodes: [],
+    guest_name: 'John Doe',
+    guest_title: 'CEO',
+    guest_company: 'Company Name',
+    guest_linkedin: 'https://www.linkedin.com/in/johndoe',
+    video_title: 'Episode Title',
+    video_duration: 3600
+  })
+});
+
+const data = await response.json();
+console.log(data.youtube_summary);</code></pre>
+                    </div>
+
+                    <div style="margin-bottom: 30px;">
+                        <h3 style="color: var(--primary); margin-bottom: 15px;">Error Responses</h3>
+                        <p>All errors return a JSON object with a <code>detail</code> field:</p>
+                        <pre style="background: var(--card-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); overflow-x: auto;"><code>{
+  "detail": "Error message here"
+}</code></pre>
+                        <p style="margin-top: 10px;">Common status codes:</p>
+                        <ul style="margin-left: 20px;">
+                            <li><strong>401</strong> - Authentication required</li>
+                            <li><strong>400</strong> - Invalid request (missing fields, invalid content type, etc.)</li>
+                            <li><strong>500</strong> - Server error</li>
+                        </ul>
+                    </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- COMMENTED OUT: Cookies Setup Tab - pytube doesn't support cookies -->
+            <!-- <div id="cookiesTab" class="tab-content" style="display: none;">
+                <div class="card">
+                    <h2>YouTube Cookies Setup</h2>
+                    <p class="info-text">YouTube requires authentication cookies to download videos. Follow the steps below to export and upload your cookies.</p>
+                    
+                    <div class="cookie-instructions">
+                        <h3>Step 1: Install Browser Extension</h3>
+                        <p>Install a cookie export extension in your browser:</p>
+                        <ul>
+                            <li><strong>For Chrome/Edge:</strong> <a href="https://chrome.google.com/webstore/detail/get-cookiestxt-locally/cclelndahbckbenkjhflpdbgdldlbecc" target="_blank" rel="noopener noreferrer">Get cookies.txt LOCALLY</a></li>
+                            <li><strong>For Firefox:</strong> <a href="https://addons.mozilla.org/en-US/firefox/addon/cookies-txt/" target="_blank" rel="noopener noreferrer">cookies.txt</a></li>
+                        </ul>
+                        
+                        <h3>Step 2: Export Cookies</h3>
+                        <ol>
+                            <li><strong>Log in to YouTube</strong> in your browser (make sure you're logged in)</li>
+                            <li>Navigate to any YouTube video page</li>
+                            <li>Click the extension icon</li>
+                            <li>Click "Export" to download <code>cookies.txt</code></li>
+                            <li>Upload the file using the button in the header above</li>
+                        </ol>
+                        
+                        <h3>Step 3: Upload Cookies</h3>
+                        <p>Once you have exported your cookies file, use the "Upload" button in the header to upload it. The status will update automatically.</p>
+                        
+                        <div class="cookie-note">
+                            <strong>Note:</strong> Cookies expire after some time. If you encounter authentication errors, re-export and upload a fresh cookies file.
+                        </div>
+                    </div>
+                </div>
+            </div> -->
+
+            <!-- Content Generator Tab -->
+            <div id="contentTab" class="tab-content">
+            <div class="generate-layout">
+            <div class="generate-left">
+            <!-- Audio Upload -->
+            <div class="card" id="step1Card">
+                <h2>Upload Audio File</h2>
+                <div class="input-group">
+                    <label for="audioFile">Audio File * (MP3, WAV, M4A, OGG, FLAC)</label>
+                    <div class="file-upload-container">
+                        <input type="file" id="audioFile" accept=".mp3,.wav,.m4a,.ogg,.flac" style="display: none;" />
+                        <div style="display: flex; flex-direction: column; align-items: center; gap: 12px; width: 100%;">
+                            <button type="button" class="btn btn-secondary" id="selectAudioBtn">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="17 8 12 3 7 8"></polyline>
+                                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                                </svg>
+                                Select Audio File
+                            </button>
+                            <span style="color: var(--text-secondary); font-size: 0.85rem; text-align: center;">or drag and drop your file here</span>
+                            <span id="audioFileName" class="file-name-display">No file selected</span>
+                        </div>
+                    </div>
+                </div>
+                <button class="btn btn-primary" id="processVideoBtn" style="margin-top: 15px;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
+                        <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                    </svg>
+                    Process Audio
+                </button>
+                <div id="processingStatus" class="status-message"></div>
+                <div id="processingAnimation" class="processing-animation" style="display: none;">
+                    <div class="spinner-small"></div>
+                    <span id="processingText">Processing...</span>
+                </div>
+            </div>
+
+            <!-- Guest Information -->
+            <div class="card" id="step2Card" style="display: none;">
+                <h2>Review Transcript & Enter Guest Information</h2>
+                
+                <!-- Transcript Preview Section -->
+                <div style="margin-bottom: 30px;">
+                    <h3 style="margin-bottom: 15px; color: var(--primary);">Generated Transcript</h3>
+                    <div class="card" style="background: var(--bg-secondary); padding: 20px; border: 1px solid var(--border-color); border-radius: 8px; max-height: 400px; overflow-y: auto;">
+                        <div id="step2Transcript" style="white-space: pre-wrap; font-family: 'Courier New', monospace; font-size: 0.9rem; line-height: 1.6; color: var(--text-primary);">
+                            <p style="color: var(--text-secondary); font-style: italic;">Transcript will appear here after processing...</p>
+                        </div>
+                    </div>
+                    <p class="info-text" style="margin-top: 10px; font-size: 0.85rem;">
+                        <strong>Note:</strong> Please review the transcript above. If the transcript is correct, proceed to fill in the guest information below and generate content.
+                    </p>
+                </div>
+                
+                <div class="form-grid">
+                    <div class="input-group">
+                        <label for="guestName">Name *</label>
+                        <input type="text" id="guestName" placeholder="John Doe" />
+                    </div>
+                    <div class="input-group">
+                        <label for="guestTitle">Title *</label>
+                        <input type="text" id="guestTitle" placeholder="CEO" />
+                    </div>
+                    <div class="input-group">
+                        <label for="guestCompany">Company *</label>
+                        <input type="text" id="guestCompany" placeholder="Company Name" />
+                    </div>
+                    <div class="input-group">
+                        <label for="guestLinkedIn">LinkedIn Profile URL *</label>
+                        <input type="text" id="guestLinkedIn" placeholder="https://www.linkedin.com/in/..." />
+                    </div>
+                </div>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <button class="btn btn-primary" id="generateContentBtn">Generate Content</button>
+                </div>
+                <div id="generatingStatus" class="status-message"></div>
+            </div>
+            </div>
+
+            <div class="generate-right">
+            <div class="generate-right-placeholder" id="generateRightPlaceholder">
+                <div class="placeholder-glow"></div>
+                <div class="placeholder-content">
+                    <span class="placeholder-icon" aria-hidden="true">◇</span>
+                    <h3>Generated content will appear here</h3>
+                    <p>Process an audio file, then generate content to see transcripts, summaries, blog posts, and more in this panel.</p>
+                </div>
+            </div>
+            <nav class="section-nav" id="sectionNav" style="display: none;">
+                <a href="#section-transcript" class="section-nav-link">Transcript with Timecodes</a>
+                <a href="#section-youtube-summary" class="section-nav-link">YouTube Summary</a>
+                <a href="#section-blog-post" class="section-nav-link">Blog post</a>
+                <a href="#section-summary" class="section-nav-link">Summary</a>
+                <a href="#section-clickbait" class="section-nav-link">Clickbait titles</a>
+                <a href="#section-quotes" class="section-nav-link">Quotes</a>
+                <a href="#section-chapters" class="section-nav-link">YouTube-Ready Chapter Timestamps</a>
+                <a href="#section-full-desc" class="section-nav-link">Full Episode Description</a>
+                <a href="#section-linkedin" class="section-nav-link">LinkedIn Post</a>
+                <a href="#section-keywords" class="section-nav-link">Keywords</a>
+                <a href="#section-hashtags" class="section-nav-link">Hashtags</a>
+            </nav>
+            <!-- Results -->
+            <div id="resultsContainer" style="display: none;">
+                <!-- Transcript with Timecodes -->
+                <div class="card result-card result-card-collapsible" id="section-transcript" data-section="transcript">
+                    <div class="result-header">
+                        <button type="button" class="result-card-toggle" aria-expanded="true"></button>
+                        <h2>Transcript with Timecodes</h2>
+                        <div class="result-actions">
+                            <button class="btn btn-icon" data-action="download" data-target="transcript" title="Download as TXT">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="7 10 12 15 17 10"></polyline>
+                                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                                </svg>
+                            </button>
+                            <button class="btn btn-icon" data-action="copy" data-target="transcript" title="Copy to Clipboard">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="result-content" id="transcript"></div>
+                </div>
+
+                <!-- YouTube Summary -->
+                <div class="card result-card result-card-collapsible" id="section-youtube-summary" data-section="youtubeSummary">
+                    <div class="result-header">
+                        <button type="button" class="result-card-toggle" aria-expanded="true"></button>
+                        <h2>YouTube Summary</h2>
+                        <div class="result-actions">
+                            <button class="btn btn-icon" data-action="regenerate" data-type="youtube_summary" data-target="youtubeSummary" title="Regenerate">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="23 4 23 10 17 10"></polyline>
+                                    <polyline points="1 20 1 14 7 14"></polyline>
+                                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                                </svg>
+                            </button>
+                            <button class="btn btn-icon" data-action="download" data-target="youtubeSummary" title="Download as TXT">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="7 10 12 15 17 10"></polyline>
+                                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                                </svg>
+                            </button>
+                            <button class="btn btn-icon" data-action="copy" data-target="youtubeSummary" title="Copy to Clipboard">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="result-content" id="youtubeSummary"></div>
+                </div>
+
+                <!-- Blog Post -->
+                <div class="card result-card result-card-collapsible" id="section-blog-post" data-section="blogPost">
+                    <div class="result-header">
+                        <button type="button" class="result-card-toggle" aria-expanded="true"></button>
+                        <h2>Blog post</h2>
+                        <div class="result-actions">
+                            <button class="btn btn-icon" data-action="regenerate" data-type="blog_post" data-target="blogPost" title="Regenerate">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="23 4 23 10 17 10"></polyline>
+                                    <polyline points="1 20 1 14 7 14"></polyline>
+                                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                                </svg>
+                            </button>
+                            <button class="btn btn-icon" data-action="download" data-target="blogPost" title="Download as TXT">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="7 10 12 15 17 10"></polyline>
+                                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                                </svg>
+                            </button>
+                            <button class="btn btn-icon" data-action="copy" data-target="blogPost" title="Copy to Clipboard">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="result-content" id="blogPost"></div>
+                </div>
+
+                <!-- One Line Summary -->
+                <div class="card result-card result-card-collapsible" id="section-summary" data-section="twoLineSummary">
+                    <div class="result-header">
+                        <button type="button" class="result-card-toggle" aria-expanded="true"></button>
+                        <h2>Summary</h2>
+                        <div class="result-actions">
+                            <button class="btn btn-icon" data-action="regenerate" data-type="two_line_summary" data-target="twoLineSummary" title="Regenerate">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="23 4 23 10 17 10"></polyline>
+                                    <polyline points="1 20 1 14 7 14"></polyline>
+                                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                                </svg>
+                            </button>
+                            <button class="btn btn-icon" data-action="download" data-target="twoLineSummary" title="Download as TXT">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="7 10 12 15 17 10"></polyline>
+                                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                                </svg>
+                            </button>
+                            <button class="btn btn-icon" data-action="copy" data-target="twoLineSummary" title="Copy to Clipboard">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="result-content" id="twoLineSummary"></div>
+                </div>
+
+                <!-- Clickbait Titles -->
+                <div class="card result-card result-card-collapsible" id="section-clickbait" data-section="clickbaitTitles">
+                    <div class="result-header">
+                        <button type="button" class="result-card-toggle" aria-expanded="true"></button>
+                        <h2>Clickbait titles</h2>
+                        <div class="result-actions">
+                            <button class="btn btn-icon" data-action="regenerate" data-type="clickbait_titles" data-target="clickbaitTitles" title="Regenerate">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="23 4 23 10 17 10"></polyline>
+                                    <polyline points="1 20 1 14 7 14"></polyline>
+                                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                                </svg>
+                            </button>
+                            <button class="btn btn-icon" data-action="download" data-target="clickbaitTitles" title="Download as TXT">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="7 10 12 15 17 10"></polyline>
+                                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                                </svg>
+                            </button>
+                            <button class="btn btn-icon" data-action="copy" data-target="clickbaitTitles" title="Copy to Clipboard">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="result-content" id="clickbaitTitles"></div>
+                </div>
+
+                <!-- Quotes -->
+                <div class="card result-card result-card-collapsible" id="section-quotes" data-section="quotes">
+                    <div class="result-header">
+                        <button type="button" class="result-card-toggle" aria-expanded="true"></button>
+                        <h2>Quotes</h2>
+                        <div class="result-actions">
+                            <button class="btn btn-icon" data-action="regenerate" data-type="quotes" data-target="quotes" title="Regenerate">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="23 4 23 10 17 10"></polyline>
+                                    <polyline points="1 20 1 14 7 14"></polyline>
+                                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                                </svg>
+                            </button>
+                            <button class="btn btn-icon" data-action="download" data-target="quotes" title="Download as TXT">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="7 10 12 15 17 10"></polyline>
+                                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                                </svg>
+                            </button>
+                            <button class="btn btn-icon" data-action="copy" data-target="quotes" title="Copy to Clipboard">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="result-content" id="quotes"></div>
+                </div>
+
+                <!-- Chapter Timestamps -->
+                <div class="card result-card result-card-collapsible" id="section-chapters" data-section="chapterTimestamps">
+                    <div class="result-header">
+                        <button type="button" class="result-card-toggle" aria-expanded="true"></button>
+                        <h2>YouTube-Ready Chapter Timestamps</h2>
+                        <div class="result-actions">
+                            <button class="btn btn-icon" data-action="regenerate" data-type="chapter_timestamps" data-target="chapterTimestamps" title="Regenerate">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="23 4 23 10 17 10"></polyline>
+                                    <polyline points="1 20 1 14 7 14"></polyline>
+                                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                                </svg>
+                            </button>
+                            <button class="btn btn-icon" data-action="download" data-target="chapterTimestamps" title="Download as TXT">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="7 10 12 15 17 10"></polyline>
+                                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                                </svg>
+                            </button>
+                            <button class="btn btn-icon" data-action="copy" data-target="chapterTimestamps" title="Copy to Clipboard">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="result-content" id="chapterTimestamps"></div>
+                </div>
+
+                <!-- Full Episode Description -->
+                <div class="card result-card result-card-collapsible" id="section-full-desc" data-section="fullEpisodeDescription">
+                    <div class="result-header">
+                        <button type="button" class="result-card-toggle" aria-expanded="true"></button>
+                        <div>
+                            <h2>Full Episode Description</h2>
+                            <p style="margin: 5px 0 0 0; color: var(--text-secondary); font-size: 0.9rem;">3 Paragraph Summary + Standard Static Content + Chapter Timestamps</p>
+                        </div>
+                        <div class="result-actions">
+                            <button class="btn btn-icon" data-action="download" data-target="fullEpisodeDescription" title="Download as TXT">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="7 10 12 15 17 10"></polyline>
+                                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                                </svg>
+                            </button>
+                            <button class="btn btn-icon" data-action="copy" data-target="fullEpisodeDescription" title="Copy to Clipboard">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="result-content" id="fullEpisodeDescription"></div>
+                </div>
+
+                <!-- LinkedIn Post -->
+                <div class="card result-card result-card-collapsible" id="section-linkedin" data-section="linkedinPost">
+                    <div class="result-header">
+                        <button type="button" class="result-card-toggle" aria-expanded="true"></button>
+                        <h2>LinkedIn Post</h2>
+                        <div class="result-actions">
+                            <button class="btn btn-icon" data-action="regenerate" data-type="linkedin_post" data-target="linkedinPost" title="Regenerate">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="23 4 23 10 17 10"></polyline>
+                                    <polyline points="1 20 1 14 7 14"></polyline>
+                                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                                </svg>
+                            </button>
+                            <button class="btn btn-icon" data-action="download" data-target="linkedinPost" title="Download as TXT">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="7 10 12 15 17 10"></polyline>
+                                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                                </svg>
+                            </button>
+                            <button class="btn btn-icon" data-action="copy" data-target="linkedinPost" title="Copy to Clipboard">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="result-content" id="linkedinPost"></div>
+                </div>
+
+                <!-- Keywords -->
+                <div class="card result-card result-card-collapsible" id="section-keywords" data-section="keywords">
+                    <div class="result-header">
+                        <button type="button" class="result-card-toggle" aria-expanded="true"></button>
+                        <h2>Keywords</h2>
+                        <div class="result-actions">
+                            <button class="btn btn-icon" data-action="regenerate" data-type="keywords" data-target="keywords" title="Regenerate">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="23 4 23 10 17 10"></polyline>
+                                    <polyline points="1 20 1 14 7 14"></polyline>
+                                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                                </svg>
+                            </button>
+                            <button class="btn btn-icon" data-action="download" data-target="keywords" title="Download as TXT">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="7 10 12 15 17 10"></polyline>
+                                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                                </svg>
+                            </button>
+                            <button class="btn btn-icon" data-action="copy" data-target="keywords" title="Copy to Clipboard">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="result-content" id="keywords"></div>
+                </div>
+
+                <!-- Hashtags -->
+                <div class="card result-card result-card-collapsible" id="section-hashtags" data-section="hashtags">
+                    <div class="result-header">
+                        <button type="button" class="result-card-toggle" aria-expanded="true"></button>
+                        <h2>Hashtags</h2>
+                        <div class="result-actions">
+                            <button class="btn btn-icon" data-action="regenerate" data-type="hashtags" data-target="hashtags" title="Regenerate">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="23 4 23 10 17 10"></polyline>
+                                    <polyline points="1 20 1 14 7 14"></polyline>
+                                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                                </svg>
+                            </button>
+                            <button class="btn btn-icon" data-action="download" data-target="hashtags" title="Download as TXT">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="7 10 12 15 17 10"></polyline>
+                                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                                </svg>
+                            </button>
+                            <button class="btn btn-icon" data-action="copy" data-target="hashtags" title="Copy to Clipboard">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="result-content" id="hashtags"></div>
+                </div>
+            </div>
+            </div>
+            </div>
+        </main>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay" style="display: none;">
+        <div class="spinner"></div>
+        <p id="loadingText">Processing...</p>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
