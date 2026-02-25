@@ -849,7 +849,7 @@ body::before {
 
 .variables-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    grid-template-columns: repeat(4, 1fr);
     gap: 15px;
 }
 
@@ -859,7 +859,8 @@ body::before {
     border-radius: 8px;
     padding: 15px;
     transition: all 0.2s ease;
-
+    display: flex;
+    flex-direction: column;
 }
 
 .variable-item:hover {
@@ -871,21 +872,24 @@ body::before {
 .variable-content {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 10px;
+    gap: 8px;
     margin-bottom: 8px;
 }
 
 .variable-code {
     font-family: 'Courier New', monospace;
-    font-size: 0.95rem;
+    font-size: 0.85rem;
     color: var(--accent);
     background-color: var(--bg-secondary);
     padding: 6px 10px;
     border-radius: 6px;
     border: 1px solid var(--border-color);
-    flex: 1;
     user-select: all;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+    flex: 1;
 }
 
 .variable-copy-btn {
@@ -893,14 +897,15 @@ body::before {
     border: 1px solid var(--border-color);
     border-radius: 6px;
     padding: 6px;
-
+    cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     color: var(--text-secondary);
     transition: all 0.2s ease;
-    width: 28px;
-    height: 28px;
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
     flex-shrink: 0;
 }
 
@@ -939,6 +944,10 @@ body::before {
     .prompts-tiles-grid {
         grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     }
+    
+    .variables-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
 }
 
 @media (max-width: 768px) {
@@ -957,6 +966,20 @@ body::before {
     
     .prompts-tiles-grid {
         grid-template-columns: 1fr;
+    }
+    
+    .variables-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 480px) {
+    .variables-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .variable-code {
+        font-size: 0.8rem;
     }
 }
 
