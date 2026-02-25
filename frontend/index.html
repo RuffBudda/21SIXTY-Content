@@ -122,7 +122,7 @@
             </div>
             <div class="topbar-right">
                 <button class="topbar-btn" id="usageBtn">Usage</button>
-                <span class="topbar-pill version">v200</span>
+                <span class="topbar-pill version">v2.0.1</span>
                 <span class="topbar-pill openai-pill">
                     <span class="openai-label">OpenAI:</span>
                     <span class="openai-value" id="creditsValue">Fetching...</span>
@@ -160,119 +160,47 @@
                         </div>
                         <div class="variables-grid">
                             <div class="variable-item" data-variable="{guest_name}">
-                                <div class="variable-content">
-                                    <code class="variable-code">{guest_name}</code>
-                                    <button class="variable-copy-btn" title="Copy variable">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                                        </svg>
-                                    </button>
-                                </div>
+                                <code class="variable-code">{guest_name}</code>
                                 <p class="variable-description">Guest's full name</p>
                             </div>
                             
                             <div class="variable-item" data-variable="{guest_title}">
-                                <div class="variable-content">
-                                    <code class="variable-code">{guest_title}</code>
-                                    <button class="variable-copy-btn" title="Copy variable">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                                        </svg>
-                                    </button>
-                                </div>
+                                <code class="variable-code">{guest_title}</code>
                                 <p class="variable-description">Guest's job title or role</p>
                             </div>
                             
                             <div class="variable-item" data-variable="{guest_company}">
-                                <div class="variable-content">
-                                    <code class="variable-code">{guest_company}</code>
-                                    <button class="variable-copy-btn" title="Copy variable">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                                        </svg>
-                                    </button>
-                                </div>
+                                <code class="variable-code">{guest_company}</code>
                                 <p class="variable-description">Guest's company or organization name</p>
                             </div>
                             
                             <div class="variable-item" data-variable="{guest_linkedin}">
-                                <div class="variable-content">
-                                    <code class="variable-code">{guest_linkedin}</code>
-                                    <button class="variable-copy-btn" title="Copy variable">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                                        </svg>
-                                    </button>
-                                </div>
+                                <code class="variable-code">{guest_linkedin}</code>
                                 <p class="variable-description">Guest's LinkedIn profile URL</p>
                             </div>
                             
                             <div class="variable-item" data-variable="{transcript}">
-                                <div class="variable-content">
-                                    <code class="variable-code">{transcript}</code>
-                                    <button class="variable-copy-btn" title="Copy variable">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                                        </svg>
-                                    </button>
-                                </div>
+                                <code class="variable-code">{transcript}</code>
                                 <p class="variable-description">Full episode transcript text (auto-truncated per prompt type)</p>
                             </div>
                             
                             <div class="variable-item" data-variable="{transcript_with_timecodes}">
-                                <div class="variable-content">
-                                    <code class="variable-code">{transcript_with_timecodes}</code>
-                                    <button class="variable-copy-btn" title="Copy variable">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                                        </svg>
-                                    </button>
-                                </div>
+                                <code class="variable-code">{transcript_with_timecodes}</code>
                                 <p class="variable-description">Transcript with timestamps formatted as [HH:MM:SS] (for quotes and chapters)</p>
                             </div>
                             
                             <div class="variable-item" data-variable="{video_title}">
-                                <div class="variable-content">
-                                    <code class="variable-code">{video_title}</code>
-                                    <button class="variable-copy-btn" title="Copy variable">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                                        </svg>
-                                    </button>
-                                </div>
+                                <code class="variable-code">{video_title}</code>
                                 <p class="variable-description">Audio file or video title</p>
                             </div>
                             
                             <div class="variable-item" data-variable="{video_duration}">
-                                <div class="variable-content">
-                                    <code class="variable-code">{video_duration}</code>
-                                    <button class="variable-copy-btn" title="Copy variable">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                                        </svg>
-                                    </button>
-                                </div>
+                                <code class="variable-code">{video_duration}</code>
                                 <p class="variable-description">Video/audio duration in seconds</p>
                             </div>
                             
                             <div class="variable-item" data-variable="{standard_static_content}">
-                                <div class="variable-content">
-                                    <code class="variable-code">{standard_static_content}</code>
-                                    <button class="variable-copy-btn" title="Copy variable">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                                        </svg>
-                                    </button>
-                                </div>
+                                <code class="variable-code">{standard_static_content}</code>
                                 <p class="variable-description">Standard static content (manually entered)</p>
                             </div>
                         </div>

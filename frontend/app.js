@@ -648,25 +648,11 @@ function setupEventListeners() {
     // Load standard static content on page load
     loadStandardStaticContent();
     
-    // Variable copy buttons
-    document.querySelectorAll('.variable-copy-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const variableItem = btn.closest('.variable-item');
-            const variable = variableItem.getAttribute('data-variable');
-            copyVariable(variable, btn);
-        });
-    });
-    
-    // Also allow clicking the variable item itself to copy
+    // Variable items - click to copy
     document.querySelectorAll('.variable-item').forEach(item => {
         item.addEventListener('click', (e) => {
-            // Only copy if not clicking the copy button
-            if (!e.target.closest('.variable-copy-btn')) {
-                const variable = item.getAttribute('data-variable');
-                const copyBtn = item.querySelector('.variable-copy-btn');
-                copyVariable(variable, copyBtn);
-            }
+            const variable = item.getAttribute('data-variable');
+            copyVariable(variable);
         });
     });
     
@@ -2910,23 +2896,38 @@ function showSaveWarnings() {
 }
 
 // Copy variable to clipboard
-function copyVariable(variable, button) {
+function showToast(message, type = 'info') {
+    // Create toast container if it doesn't exist
+    let toastContainer = document.getElementById('toast-container');
+    if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.id = 'toast-container';
+        document.body.appendChild(toastContainer);
+    }
+    
+    // Create toast element
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.textContent = message;
+    toastContainer.appendChild(toast);
+    
+    // Auto remove after 2 seconds
+    setTimeout(() => {
+        toast.remove();
+    }, 2000);
+}
+
+function copyVariable(variable) {
     if (!variable) {
-        alert('Nothing to copy');
+        showToast('Nothing to copy', 'error');
         return;
     }
     
     navigator.clipboard.writeText(variable).then(() => {
-        // Visual feedback
-        if (button) {
-            button.classList.add('copied');
-            setTimeout(() => {
-                button.classList.remove('copied');
-            }, 2000);
-        }
+        showToast('Copied!', 'success');
     }).catch(err => {
         console.error('Failed to copy variable:', err);
-        alert('Failed to copy variable to clipboard');
+        showToast('Failed to copy to clipboard', 'error');
     });
 }
 
