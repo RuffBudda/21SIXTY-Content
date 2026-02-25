@@ -873,10 +873,10 @@ body::before {
 }
 
 .variable-content {
-    grid-column: 1 / -1;
     display: flex;
-    align-items: center;
+    align-items: stretch;
     gap: 8px;
+    margin-bottom: 0;
 }
 
 .variable-code {
@@ -893,6 +893,8 @@ body::before {
     text-overflow: ellipsis;
     flex: 1;
     min-width: 0;
+    display: flex;
+    align-items: center;
 }
 
 .variable-copy-btn {
@@ -906,12 +908,12 @@ body::before {
     justify-content: center;
     color: var(--text-secondary);
     transition: all 0.2s ease;
-    width: 32px;
-    height: 32px;
-    min-width: 32px;
+    width: 30px;
+    height: 30px;
+    min-width: 30px;
+    min-height: 30px;
     flex-shrink: 0;
-    grid-column: 2;
-    grid-row: 1;
+    align-self: center;
 }
 
 .variable-copy-btn:hover {
