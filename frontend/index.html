@@ -61,13 +61,23 @@
     <div id="usageModal" class="modal">
         <div class="modal-content usage-modal-content">
             <div class="usage-modal-header">
-                <h2>Usage Dashboard</h2>
-                <button class="usage-close-btn" id="closeUsageModal" title="Close">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="18" y1="6" x2="6" y2="18"></line>
-                        <line x1="6" y1="6" x2="18" y2="18"></line>
-                    </svg>
-                </button>
+                <div class="usage-header-left">
+                    <h2>Usage Dashboard</h2>
+                    <span class="usage-header-subtitle">Track spend and trends at a glance</span>
+                </div>
+                <div class="usage-header-right">
+                    <div class="usage-range-toggle" role="group" aria-label="Usage range">
+                        <button class="usage-range-btn active" data-range="30d" type="button">30d</button>
+                        <button class="usage-range-btn" data-range="90d" type="button">90d</button>
+                        <button class="usage-range-btn" data-range="all" type="button">All</button>
+                    </div>
+                    <button class="usage-close-btn" id="closeUsageModal" title="Close" type="button">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
+                </div>
             </div>
             
             <div class="usage-dashboard">
@@ -89,19 +99,31 @@
                         <div class="usage-heading">Monthly Usage ($)</div>
                         <div class="usage-chart-wrapper">
                             <canvas id="monthlyUsageChart"></canvas>
+                            <div class="usage-empty-state" data-empty-for="monthly">
+                                <div class="usage-empty-title">No usage yet</div>
+                                <div class="usage-empty-text">Run a job to start tracking usage.</div>
+                            </div>
                         </div>
                     </div>
                     <div class="usage-chart-card">
                         <div class="usage-heading">Cumulative Usage ($)</div>
                         <div class="usage-chart-wrapper">
                             <canvas id="cumulativeUsageChart"></canvas>
+                            <div class="usage-empty-state" data-empty-for="cumulative">
+                                <div class="usage-empty-title">No usage yet</div>
+                                <div class="usage-empty-text">Your totals will appear here.</div>
+                            </div>
                         </div>
                     </div>
                 </div>
                 
                 <!-- Billing Footer -->
                 <div class="usage-billing-footer">
-                    <span class="usage-billing-text">Auth with Google SSO • <a href="https://platform.openai.com/settings/organization/billing/" target="_blank" class="usage-billing-link">OpenAI Billing</a> • <a href="https://www.assemblyai.com/dashboard/cost" target="_blank" class="usage-billing-link">AssemblyAI Billing</a></span>
+                    <div class="usage-billing-text">Auth with Google SSO to unlock billing links.</div>
+                    <div class="usage-billing-actions">
+                        <a href="https://platform.openai.com/settings/organization/billing/" target="_blank" class="usage-billing-btn">OpenAI Billing</a>
+                        <a href="https://www.assemblyai.com/dashboard/cost" target="_blank" class="usage-billing-btn">AssemblyAI Billing</a>
+                    </div>
                 </div>
             </div>
         </div>
@@ -122,7 +144,7 @@
             </div>
             <div class="topbar-right">
                 <button class="topbar-btn" id="usageBtn">Usage</button>
-                <span class="topbar-pill version">v2.0.1</span>
+                <span class="topbar-pill version">v2.0.2</span>
                 <span class="topbar-pill openai-pill">
                     <span class="openai-label">OpenAI:</span>
                     <span class="openai-value" id="creditsValue">Fetching...</span>

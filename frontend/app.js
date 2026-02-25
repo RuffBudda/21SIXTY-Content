@@ -204,11 +204,53 @@ async function logout() {
 // Usage Modal Functions
 let monthlyUsageChart = null;
 let cumulativeUsageChart = null;
+let usageRange = '30d';
+let usageDataCache = null;
+let usageRangeInitialized = false;
+
+function initUsageRangeControls() {
+    if (usageRangeInitialized) return;
+    const rangeButtons = document.querySelectorAll('.usage-range-btn');
+    if (!rangeButtons.length) return;
+    rangeButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const range = btn.getAttribute('data-range');
+            if (!range || range === usageRange) return;
+            usageRange = range;
+            rangeButtons.forEach(b => b.classList.toggle('active', b === btn));
+            if (usageDataCache) {
+                renderMonthlyUsageChart(usageDataCache);
+                renderCumulativeUsageChart(usageDataCache);
+            }
+        });
+    });
+    usageRangeInitialized = true;
+}
+
+function getRangeLimit(range) {
+    if (range === '30d') return 1;
+    if (range === '90d') return 3;
+    return null;
+}
+
+function sliceMonthsForRange(sortedMonths) {
+    const limit = getRangeLimit(usageRange);
+    if (!limit || sortedMonths.length <= limit) return sortedMonths;
+    return sortedMonths.slice(-limit);
+}
+
+function toggleUsageEmptyState(type, isEmpty) {
+    const emptyState = document.querySelector(`.usage-empty-state[data-empty-for="${type}"]`);
+    if (emptyState) {
+        emptyState.style.display = isEmpty ? 'flex' : 'none';
+    }
+}
 
 function showUsageModal() {
     const modal = document.getElementById('usageModal');
     if (modal) {
         modal.style.display = 'flex';
+        initUsageRangeControls();
         // Delay so modal is laid out before charts render (fixes zero-size canvas)
         setTimeout(() => {
             loadUsageStats();
@@ -258,6 +300,7 @@ async function loadUsageStats() {
         }
         
         const data = await response.json();
+        usageDataCache = data;
         
         // Update total costs
         document.getElementById('totalOpenAICost').textContent = `$${data.total_openai_cost.toFixed(2)}`;
@@ -295,7 +338,7 @@ function renderMonthlyUsageChart(data) {
         ...Object.keys(openaiByMonth),
         ...Object.keys(assemblyaiByMonth)
     ]);
-    const sortedMonths = Array.from(allMonths).sort();
+    const sortedMonths = sliceMonthsForRange(Array.from(allMonths).sort());
     // Ensure we have at least one label so chart axes render when empty
     const monthLabels = sortedMonths.length > 0
         ? sortedMonths.map(month => {
@@ -310,6 +353,8 @@ function renderMonthlyUsageChart(data) {
     const assemblyaiCosts = sortedMonths.length > 0
         ? sortedMonths.map(month => assemblyaiByMonth[month]?.cost || 0)
         : [0];
+    const hasData = sortedMonths.length > 0 && ([...openaiCosts, ...assemblyaiCosts].some(value => value > 0));
+    toggleUsageEmptyState('monthly', !hasData);
     
     monthlyUsageChart = new Chart(ctx, {
         type: 'line',
@@ -356,6 +401,8 @@ function renderMonthlyUsageChart(data) {
                     labels: {
                         color: '#E0E0E0',
                         usePointStyle: true,
+                        boxWidth: 8,
+                        boxHeight: 8,
                         padding: 12,
                         font: {
                             size: 12,
@@ -389,7 +436,7 @@ function renderMonthlyUsageChart(data) {
             scales: {
                 x: {
                     grid: {
-                        color: 'rgba(255, 255, 255, 0.08)',
+                        color: 'rgba(255, 255, 255, 0.04)',
                         drawBorder: false
                     },
                     ticks: {
@@ -403,7 +450,7 @@ function renderMonthlyUsageChart(data) {
                 y: {
                     beginAtZero: true,
                     grid: {
-                        color: 'rgba(255, 255, 255, 0.08)',
+                        color: 'rgba(255, 255, 255, 0.04)',
                         drawBorder: false
                     },
                     ticks: {
@@ -444,7 +491,7 @@ function renderCumulativeUsageChart(data) {
         ...Object.keys(openaiByMonth),
         ...Object.keys(assemblyaiByMonth)
     ]);
-    const sortedMonths = Array.from(allMonths).sort();
+    const sortedMonths = sliceMonthsForRange(Array.from(allMonths).sort());
     const monthLabels = sortedMonths.length > 0
         ? sortedMonths.map(month => {
             const [year, monthNum] = month.split('-');
@@ -466,6 +513,8 @@ function renderCumulativeUsageChart(data) {
             return assemblyaiCumulative;
         })
         : [0];
+    const hasData = sortedMonths.length > 0 && ([...openaiCumulativeCosts, ...assemblyaiCumulativeCosts].some(value => value > 0));
+    toggleUsageEmptyState('cumulative', !hasData);
     
     cumulativeUsageChart = new Chart(ctx, {
         type: 'line',
@@ -512,6 +561,8 @@ function renderCumulativeUsageChart(data) {
                     labels: {
                         color: '#E0E0E0',
                         usePointStyle: true,
+                        boxWidth: 8,
+                        boxHeight: 8,
                         padding: 12,
                         font: {
                             size: 12,
@@ -545,7 +596,7 @@ function renderCumulativeUsageChart(data) {
             scales: {
                 x: {
                     grid: {
-                        color: 'rgba(255, 255, 255, 0.08)',
+                        color: 'rgba(255, 255, 255, 0.04)',
                         drawBorder: false
                     },
                     ticks: {
@@ -559,7 +610,7 @@ function renderCumulativeUsageChart(data) {
                 y: {
                     beginAtZero: true,
                     grid: {
-                        color: 'rgba(255, 255, 255, 0.08)',
+                        color: 'rgba(255, 255, 255, 0.04)',
                         drawBorder: false
                     },
                     ticks: {

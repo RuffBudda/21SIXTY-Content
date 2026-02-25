@@ -43,7 +43,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="21SIXTY CONTENT GEN API", version="2.0.1")
+app = FastAPI(title="21SIXTY CONTENT GEN API", version="2.0.2")
 
 # CORS configuration
 allowed_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,https://contents.2160.media").split(",")
@@ -231,7 +231,7 @@ async def health_check():
     try:
         return {
             "status": "healthy",
-            "version": "2.0.1",
+            "version": "2.0.2",
             "timestamp": datetime.utcnow().isoformat()
         }
     except Exception as e:
