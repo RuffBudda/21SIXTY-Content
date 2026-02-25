@@ -14,14 +14,26 @@ PRICING = {
         "prompt": 0.03,      # $0.03 per 1K prompt tokens
         "completion": 0.06,  # $0.06 per 1K completion tokens
     },
+    "gpt-4o": {
+        "prompt": 0.0025,    # $2.50 per 1M = $0.0025 per 1K prompt tokens
+        "completion": 0.01,  # $10.00 per 1M = $0.01 per 1K completion tokens
+    },
+    "gpt-4o-mini": {
+        "prompt": 0.00015,   # $0.15 per 1M = $0.00015 per 1K prompt tokens
+        "completion": 0.0006, # $0.60 per 1M = $0.0006 per 1K completion tokens
+    },
     "gpt-3.5-turbo": {
         "prompt": 0.0005,    # $0.0005 per 1K prompt tokens
         "completion": 0.0015,  # $0.0015 per 1K completion tokens
     },
+    "gpt-5-mini": {
+        "prompt": 0.00015,   # Same tier as gpt-4o-mini
+        "completion": 0.0006,
+    },
 }
 
 # Default model
-DEFAULT_MODEL = "gpt-4-turbo"
+DEFAULT_MODEL = "gpt-4o-mini"
 
 
 def get_model_pricing(model: str) -> Dict[str, float]:

@@ -2870,7 +2870,7 @@ async function verifyEditPassword() {
         
         if (response.ok && data.success) {
             // Password is correct - enable editing for this prompt
-            const textarea = document.getElementById(`prompt_${promptId}`);
+            const textarea = document.getElementById(promptId === 'standard_static_content' ? 'standardStaticContent' : `prompt_${promptId}`);
             const tile = document.querySelector(`[data-prompt-id="${promptId}"]`);
             
             if (textarea) {

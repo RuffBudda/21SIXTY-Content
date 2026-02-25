@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, Text, Float, DateTime, Boolean, ForeignKey, JSON
+from sqlalchemy import Column, Integer, String, Text, Float, DateTime, Boolean, ForeignKey, JSON, Index
 from sqlalchemy.orm import relationship
 from database import Base
 
@@ -134,9 +134,9 @@ class PromptTemplate(Base):
     prompt_usages = relationship("PromptUsage", back_populates="prompt_template", cascade="all, delete-orphan")
     token_usages = relationship("TokenUsage", back_populates="prompt_template")
 
-    # Unique constraint on (name, version) - index
+    # Composite index on (name, version)
     __table_args__ = (
-        {"indexes": [{"name": "idx_template_name_version", "columns": ["name", "version"]}]},
+        Index("idx_template_name_version", "name", "version"),
     )
 
 

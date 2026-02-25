@@ -53,35 +53,35 @@ jobs:
           # Test Python imports
           echo ""
           echo "========== TESTING IMPORTS =========="
-          python -c "
-import sys
-print('Testing critical imports...')
-try:
-    import fastapi
-    print('✓ fastapi')
-except Exception as e:
-    print('✗ fastapi:', e)
-    sys.exit(1)
-try:
-    from dotenv import load_dotenv
-    print('✓ dotenv')
-except Exception as e:
-    print('✗ dotenv:', e)
-    sys.exit(1)
-try:
-    import sqlalchemy
-    print('✓ sqlalchemy')
-except Exception as e:
-    print('✗ sqlalchemy:', e)
-    sys.exit(1)
-try:
-    import aiosqlite
-    print('✓ aiosqlite')
-except Exception as e:
-    print('✗ aiosqlite:', e)
-    sys.exit(1)
-print('All imports successful!')
-" || exit 1
+          python3 << 'PYEOF'
+          import sys
+          print('Testing critical imports...')
+          try:
+              import fastapi
+              print('✓ fastapi')
+          except Exception as e:
+              print('✗ fastapi:', e)
+              sys.exit(1)
+          try:
+              from dotenv import load_dotenv
+              print('✓ dotenv')
+          except Exception as e:
+              print('✗ dotenv:', e)
+              sys.exit(1)
+          try:
+              import sqlalchemy
+              print('✓ sqlalchemy')
+          except Exception as e:
+              print('✗ sqlalchemy:', e)
+              sys.exit(1)
+          try:
+              import aiosqlite
+              print('✓ aiosqlite')
+          except Exception as e:
+              print('✗ aiosqlite:', e)
+              sys.exit(1)
+          print('All imports successful!')
+          PYEOF
           
           # Test main.py syntax
           echo ""

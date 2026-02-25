@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, BackgroundTasks, Depends, Header, UploadFile, File, Form
+from fastapi import FastAPI, HTTPException, BackgroundTasks, Depends, UploadFile, File, Form
 import hashlib
 import time
 from fastapi.middleware.cors import CORSMiddleware
@@ -9,9 +9,7 @@ import os
 from dotenv import load_dotenv
 import logging
 from typing import Optional, Dict
-import hashlib
 from datetime import datetime, timedelta
-import shutil
 import tempfile
 import assemblyai as aai
 import uuid
@@ -27,6 +25,7 @@ from utils.cost_calculator import calculate_token_cost
 from database import init_db, AsyncSessionLocal, Base
 from database.repository import Repository
 from database.seed import init_prompt_templates
+from sqlalchemy.ext.asyncio import AsyncSession
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 
@@ -129,9 +128,8 @@ async def startup_event():
         logger.info("=" * 50)
         
         # Log authentication setup
-        logger.info(f"🔐 Authentication enabled")
-        logger.info(f"   Master password: {MASTER_PASSWORD[:8]}..." if len(MASTER_PASSWORD) > 8 else f"   Master password loaded")
-        logger.info(f"   Password hash: {MASTER_PASSWORD_HASH[:16]}...")
+        logger.info("🔐 Authentication enabled")
+        logger.info("   Master password: [SET]" if MASTER_PASSWORD else "   Master password: [NOT SET - USING DEFAULT]")
         
         # Initialize database
         try:
@@ -488,7 +486,7 @@ async def process_video(
 @app.post("/api/generate-content", response_model=GenerateContentResponse)
 async def generate_content(request: GenerateContentRequest,
                           credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
-                          db: AsyncSessionLocal = Depends(get_db)):
+                          db: AsyncSession = Depends(get_db)):
     """Generate all content using OpenAI based on transcript and guest info"""
     if not verify_auth(credentials):
         raise HTTPException(status_code=401, detail="Authentication required")
@@ -890,7 +888,7 @@ def cleanup_file(file_path: str):
 @app.get("/api/sessions/{session_id}/content")
 async def get_session_content(session_id: str,
                              credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
-                             db: AsyncSessionLocal = Depends(get_db)):
+                             db: AsyncSession = Depends(get_db)):
     """Retrieve all stored content for a session from database"""
     if not verify_auth(credentials):
         raise HTTPException(status_code=401, detail="Authentication required")
@@ -961,7 +959,7 @@ async def get_session_content(session_id: str,
 @app.get("/api/sessions/{session_id}/usage")
 async def get_session_usage(session_id: str,
                            credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
-                           db: AsyncSessionLocal = Depends(get_db)):
+                           db: AsyncSession = Depends(get_db)):
     """Get token usage and costs for a session"""
     if not verify_auth(credentials):
         raise HTTPException(status_code=401, detail="Authentication required")
@@ -977,7 +975,7 @@ async def get_session_usage(session_id: str,
 @app.get("/api/usage/summary")
 async def get_usage_summary(days: int = 30,
                            credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
-                           db: AsyncSessionLocal = Depends(get_db)):
+                           db: AsyncSession = Depends(get_db)):
     """Get aggregate usage statistics"""
     if not verify_auth(credentials):
         raise HTTPException(status_code=401, detail="Authentication required")
