@@ -804,7 +804,39 @@ function setupEventListeners() {
     const selectAudioBtn = document.getElementById('selectAudioBtn');
     const audioFileInput = document.getElementById('audioFile');
     const audioFileName = document.getElementById('audioFileName');
+    const audioFileSize = document.getElementById('audioFileSize');
     const fileUploadContainer = document.querySelector('.file-upload-container');
+    const fileUploadEmpty = document.getElementById('fileUploadEmpty');
+    const fileUploadSelected = document.getElementById('fileUploadSelected');
+    const removeAudioBtn = document.getElementById('removeAudioBtn');
+    
+    // Format file size
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
+    }
+    
+    // Show file selected state
+    function showFileSelected(file) {
+        if (audioFileName) audioFileName.textContent = file.name;
+        if (audioFileSize) audioFileSize.textContent = formatFileSize(file.size);
+        if (fileUploadEmpty) fileUploadEmpty.style.display = 'none';
+        if (fileUploadSelected) fileUploadSelected.style.display = 'flex';
+        if (fileUploadContainer) fileUploadContainer.classList.add('has-file');
+    }
+    
+    // Show empty state
+    function showFileEmpty() {
+        if (audioFileName) audioFileName.textContent = '';
+        if (audioFileSize) audioFileSize.textContent = '';
+        if (fileUploadEmpty) fileUploadEmpty.style.display = 'flex';
+        if (fileUploadSelected) fileUploadSelected.style.display = 'none';
+        if (fileUploadContainer) fileUploadContainer.classList.remove('has-file');
+        if (audioFileInput) audioFileInput.value = '';
+    }
     
     if (selectAudioBtn && audioFileInput) {
         selectAudioBtn.addEventListener('click', () => {
@@ -814,12 +846,19 @@ function setupEventListeners() {
         // Update file name display when file is selected
         audioFileInput.addEventListener('change', (e) => {
             const file = e.target.files[0];
-            if (file && audioFileName) {
-                audioFileName.textContent = file.name;
-            } else if (audioFileName) {
-                audioFileName.textContent = 'No file selected';
+            if (file) {
+                showFileSelected(file);
+            } else {
+                showFileEmpty();
             }
         });
+        
+        // Remove file button
+        if (removeAudioBtn) {
+            removeAudioBtn.addEventListener('click', () => {
+                showFileEmpty();
+            });
+        }
         
         // Drag and drop support
         if (fileUploadContainer) {
