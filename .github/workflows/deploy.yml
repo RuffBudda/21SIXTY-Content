@@ -31,6 +31,20 @@ jobs:
           git reset --hard origin/main
           git clean -fd
           echo "✅ Updated to commit: $(git log -1 --oneline)"
+
+          echo ""
+          echo "========== NGINX CONFIG =========="
+          if [ -f nginx/contents.2160.media.conf ]; then
+            sudo cp nginx/contents.2160.media.conf /etc/nginx/sites-available/contents.2160.media
+            sudo ln -sf /etc/nginx/sites-available/contents.2160.media /etc/nginx/sites-enabled/contents.2160.media
+            sudo nginx -t
+            sudo systemctl reload nginx
+            echo "✅ Nginx config applied and reloaded"
+            echo "Effective upload limit(s):"
+            sudo nginx -T 2>/dev/null | grep -E "client_max_body_size|server_name contents\.2160\.media" || true
+          else
+            echo "⚠️ nginx/contents.2160.media.conf not found in repo, skipping nginx reload"
+          fi
           
           echo ""
           echo "========== DEPENDENCY INSTALLATION =========="
