@@ -43,7 +43,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="21SIXTY CONTENT GEN API", version="2.0.2")
+app = FastAPI(title="21SIXTY CONTENT GEN API", version="2.0.3")
 
 # CORS configuration
 allowed_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,https://contents.2160.media").split(",")
@@ -266,7 +266,7 @@ async def process_video(
         file_content = await audio_file.read()
         
         # Validate file size (optional: prevent extremely large files)
-        max_file_size = 500 * 1024 * 1024  # 500MB
+        max_file_size = 1 * 1024 * 1024 * 1024  # 1GB
         if len(file_content) > max_file_size:
             raise HTTPException(status_code=400, detail=f"File too large. Maximum size is {max_file_size / (1024*1024):.0f}MB")
         
