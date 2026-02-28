@@ -800,99 +800,79 @@ function setupEventListeners() {
         });
     }
     
-    // Audio file selection button
-    const selectAudioBtn = document.getElementById('selectAudioBtn');
+    // ── Audio file drop-zone ──────────────────────────────────
+    const dropZone      = document.getElementById('dropZone');
     const audioFileInput = document.getElementById('audioFile');
-    const audioFileName = document.getElementById('audioFileName');
-    const audioFileSize = document.getElementById('audioFileSize');
-    const fileUploadContainer = document.querySelector('.file-upload-container');
-    const fileUploadEmpty = document.getElementById('fileUploadEmpty');
-    const fileUploadSelected = document.getElementById('fileUploadSelected');
-    const removeAudioBtn = document.getElementById('removeAudioBtn');
-    
-    // Format file size
-    function formatFileSize(bytes) {
-        if (bytes === 0) return '0 Bytes';
-        const k = 1024;
-        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
+    const dzIdle        = document.getElementById('dzIdle');
+    const dzSelected    = document.getElementById('dzSelected');
+    const dzFileName    = document.getElementById('dzFileName');
+    const dzFileSize    = document.getElementById('dzFileSize');
+    const dzRemoveBtn   = document.getElementById('dzRemoveBtn');
+
+    function fmtSize(bytes) {
+        if (!bytes) return '0 B';
+        const u = ['B','KB','MB','GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(1024));
+        return (bytes / Math.pow(1024, i)).toFixed(i ? 1 : 0) + ' ' + u[i];
     }
-    
-    // Show file selected state
-    function showFileSelected(file) {
-        if (audioFileName) audioFileName.textContent = file.name;
-        if (audioFileSize) audioFileSize.textContent = formatFileSize(file.size);
-        if (fileUploadEmpty) fileUploadEmpty.style.display = 'none';
-        if (fileUploadSelected) fileUploadSelected.style.display = 'flex';
-        if (fileUploadContainer) fileUploadContainer.classList.add('has-file');
+
+    function setFileState(file) {
+        if (!dropZone) return;
+        dzFileName.textContent = file.name;
+        dzFileSize.textContent = fmtSize(file.size);
+        dzIdle.style.display     = 'none';
+        dzSelected.style.display = 'block';
+        dropZone.classList.add('has-file');
     }
-    
-    // Show empty state
-    function showFileEmpty() {
-        if (audioFileName) audioFileName.textContent = '';
-        if (audioFileSize) audioFileSize.textContent = '';
-        if (fileUploadEmpty) fileUploadEmpty.style.display = 'flex';
-        if (fileUploadSelected) fileUploadSelected.style.display = 'none';
-        if (fileUploadContainer) fileUploadContainer.classList.remove('has-file');
+
+    function clearFileState() {
+        if (!dropZone) return;
+        dzFileName.textContent = '';
+        dzFileSize.textContent = '';
+        dzIdle.style.display     = 'flex';
+        dzSelected.style.display = 'none';
+        dropZone.classList.remove('has-file');
         if (audioFileInput) audioFileInput.value = '';
     }
-    
-    if (selectAudioBtn && audioFileInput) {
-        selectAudioBtn.addEventListener('click', () => {
+
+    if (dropZone && audioFileInput) {
+        // Click anywhere on the zone to open file picker
+        dropZone.addEventListener('click', (e) => {
+            // Don't open picker if clicking remove button
+            if (e.target.closest('.drop-zone__remove')) return;
             audioFileInput.click();
         });
-        
-        // Update file name display when file is selected
-        audioFileInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                showFileSelected(file);
-            } else {
-                showFileEmpty();
-            }
+
+        audioFileInput.addEventListener('change', () => {
+            const f = audioFileInput.files[0];
+            if (f) setFileState(f); else clearFileState();
         });
-        
-        // Remove file button
-        if (removeAudioBtn) {
-            removeAudioBtn.addEventListener('click', () => {
-                showFileEmpty();
+
+        // Remove button
+        if (dzRemoveBtn) {
+            dzRemoveBtn.addEventListener('click', (e) => {
+                e.stopPropagation();   // prevent zone click from re-opening picker
+                clearFileState();
             });
         }
-        
-        // Drag and drop support
-        if (fileUploadContainer) {
-            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-                fileUploadContainer.addEventListener(eventName, preventDefaults, false);
-            });
-            
-            function preventDefaults(e) {
-                e.preventDefault();
-                e.stopPropagation();
+
+        // Drag & drop
+        ['dragenter','dragover','dragleave','drop'].forEach(ev =>
+            dropZone.addEventListener(ev, e => { e.preventDefault(); e.stopPropagation(); }, false)
+        );
+        ['dragenter','dragover'].forEach(ev =>
+            dropZone.addEventListener(ev, () => dropZone.classList.add('is-dragging'), false)
+        );
+        ['dragleave','drop'].forEach(ev =>
+            dropZone.addEventListener(ev, () => dropZone.classList.remove('is-dragging'), false)
+        );
+        dropZone.addEventListener('drop', (e) => {
+            const files = e.dataTransfer.files;
+            if (files.length) {
+                audioFileInput.files = files;
+                audioFileInput.dispatchEvent(new Event('change', { bubbles: true }));
             }
-            
-            ['dragenter', 'dragover'].forEach(eventName => {
-                fileUploadContainer.addEventListener(eventName, () => {
-                    fileUploadContainer.classList.add('drag-over');
-                }, false);
-            });
-            
-            ['dragleave', 'drop'].forEach(eventName => {
-                fileUploadContainer.addEventListener(eventName, () => {
-                    fileUploadContainer.classList.remove('drag-over');
-                }, false);
-            });
-            
-            fileUploadContainer.addEventListener('drop', (e) => {
-                const dt = e.dataTransfer;
-                const files = dt.files;
-                if (files.length > 0) {
-                    audioFileInput.files = files;
-                    // Trigger change event to update file name display
-                    audioFileInput.dispatchEvent(new Event('change', { bubbles: true }));
-                }
-            }, false);
-        }
+        }, false);
     }
     
     document.getElementById('processVideoBtn').addEventListener('click', processVideo);

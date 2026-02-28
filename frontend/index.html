@@ -6,7 +6,7 @@
     <title>CONTENT GEN</title>
     <link rel="icon" type="image/x-icon" href="/static/images/favicons/favicon.ico">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=204">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
@@ -754,44 +754,42 @@ console.log(data.youtube_summary);</code></pre>
                 <h2>Upload Audio File</h2>
                 <div class="input-group">
                     <label for="audioFile">Audio File * (MP3, WAV, M4A, OGG, FLAC)</label>
-                    <div class="file-upload-container">
-                        <input type="file" id="audioFile" accept=".mp3,.wav,.m4a,.ogg,.flac" style="display: none;" />
-                        
-                        <!-- Empty state - shown when no file is selected -->
-                        <div class="file-upload-empty" id="fileUploadEmpty">
-                            <button type="button" class="btn btn-secondary" id="selectAudioBtn">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
-                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                                    <polyline points="17 8 12 3 7 8"></polyline>
-                                    <line x1="12" y1="3" x2="12" y2="15"></line>
-                                </svg>
-                                Select Audio File
-                            </button>
-                            <span style="color: var(--text-secondary); font-size: 0.85rem; text-align: center;">or drag and drop your file here</span>
+                    <input type="file" id="audioFile" accept=".mp3,.wav,.m4a,.ogg,.flac" style="display: none;" />
+                    
+                    <!-- Drop Zone -->
+                    <div class="drop-zone" id="dropZone">
+                        <!-- STATE: Idle / Empty -->
+                        <div class="drop-zone__idle" id="dzIdle">
+                            <svg class="drop-zone__icon" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="17 8 12 3 7 8"></polyline>
+                                <line x1="12" y1="3" x2="12" y2="15"></line>
+                            </svg>
+                            <span class="drop-zone__prompt">Click to select or drag & drop your audio file</span>
+                            <span class="drop-zone__hint">MP3, WAV, M4A, OGG, FLAC</span>
                         </div>
-                        
-                        <!-- Selected state - shown when file is selected -->
-                        <div class="file-upload-selected" id="fileUploadSelected" style="display: none;">
-                            <div class="file-info">
-                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="file-icon">
-                                    <path d="M9 18V5l12-2v13"></path>
-                                    <circle cx="6" cy="18" r="3"></circle>
-                                    <circle cx="18" cy="16" r="3"></circle>
-                                </svg>
-                                <div class="file-details">
-                                    <span id="audioFileName" class="file-name"></span>
-                                    <span id="audioFileSize" class="file-size"></span>
+
+                        <!-- STATE: File Selected -->
+                        <div class="drop-zone__selected" id="dzSelected" style="display:none;">
+                            <div class="drop-zone__file-row">
+                                <div class="drop-zone__file-icon-wrap">
+                                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M9 18V5l12-2v13"></path>
+                                        <circle cx="6" cy="18" r="3"></circle>
+                                        <circle cx="18" cy="16" r="3"></circle>
+                                    </svg>
                                 </div>
+                                <div class="drop-zone__file-meta">
+                                    <span class="drop-zone__file-name" id="dzFileName"></span>
+                                    <span class="drop-zone__file-size" id="dzFileSize"></span>
+                                </div>
+                                <button type="button" class="drop-zone__remove" id="dzRemoveBtn" title="Remove file">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                                    </svg>
+                                </button>
                             </div>
-                            <button type="button" class="btn btn-danger-outline" id="removeAudioBtn" title="Remove file">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <polyline points="3 6 5 6 21 6"></polyline>
-                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                                    <line x1="10" y1="11" x2="10" y2="17"></line>
-                                    <line x1="14" y1="11" x2="14" y2="17"></line>
-                                </svg>
-                                Remove
-                            </button>
                         </div>
                     </div>
                 </div>
@@ -1216,6 +1214,6 @@ console.log(data.youtube_summary);</code></pre>
         <p id="loadingText">Processing...</p>
     </div>
 
-    <script src="app.js"></script>
+    <script src="app.js?v=204"></script>
 </body>
 </html>
